@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  ipam-app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://ipam_user:ipam_password@postgres:5432/ipam_db
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - ipam-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=ipam_db
+      - POSTGRES_USER=ipam_user
+      - POSTGRES_PASSWORD=ipam_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - ipam-network
+
+volumes:
+  postgres_data:
+
+networks:
+  ipam-network:
+    driver: bridge
