@@ -110,6 +110,19 @@ export class DatabaseStorage implements IStorage {
     return subnet;
   }
 
+  async updateSubnet(id: number, updates: Partial<InsertSubnet>): Promise<Subnet> {
+    const [subnet] = await db
+      .update(subnets)
+      .set(updates)
+      .where(eq(subnets.id, id))
+      .returning();
+    return subnet;
+  }
+
+  async deleteSubnet(id: number): Promise<void> {
+    await db.delete(subnets).where(eq(subnets.id, id));
+  }
+
   async getSubnetUtilization(subnetId: number): Promise<any> {
     // This would calculate utilization - simplified for now
     const subnet = await this.getSubnet(subnetId);
