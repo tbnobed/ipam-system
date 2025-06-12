@@ -90,6 +90,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteVlan(id: number): Promise<void> {
+    // First, get all subnets for this VLAN
+    const vlanSubnets = await db.select().from(subnets).where(eq(subnets.vlanId, id));
+    
+    // Delete all devices in these subnets
+    for (const subnet of vlanSubnets) {
+      await db.delete(devices).where(eq(devices.subnetId, subnet.id));
+    }
+    
+    // Then delete all subnets associated with this VLAN
+    await db.delete(subnets).where(eq(subnets.vlanId, id));
+    
+    // Finally delete the VLAN
     await db.delete(vlans).where(eq(vlans.id, id));
   }
 
@@ -120,6 +132,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteSubnet(id: number): Promise<void> {
+    // First, delete all devices in this subnet
+    await db.delete(devices).where(eq(devices.subnetId, id));
+    // Then delete the subnet
     await db.delete(subnets).where(eq(subnets.id, id));
   }
 

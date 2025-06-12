@@ -242,7 +242,9 @@ export default function VLANs() {
                             <AlertDialogTitle>Delete VLAN</AlertDialogTitle>
                             <AlertDialogDescription>
                               Are you sure you want to delete VLAN {vlan.vlanId} ({vlan.name})? 
-                              This action cannot be undone and will also delete all associated subnets.
+                              This action cannot be undone and will permanently delete:
+                              <br />• All subnets in this VLAN
+                              <br />• All devices in those subnets
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
