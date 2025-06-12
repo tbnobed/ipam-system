@@ -118,7 +118,6 @@ export class DatabaseStorage implements IStorage {
     const limit = filters.limit || 50;
     const offset = (page - 1) * limit;
 
-    let query = db.select().from(devices);
     let conditions = [];
 
     if (filters.search) {
@@ -131,18 +130,19 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(devices.status, filters.status));
     }
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    const data = await query
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    
+    const data = await db.select()
+      .from(devices)
+      .where(whereClause)
       .orderBy(devices.ipAddress)
       .limit(limit)
       .offset(offset);
 
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)` })
-      .from(devices);
+      .from(devices)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
 
     return {
       data,

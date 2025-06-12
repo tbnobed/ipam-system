@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Play, Square, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { NetworkScanResult, Subnet } from "@/lib/types";
+import type { NetworkScanResult } from "@/lib/types";
+import type { Subnet } from "@shared/schema";
 
 export default function Discovery() {
   const { toast } = useToast();
@@ -89,7 +90,7 @@ export default function Discovery() {
                     <SelectValue placeholder="Select subnet to scan (or leave empty for all)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Subnets</SelectItem>
+                    <SelectItem value="all">All Subnets</SelectItem>
                     {subnets?.map((subnet) => (
                       <SelectItem key={subnet.id} value={subnet.id.toString()}>
                         {subnet.network} - {subnet.description}

@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Edit, Activity, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
-import type { Device, DeviceFilters, PaginatedResponse } from "@/lib/types";
+import type { DeviceFilters, PaginatedResponse } from "@/lib/types";
+import type { Device } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -24,7 +25,7 @@ export default function DeviceTable() {
     queryKey: ['/api/devices', filters],
   });
 
-  const { data: vlans } = useQuery({
+  const { data: vlans = [] } = useQuery({
     queryKey: ['/api/vlans'],
   });
 
@@ -33,11 +34,11 @@ export default function DeviceTable() {
   };
 
   const handleVlanFilter = (vlan: string) => {
-    setFilters(prev => ({ ...prev, vlan: vlan || undefined, page: 1 }));
+    setFilters(prev => ({ ...prev, vlan: vlan === "all" ? undefined : vlan, page: 1 }));
   };
 
   const handleStatusFilter = (status: string) => {
-    setFilters(prev => ({ ...prev, status: status || undefined, page: 1 }));
+    setFilters(prev => ({ ...prev, status: status === "all" ? undefined : status, page: 1 }));
   };
 
   const handlePageChange = (page: number) => {
@@ -146,7 +147,7 @@ export default function DeviceTable() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All VLANs</SelectItem>
-                {vlans?.map((vlan: any) => (
+                {vlans.map((vlan: any) => (
                   <SelectItem key={vlan.id} value={vlan.vlanId.toString()}>
                     VLAN {vlan.vlanId} - {vlan.name}
                   </SelectItem>
@@ -158,7 +159,7 @@ export default function DeviceTable() {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="online">Online</SelectItem>
                 <SelectItem value="offline">Offline</SelectItem>
                 <SelectItem value="unknown">Unknown</SelectItem>
