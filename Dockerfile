@@ -3,8 +3,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+# Install dependencies for health checks and networking
+RUN apk add --no-cache curl netcat-openbsd
 
 # Copy package files
 COPY package*.json ./
@@ -14,6 +14,10 @@ RUN npm ci && npm cache clean --force
 
 # Copy source code
 COPY . .
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
@@ -30,5 +34,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:5000/api/dashboard/metrics || exit 1
 
-# Start the application in production mode
-CMD ["npm", "run", "dev"]
+# Use custom entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
