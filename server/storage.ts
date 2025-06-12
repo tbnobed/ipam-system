@@ -90,27 +90,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteVlan(id: number): Promise<void> {
-    // Get all subnet IDs for this VLAN first
-    const vlanSubnets = await db.select({ id: subnets.id }).from(subnets).where(eq(subnets.vlanId, id));
-    const subnetIds = vlanSubnets.map(s => s.id);
-    
-    if (subnetIds.length > 0) {
-      // Delete all devices in these subnets
-      for (const subnetId of subnetIds) {
-        await db.delete(devices).where(eq(devices.subnetId, subnetId));
+    await db.transaction(async (tx) => {
+      // Get all subnet IDs for this VLAN first
+      const vlanSubnets = await tx.select({ id: subnets.id }).from(subnets).where(eq(subnets.vlanId, id));
+      const subnetIds = vlanSubnets.map(s => s.id);
+      
+      if (subnetIds.length > 0) {
+        // Delete all devices in these subnets
+        for (const subnetId of subnetIds) {
+          await tx.delete(devices).where(eq(devices.subnetId, subnetId));
+        }
+        
+        // Delete all network scans for these subnets
+        for (const subnetId of subnetIds) {
+          await tx.delete(networkScans).where(eq(networkScans.subnetId, subnetId));
+        }
+        
+        // Delete all subnets for this VLAN
+        await tx.delete(subnets).where(eq(subnets.vlanId, id));
       }
       
-      // Delete all network scans for these subnets
-      for (const subnetId of subnetIds) {
-        await db.delete(networkScans).where(eq(networkScans.subnetId, subnetId));
-      }
-      
-      // Delete all subnets for this VLAN
-      await db.delete(subnets).where(eq(subnets.vlanId, id));
-    }
-    
-    // Finally delete the VLAN
-    await db.delete(vlans).where(eq(vlans.id, id));
+      // Finally delete the VLAN
+      await tx.delete(vlans).where(eq(vlans.id, id));
+    });
   }
 
   async getAllSubnets(): Promise<Subnet[]> {
