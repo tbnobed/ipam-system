@@ -44,6 +44,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/vlans/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertVlanSchema.parse(req.body);
+      const vlan = await storage.updateVlan(id, validatedData);
+      res.json(vlan);
+    } catch (error) {
+      console.error("Error updating VLAN:", error);
+      res.status(400).json({ error: "Failed to update VLAN" });
+    }
+  });
+
+  app.delete("/api/vlans/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteVlan(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting VLAN:", error);
+      res.status(400).json({ error: "Failed to delete VLAN" });
+    }
+  });
+
   // Subnets
   app.get("/api/subnets", async (req, res) => {
     try {
@@ -63,6 +86,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating subnet:", error);
       res.status(400).json({ error: "Failed to create subnet" });
+    }
+  });
+
+  app.put("/api/subnets/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertSubnetSchema.parse(req.body);
+      const subnet = await storage.updateSubnet(id, validatedData);
+      res.json(subnet);
+    } catch (error) {
+      console.error("Error updating subnet:", error);
+      res.status(400).json({ error: "Failed to update subnet" });
+    }
+  });
+
+  app.delete("/api/subnets/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteSubnet(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting subnet:", error);
+      res.status(400).json({ error: "Failed to delete subnet" });
     }
   });
 

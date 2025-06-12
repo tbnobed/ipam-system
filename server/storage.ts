@@ -17,11 +17,15 @@ interface IStorage {
   // VLANs
   getAllVlans(): Promise<Vlan[]>;
   createVlan(insertVlan: InsertVlan): Promise<Vlan>;
+  updateVlan(id: number, updates: Partial<InsertVlan>): Promise<Vlan>;
+  deleteVlan(id: number): Promise<void>;
   
   // Subnets
   getAllSubnets(): Promise<Subnet[]>;
   getSubnet(id: number): Promise<Subnet | undefined>;
   createSubnet(insertSubnet: InsertSubnet): Promise<Subnet>;
+  updateSubnet(id: number, updates: Partial<InsertSubnet>): Promise<Subnet>;
+  deleteSubnet(id: number): Promise<void>;
   getSubnetUtilization(subnetId: number): Promise<any>;
   
   // Devices
@@ -74,6 +78,19 @@ export class DatabaseStorage implements IStorage {
       .values(insertVlan)
       .returning();
     return vlan;
+  }
+
+  async updateVlan(id: number, updates: Partial<InsertVlan>): Promise<Vlan> {
+    const [vlan] = await db
+      .update(vlans)
+      .set(updates)
+      .where(eq(vlans.id, id))
+      .returning();
+    return vlan;
+  }
+
+  async deleteVlan(id: number): Promise<void> {
+    await db.delete(vlans).where(eq(vlans.id, id));
   }
 
   async getAllSubnets(): Promise<Subnet[]> {

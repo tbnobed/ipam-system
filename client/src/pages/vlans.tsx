@@ -161,7 +161,7 @@ export default function VLANs() {
                 </DialogHeader>
                 <VlanForm
                   vlan={editingVlan}
-                  onSubmit={(data) => {
+                  onSubmit={(data: VlanFormData) => {
                     if (editingVlan) {
                       updateVlanMutation.mutate({ id: editingVlan.id, data });
                     } else {
@@ -187,7 +187,7 @@ export default function VLANs() {
                 <SubnetForm
                   subnet={editingSubnet}
                   vlans={vlans || []}
-                  onSubmit={(data) => {
+                  onSubmit={(data: SubnetFormData) => {
                     if (editingSubnet) {
                       updateSubnetMutation.mutate({ id: editingSubnet.id, data });
                     } else {
@@ -449,7 +449,7 @@ function SubnetForm({ subnet, vlans, onSubmit, isLoading }: SubnetFormProps) {
       network: subnet?.network || "",
       gateway: subnet?.gateway || "",
       vlanId: subnet?.vlanId || 0,
-      assignmentType: subnet?.assignmentType || "static",
+      assignmentType: (subnet?.assignmentType as "static" | "dhcp") || "static",
       description: subnet?.description || ""
     }
   });
