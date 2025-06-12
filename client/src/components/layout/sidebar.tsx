@@ -47,8 +47,8 @@ export default function Sidebar() {
               
               return (
                 <Link key={item.name} href={item.href}>
-                  <a className={cn(
-                    "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
+                  <div className={cn(
+                    "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer",
                     isActive
                       ? "bg-primary/10 border-r-2 border-primary text-primary"
                       : "text-gray-700 hover:bg-gray-50"
@@ -58,7 +58,7 @@ export default function Sidebar() {
                       isActive ? "text-primary" : "text-gray-400"
                     )} />
                     {item.name}
-                  </a>
+                  </div>
                 </Link>
               );
             })}

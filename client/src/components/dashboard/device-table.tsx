@@ -25,7 +25,7 @@ export default function DeviceTable() {
     queryKey: ['/api/devices', filters],
   });
 
-  const { data: vlans = [] } = useQuery({
+  const { data: vlans = [] } = useQuery<any[]>({
     queryKey: ['/api/vlans'],
   });
 
