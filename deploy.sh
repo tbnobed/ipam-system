@@ -37,18 +37,18 @@ cd $APP_DIR
 
 # Create Docker volumes
 echo "Creating Docker volumes..."
-docker volume create ipam_postgres_data
+sudo docker volume create ipam_postgres_data
 
 # Start the application
 echo "Starting IPAM System..."
-docker-compose up -d
+sudo docker-compose up -d
 
 # Wait for services to start
 echo "Waiting for services to start..."
 sleep 30
 
 # Check if services are running
-if docker-compose ps | grep -q "Up"; then
+if sudo docker-compose ps | grep -q "Up"; then
     echo "✅ IPAM System deployed successfully!"
     echo ""
     echo "🌐 Access your application at: http://$(hostname -I | awk '{print $1}'):5000"
@@ -61,7 +61,7 @@ if docker-compose ps | grep -q "Up"; then
     echo "  - Update system: git pull && docker-compose up -d --build"
 else
     echo "❌ Deployment failed. Check logs:"
-    docker-compose logs
+    sudo docker-compose logs
     exit 1
 fi
 
