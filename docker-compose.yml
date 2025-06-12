@@ -3,11 +3,11 @@ services:
     build: .
     ports:
       - "5000:5000"
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://ipam_user:ipam_password@postgres:5432/ipam_db
+    env_file:
+      - .env.docker
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - ipam-network
@@ -26,6 +26,11 @@ services:
     restart: unless-stopped
     networks:
       - ipam-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ipam_user -d ipam_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
