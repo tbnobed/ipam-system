@@ -1,0 +1,170 @@
+postgres-1  | 2025-06-12 23:17:10.931 UTC [1] LOG:  database system is ready to accept connections
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 start
+ipam-app-1  | > NODE_ENV=production node dist/index.js
+ipam-app-1  |
+ipam-app-1  | node:internal/modules/esm/resolve:873
+ipam-app-1  |   throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+ipam-app-1  |         ^
+ipam-app-1  |
+ipam-app-1  | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/dist/index.js
+ipam-app-1  |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+ipam-app-1  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+ipam-app-1  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+ipam-app-1  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+ipam-app-1  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+ipam-app-1  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+ipam-app-1  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+ipam-app-1  |     at ModuleJob._link (node:internal/modules/esm/module_job:130:49) {
+ipam-app-1  |   code: 'ERR_MODULE_NOT_FOUND'
+ipam-app-1  | }
+ipam-app-1  |
+ipam-app-1  | Node.js v20.19.2
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 start
+ipam-app-1  | > NODE_ENV=production node dist/index.js
+ipam-app-1  |
+ipam-app-1  | node:internal/modules/esm/resolve:873
+ipam-app-1  |   throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+ipam-app-1  |         ^
+ipam-app-1  |
+ipam-app-1  | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/dist/index.js
+ipam-app-1  |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+ipam-app-1  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+ipam-app-1  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+ipam-app-1  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+ipam-app-1  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+ipam-app-1  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+ipam-app-1  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+ipam-app-1  |     at ModuleJob._link (node:internal/modules/esm/module_job:130:49) {
+ipam-app-1  |   code: 'ERR_MODULE_NOT_FOUND'
+ipam-app-1  | }
+ipam-app-1  |
+ipam-app-1  | Node.js v20.19.2
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 start
+ipam-app-1  | > NODE_ENV=production node dist/index.js
+ipam-app-1  |
+ipam-app-1  | node:internal/modules/esm/resolve:873
+ipam-app-1  |   throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+ipam-app-1  |         ^
+ipam-app-1  |
+ipam-app-1  | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/dist/index.js
+ipam-app-1  |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+ipam-app-1  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+ipam-app-1  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+ipam-app-1  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+ipam-app-1  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+ipam-app-1  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+ipam-app-1  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+ipam-app-1  |     at ModuleJob._link (node:internal/modules/esm/module_job:130:49) {
+ipam-app-1  |   code: 'ERR_MODULE_NOT_FOUND'
+ipam-app-1  | }
+ipam-app-1  |
+ipam-app-1  | Node.js v20.19.2
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 start
+ipam-app-1  | > NODE_ENV=production node dist/index.js
+ipam-app-1  |
+ipam-app-1  | node:internal/modules/esm/resolve:873
+ipam-app-1  |   throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+ipam-app-1  |         ^
+ipam-app-1  |
+ipam-app-1  | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/dist/index.js
+ipam-app-1  |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+ipam-app-1  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+ipam-app-1  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+ipam-app-1  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+ipam-app-1  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+ipam-app-1  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+ipam-app-1  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+ipam-app-1  |     at ModuleJob._link (node:internal/modules/esm/module_job:130:49) {
+ipam-app-1  |   code: 'ERR_MODULE_NOT_FOUND'
+ipam-app-1  | }
+ipam-app-1  |
+ipam-app-1  | Node.js v20.19.2
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 start
+ipam-app-1  | > NODE_ENV=production node dist/index.js
+ipam-app-1  |
+ipam-app-1  | node:internal/modules/esm/resolve:873
+ipam-app-1  |   throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+ipam-app-1  |         ^
+ipam-app-1  |
+ipam-app-1  | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/dist/index.js
+ipam-app-1  |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+ipam-app-1  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+ipam-app-1  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+ipam-app-1  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+ipam-app-1  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+ipam-app-1  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+ipam-app-1  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+ipam-app-1  |     at ModuleJob._link (node:internal/modules/esm/module_job:130:49) {
+ipam-app-1  |   code: 'ERR_MODULE_NOT_FOUND'
+ipam-app-1  | }
+ipam-app-1  |
+ipam-app-1  | Node.js v20.19.2
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 start
+ipam-app-1  | > NODE_ENV=production node dist/index.js
+ipam-app-1  |
+ipam-app-1  | node:internal/modules/esm/resolve:873
+ipam-app-1  |   throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+ipam-app-1  |         ^
+ipam-app-1  |
+ipam-app-1  | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/dist/index.js
+ipam-app-1  |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+ipam-app-1  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+ipam-app-1  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+ipam-app-1  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+ipam-app-1  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+ipam-app-1  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+ipam-app-1  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+ipam-app-1  |     at ModuleJob._link (node:internal/modules/esm/module_job:130:49) {
+ipam-app-1  |   code: 'ERR_MODULE_NOT_FOUND'
+ipam-app-1  | }
+ipam-app-1  |
+ipam-app-1  | Node.js v20.19.2
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 start
+ipam-app-1  | > NODE_ENV=production node dist/index.js
+ipam-app-1  |
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 start
+ipam-app-1  | > NODE_ENV=production node dist/index.js
+ipam-app-1  |
+ipam-app-1  | node:internal/modules/esm/resolve:873
+ipam-app-1  |   throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+ipam-app-1  |         ^
+ipam-app-1  |
+ipam-app-1  | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/dist/index.js
+ipam-app-1  |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+ipam-app-1  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+ipam-app-1  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+ipam-app-1  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+ipam-app-1  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+ipam-app-1  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+ipam-app-1  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+ipam-app-1  |     at ModuleJob._link (node:internal/modules/esm/module_job:130:49) {
+ipam-app-1  |   code: 'ERR_MODULE_NOT_FOUND'
+ipam-app-1  | }
+ipam-app-1  |
+ipam-app-1  | Node.js v20.19.2
+ipam-app-1  | node:internal/modules/esm/resolve:873
+ipam-app-1  |   throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+ipam-app-1  |         ^
+ipam-app-1  |
+ipam-app-1  | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/dist/index.js
+ipam-app-1  |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+ipam-app-1  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+ipam-app-1  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+ipam-app-1  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+ipam-app-1  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+ipam-app-1  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+ipam-app-1  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+ipam-app-1  |     at ModuleJob._link (node:internal/modules/esm/module_job:130:49) {
+ipam-app-1  |   code: 'ERR_MODULE_NOT_FOUND'
+ipam-app-1  | }
+ipam-app-1  |
+ipam-app-1  | Node.js v20.19.2
+ipam-app-1 exited with code 1
