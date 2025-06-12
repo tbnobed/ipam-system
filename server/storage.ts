@@ -90,19 +90,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteVlan(id: number): Promise<void> {
-    // First, get all subnets for this VLAN
-    const vlanSubnets = await db.select().from(subnets).where(eq(subnets.vlanId, id));
-    
-    // Delete all devices in these subnets
-    for (const subnet of vlanSubnets) {
-      await db.delete(devices).where(eq(devices.subnetId, subnet.id));
-    }
-    
-    // Then delete all subnets associated with this VLAN
-    await db.delete(subnets).where(eq(subnets.vlanId, id));
-    
-    // Finally delete the VLAN
-    await db.delete(vlans).where(eq(vlans.id, id));
+    // Use raw SQL to delete with cascading behavior
+    await db.transaction(async (tx) => {
+      // Delete devices first
+      await tx.execute(sql`
+        DELETE FROM devices 
+        WHERE subnet_id IN (
+          SELECT id FROM subnets WHERE vlan_id = ${id}
+        )
+      `);
+      
+      // Delete subnets
+      await tx.execute(sql`DELETE FROM subnets WHERE vlan_id = ${id}`);
+      
+      // Delete VLAN
+      await tx.execute(sql`DELETE FROM vlans WHERE id = ${id}`);
+    });
   }
 
   async getAllSubnets(): Promise<Subnet[]> {
