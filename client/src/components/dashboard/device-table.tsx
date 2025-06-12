@@ -145,7 +145,7 @@ export default function DeviceTable() {
                 <SelectValue placeholder="All VLANs" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All VLANs</SelectItem>
+                <SelectItem value="all">All VLANs</SelectItem>
                 {vlans?.map((vlan: any) => (
                   <SelectItem key={vlan.id} value={vlan.vlanId.toString()}>
                     VLAN {vlan.vlanId} - {vlan.name}
