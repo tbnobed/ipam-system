@@ -457,6 +457,6 @@ export default function DeviceTable() {
         </div>
       </CardContent>
     </Card>
-    </>
+    </div>
   );
 }
