@@ -123,6 +123,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Subnet utilization for dashboard
+  app.get("/api/dashboard/subnet-utilization", async (req, res) => {
+    try {
+      const subnets = await storage.getAllSubnets();
+      const utilizationData = await Promise.all(
+        subnets.map(async (subnet) => {
+          const utilization = await storage.getSubnetUtilization(subnet.id);
+          return {
+            id: subnet.id,
+            name: subnet.network,
+            description: subnet.description || '',
+            utilization: utilization.utilizationPercent || 0,
+            available: utilization.availableIPs || 0,
+            total: utilization.totalIPs || 0,
+          };
+        })
+      );
+      res.json(utilizationData);
+    } catch (error) {
+      console.error("Error fetching subnet utilization:", error);
+      res.status(500).json({ error: "Failed to fetch subnet utilization" });
+    }
+  });
+
   // Devices
   app.get("/api/devices", async (req, res) => {
     try {

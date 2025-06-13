@@ -149,22 +149,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSubnetUtilization(subnetId: number): Promise<any> {
-    // This would calculate utilization - simplified for now
     const subnet = await this.getSubnet(subnetId);
     if (!subnet) return null;
     
-    const deviceCount = await db
+    const [deviceCountResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(devices)
       .where(eq(devices.subnetId, subnetId));
     
+    const deviceCount = Number(deviceCountResult.count);
+    
+    // Calculate total IPs from CIDR notation
+    const [network, prefixLength] = subnet.network.split('/');
+    const totalIPs = Math.pow(2, 32 - parseInt(prefixLength)) - 2; // Subtract network and broadcast addresses
+    const availableIPs = totalIPs - deviceCount;
+    const utilizationPercent = totalIPs > 0 ? Math.round((deviceCount / totalIPs) * 100) : 0;
+    
     return {
       id: subnet.id,
       name: subnet.network,
-      utilization: 0, // Would calculate based on CIDR and device count
+      utilizationPercent,
       description: subnet.description,
-      available: 250, // Simplified
-      total: 254,
+      availableIPs,
+      totalIPs,
+      deviceCount,
     };
   }
 

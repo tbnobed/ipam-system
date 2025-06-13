@@ -17,7 +17,8 @@ export default function Dashboard() {
   });
 
   const { data: subnets, isLoading: subnetsLoading } = useQuery<SubnetUtilization[]>({
-    queryKey: ['/api/subnets'],
+    queryKey: ['/api/dashboard/subnet-utilization'],
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const { data: activities, isLoading: activitiesLoading } = useQuery<ActivityItem[]>({
