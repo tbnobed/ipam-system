@@ -134,25 +134,43 @@ export default function VLANs() {
     const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
     const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
     
+    // Debug: Log subnet details and all devices
+    console.log('=== SUBNET DETAILS DEBUG ===');
+    console.log('Subnet:', subnet.network);
+    console.log('Network Address:', networkAddr);
+    console.log('CIDR:', cidr);
+    console.log('Network Int:', networkInt);
+    console.log('Broadcast Int:', broadcastInt);
+    console.log('All devices:', devices?.data?.map(d => ({
+      ip: d.ipAddress,
+      subnetId: d.subnetId,
+      hostname: d.hostname
+    })));
+    
     // Get devices that fall within this subnet's IP range using proper IP math
     const deviceData = devices?.data?.filter((device: any) => {
       if (!device.ipAddress) return false;
       
       try {
         const deviceIPParts = device.ipAddress.split('.').map(Number);
-        if (deviceIPParts.length !== 4 || deviceIPParts.some(part => isNaN(part) || part < 0 || part > 255)) {
+        if (deviceIPParts.length !== 4 || deviceIPParts.some((part: number) => isNaN(part) || part < 0 || part > 255)) {
           return false;
         }
         
         const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
+        const inRange = deviceIPInt > networkInt && deviceIPInt < broadcastInt;
         
-        // Check if device IP falls within subnet range (excluding network and broadcast)
-        return deviceIPInt > networkInt && deviceIPInt < broadcastInt;
+        console.log(`Device ${device.ipAddress} (${deviceIPInt}) in range ${networkInt}-${broadcastInt}? ${inRange}`);
+        
+        return inRange;
       } catch (error) {
         console.error('Error processing device IP:', device.ipAddress, error);
         return false;
       }
     }) || [];
+    
+    console.log('Filtered devices for subnet:', deviceData.length);
+    console.log('=== END DEBUG ===');
     
     const usedIPs = new Set(deviceData.map((device: any) => device.ipAddress));
     const availableRanges: string[] = [];
