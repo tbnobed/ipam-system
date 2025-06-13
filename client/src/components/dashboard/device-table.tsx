@@ -105,7 +105,10 @@ export default function DeviceTable() {
   };
 
   const handleVlanFilter = (vlan: string) => {
-    setFilters(prev => ({ ...prev, vlan: vlan === "all" ? undefined : vlan, page: 1 }));
+    console.log('VLAN filter changed to:', vlan);
+    const newFilters = { ...filters, vlan: vlan === "all" ? undefined : vlan, page: 1 };
+    console.log('New filters:', newFilters);
+    setFilters(newFilters);
   };
 
   const handleStatusFilter = (status: string) => {
