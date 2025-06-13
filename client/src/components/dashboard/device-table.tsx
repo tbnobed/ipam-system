@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Search, Edit, Activity, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Edit, Activity, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
@@ -38,6 +38,10 @@ export default function DeviceTable() {
   });
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortField, setSortField] = useState<string>("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const form = useForm<EditDeviceFormData>({
     resolver: zodResolver(editDeviceSchema),
@@ -49,6 +53,24 @@ export default function DeviceTable() {
       vendor: "",
     },
   });
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchValue);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchValue]);
+
+  // Update filters when debounced search changes
+  useEffect(() => {
+    setFilters(prev => ({ 
+      ...prev, 
+      search: debouncedSearch || undefined, 
+      page: 1 
+    }));
+  }, [debouncedSearch]);
 
   const { data: deviceData, isLoading, refetch } = useQuery<PaginatedResponse<Device>>({
     queryKey: ['/api/devices', filters],
@@ -78,8 +100,8 @@ export default function DeviceTable() {
     },
   });
 
-  const handleSearch = (search: string) => {
-    setFilters(prev => ({ ...prev, search: search || undefined, page: 1 }));
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
   };
 
   const handleVlanFilter = (vlan: string) => {
@@ -92,6 +114,24 @@ export default function DeviceTable() {
 
   const handlePageChange = (page: number) => {
     setFilters(prev => ({ ...prev, page }));
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-4 h-4" />;
+    }
+    return sortDirection === "asc" ? 
+      <ArrowUp className="w-4 h-4" /> : 
+      <ArrowDown className="w-4 h-4" />;
   };
 
   const handleEditDevice = (device: Device) => {
@@ -310,7 +350,8 @@ export default function DeviceTable() {
               <Input
                 placeholder="Search devices..."
                 className="pl-10 w-64"
-                onChange={(e) => handleSearch(e.target.value)}
+                value={searchValue}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             </div>
