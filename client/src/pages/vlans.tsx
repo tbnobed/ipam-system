@@ -84,14 +84,8 @@ export default function VLANs() {
       const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
       const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
       
-      // Filter devices by IP range instead of subnet assignment
-      deviceData = devices?.data?.filter((device: any) => {
-        if (!device.ipAddress) return false;
-        const deviceIPParts = device.ipAddress.split('.').map(Number);
-        const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
-        // Include devices that fall within the subnet range (excluding network and broadcast addresses)
-        return deviceIPInt >= networkInt + 1 && deviceIPInt <= broadcastInt - 1;
-      }) || [];
+      // Use subnet ID filtering for now
+      deviceData = devices?.data?.filter((device: any) => device.subnetId === subnetId) || [];
     }
     
     const onlineDevices = deviceData.filter((device: any) => device.status === 'online').length;
@@ -123,12 +117,9 @@ export default function VLANs() {
     const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
     const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
     
-    // Get devices that fall within this subnet's IP range (regardless of assigned subnet)
+    // For now, fallback to subnet ID filtering since IP range filtering has issues
     const deviceData = devices?.data?.filter((device: any) => {
-      if (!device.ipAddress) return false;
-      const deviceIPParts = device.ipAddress.split('.').map(Number);
-      const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
-      return deviceIPInt >= networkInt + 1 && deviceIPInt <= broadcastInt - 1;
+      return device.subnetId === subnet.id;
     }) || [];
     
     const usedIPs = new Set(deviceData.map((device: any) => device.ipAddress));
