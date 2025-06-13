@@ -195,46 +195,45 @@ export class DatabaseStorage implements IStorage {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     
-    // Build order by clause based on sortBy and sortOrder
-    let orderByClause;
+    // Build the base query
+    let query = db.select().from(devices);
+    
+    // Apply where clause if conditions exist
+    if (whereClause) {
+      query = query.where(whereClause);
+    }
+    
+    // Apply sorting
     if (filters.sortBy && filters.sortOrder) {
       const isDesc = filters.sortOrder === 'desc';
       switch (filters.sortBy) {
         case 'ipAddress':
-          // Convert IP to numeric format for proper sorting
-          orderByClause = isDesc ? 
-            sql`(split_part(${devices.ipAddress}, '.', 1)::int * 16777216 + 
-                 split_part(${devices.ipAddress}, '.', 2)::int * 65536 + 
-                 split_part(${devices.ipAddress}, '.', 3)::int * 256 + 
-                 split_part(${devices.ipAddress}, '.', 4)::int) DESC` : 
-            sql`(split_part(${devices.ipAddress}, '.', 1)::int * 16777216 + 
-                 split_part(${devices.ipAddress}, '.', 2)::int * 65536 + 
-                 split_part(${devices.ipAddress}, '.', 3)::int * 256 + 
-                 split_part(${devices.ipAddress}, '.', 4)::int) ASC`;
+          query = query.orderBy(isDesc ? desc(devices.ipAddress) : devices.ipAddress);
           break;
         case 'hostname':
-          orderByClause = isDesc ? desc(devices.hostname) : devices.hostname;
+          query = query.orderBy(isDesc ? desc(devices.hostname) : devices.hostname);
           break;
         case 'status':
-          orderByClause = isDesc ? desc(devices.status) : devices.status;
+          query = query.orderBy(isDesc ? desc(devices.status) : devices.status);
           break;
         case 'deviceType':
-          orderByClause = isDesc ? desc(devices.deviceType) : devices.deviceType;
+          query = query.orderBy(isDesc ? desc(devices.deviceType) : devices.deviceType);
           break;
         case 'lastSeen':
-          orderByClause = isDesc ? desc(devices.lastSeen) : devices.lastSeen;
+          query = query.orderBy(isDesc ? desc(devices.lastSeen) : devices.lastSeen);
+          break;
+        case 'vendor':
+          query = query.orderBy(isDesc ? desc(devices.vendor) : devices.vendor);
           break;
         default:
-          orderByClause = devices.ipAddress;
+          query = query.orderBy(devices.ipAddress);
       }
     } else {
-      orderByClause = devices.ipAddress;
+      query = query.orderBy(devices.ipAddress);
     }
     
-    const data = await db.select()
-      .from(devices)
-      .where(whereClause)
-      .orderBy(orderByClause)
+    // Apply pagination
+    const data = await query
       .limit(limit)
       .offset(offset);
 
