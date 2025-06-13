@@ -9,11 +9,33 @@ interface SubnetOverviewProps {
 }
 
 export default function SubnetOverview({ subnets }: SubnetOverviewProps) {
+  console.log('SubnetOverview received subnets:', subnets);
+  
   const getUtilizationColor = (utilization: number) => {
     if (utilization >= 90) return "bg-red-500";
     if (utilization >= 75) return "bg-orange-500";
     return "bg-primary";
   };
+
+  if (!subnets || subnets.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Subnet Utilization</CardTitle>
+          <Link href="/vlans">
+            <Button variant="link" className="text-primary">
+              View All
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-gray-500 py-8">
+            No subnets configured. Add VLANs and subnets to see utilization data.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
