@@ -201,7 +201,16 @@ export class DatabaseStorage implements IStorage {
       const isDesc = filters.sortOrder === 'desc';
       switch (filters.sortBy) {
         case 'ipAddress':
-          orderByClause = isDesc ? desc(devices.ipAddress) : devices.ipAddress;
+          // Convert IP to numeric format for proper sorting
+          orderByClause = isDesc ? 
+            sql`(split_part(${devices.ipAddress}, '.', 1)::int * 16777216 + 
+                 split_part(${devices.ipAddress}, '.', 2)::int * 65536 + 
+                 split_part(${devices.ipAddress}, '.', 3)::int * 256 + 
+                 split_part(${devices.ipAddress}, '.', 4)::int) DESC` : 
+            sql`(split_part(${devices.ipAddress}, '.', 1)::int * 16777216 + 
+                 split_part(${devices.ipAddress}, '.', 2)::int * 65536 + 
+                 split_part(${devices.ipAddress}, '.', 3)::int * 256 + 
+                 split_part(${devices.ipAddress}, '.', 4)::int) ASC`;
           break;
         case 'hostname':
           orderByClause = isDesc ? desc(devices.hostname) : devices.hostname;
