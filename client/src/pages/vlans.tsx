@@ -72,15 +72,35 @@ export default function VLANs() {
 
   const getSubnetMetrics = (subnetId: number) => {
     const utilData = subnetUtilization?.find((util: any) => util.id === subnetId);
-    const deviceData = devices?.data?.filter((device: any) => device.subnetId === subnetId) || [];
+    const subnet = subnets?.find((s: any) => s.id === subnetId);
+    
+    let deviceData: any[] = [];
+    if (subnet) {
+      // Parse network CIDR for IP range filtering
+      const [networkAddr, cidrBits] = subnet.network.split('/');
+      const cidr = parseInt(cidrBits);
+      const hostBits = 32 - cidr;
+      const networkParts = networkAddr.split('.').map(Number);
+      const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
+      const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
+      
+      // Filter devices by IP range instead of subnet assignment
+      deviceData = devices?.data?.filter((device: any) => {
+        if (!device.ipAddress) return false;
+        const deviceIPParts = device.ipAddress.split('.').map(Number);
+        const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
+        return deviceIPInt > networkInt && deviceIPInt < broadcastInt;
+      }) || [];
+    }
+    
     const onlineDevices = deviceData.filter((device: any) => device.status === 'online').length;
     const offlineDevices = deviceData.filter((device: any) => device.status === 'offline').length;
     
     return {
       totalIPs: utilData?.total || 0,
-      usedIPs: (utilData?.total || 0) - (utilData?.available || 0),
-      availableIPs: utilData?.available || 0,
-      utilization: utilData?.utilization || 0,
+      usedIPs: deviceData.length, // Use actual device count in range
+      availableIPs: (utilData?.total || 0) - deviceData.length,
+      utilization: utilData?.total ? (deviceData.length / utilData.total) * 100 : 0,
       totalDevices: deviceData.length,
       onlineDevices,
       offlineDevices,
@@ -89,7 +109,6 @@ export default function VLANs() {
   };
 
   const getSubnetDetails = (subnet: Subnet) => {
-    const deviceData = devices?.data?.filter((device: any) => device.subnetId === subnet.id) || [];
     const metrics = getSubnetMetrics(subnet.id);
     
     // Parse network CIDR
@@ -102,6 +121,14 @@ export default function VLANs() {
     const networkParts = networkAddr.split('.').map(Number);
     const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
     const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
+    
+    // Get devices that fall within this subnet's IP range (regardless of assigned subnet)
+    const deviceData = devices?.data?.filter((device: any) => {
+      if (!device.ipAddress) return false;
+      const deviceIPParts = device.ipAddress.split('.').map(Number);
+      const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
+      return deviceIPInt > networkInt && deviceIPInt < broadcastInt;
+    }) || [];
     
     const usedIPs = new Set(deviceData.map((device: any) => device.ipAddress));
     const availableRanges: string[] = [];
