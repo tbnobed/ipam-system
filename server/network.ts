@@ -106,7 +106,7 @@ class NetworkScanner {
       await storage.updateNetworkScan(scanId, {
         endTime: new Date(),
         status: 'failed',
-        results: { error: error.message },
+        results: { error: error instanceof Error ? error.message : 'Unknown error' },
       });
     }
   }
