@@ -147,7 +147,7 @@ export default function VLANs() {
         ((broadcastInt - 1) >>> 8) & 255,
         (broadcastInt - 1) & 255
       ].join('.'),
-      availableRanges: availableRanges.slice(0, 50), // Limit for performance
+      availableRanges: availableRanges, // Show all available IPs
       usedRanges,
       deviceData
     };
@@ -662,7 +662,7 @@ function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
         <div>
           <h4 className="font-medium text-gray-900 mb-3 flex items-center">
             <Activity className="w-4 h-4 mr-2" />
-            Available IP Addresses ({details.availableRanges.length > 50 ? '50+' : details.availableRanges.length})
+            Available IP Addresses ({details.availableRanges.length})
           </h4>
           <div className="border rounded-lg max-h-64 overflow-y-auto">
             {details.availableRanges.length > 0 ? (
@@ -672,11 +672,6 @@ function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
                     {ip}
                   </div>
                 ))}
-                {details.metrics.availableIPs > 50 && (
-                  <div className="text-center text-gray-500 text-sm p-2">
-                    ... and {details.metrics.availableIPs - 50} more available IPs
-                  </div>
-                )}
               </div>
             ) : (
               <div className="p-4 text-center text-gray-500">No IP addresses available</div>
