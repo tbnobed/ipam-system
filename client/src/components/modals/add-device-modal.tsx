@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -33,12 +33,62 @@ export default function AddDeviceModal() {
     queryKey: ['/api/subnets'],
   });
 
+  const { data: devices = { data: [] } } = useQuery<any>({
+    queryKey: ['/api/devices'],
+  });
+
   const form = useForm<DeviceFormData>({
     resolver: zodResolver(deviceSchema),
     defaultValues: {
       assignmentType: "static",
     },
   });
+
+  const selectedSubnetId = form.watch("subnetId");
+  
+  const availableIPs = useMemo(() => {
+    if (!selectedSubnetId) return [];
+    
+    const subnet = subnets.find((s: any) => s.id.toString() === selectedSubnetId);
+    if (!subnet) return [];
+    
+    // Parse network CIDR
+    const [networkAddr, cidrBits] = subnet.network.split('/');
+    const cidr = parseInt(cidrBits);
+    const hostBits = 32 - cidr;
+    
+    // Generate IP range
+    const networkParts = networkAddr.split('.').map(Number);
+    const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
+    const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
+    
+    // Get used IPs in this subnet
+    const usedIPs = new Set(
+      devices.data
+        .filter((device: any) => device.subnetId?.toString() === selectedSubnetId)
+        .map((device: any) => device.ipAddress)
+    );
+    
+    // Add gateway to used IPs
+    usedIPs.add(subnet.gateway);
+    
+    // Generate available IPs
+    const availableList: string[] = [];
+    for (let i = networkInt + 1; i < broadcastInt; i++) {
+      const ip = [
+        (i >>> 24) & 255,
+        (i >>> 16) & 255,
+        (i >>> 8) & 255,
+        i & 255
+      ].join('.');
+      
+      if (!usedIPs.has(ip)) {
+        availableList.push(ip);
+      }
+    }
+    
+    return availableList;
+  }, [selectedSubnetId, subnets, devices]);
 
   const onSubmit = async (data: DeviceFormData) => {
     try {
@@ -86,13 +136,67 @@ export default function AddDeviceModal() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
+              name="subnetId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subnet</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select subnet first" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {subnets.map((subnet: any) => (
+                        <SelectItem key={subnet.id} value={subnet.id.toString()}>
+                          {subnet.network} - {subnet.description || 'No description'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="ipAddress"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>IP Address</FormLabel>
-                  <FormControl>
-                    <Input placeholder="192.168.1.100" {...field} />
-                  </FormControl>
+                  <FormLabel>
+                    Available IP Address 
+                    {selectedSubnetId && (
+                      <span className="text-sm text-gray-500 ml-2">
+                        ({availableIPs.length} available)
+                      </span>
+                    )}
+                  </FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value}
+                    disabled={!selectedSubnetId}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={
+                          selectedSubnetId ? "Select an available IP address" : "Select subnet first"
+                        } />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-60">
+                      {availableIPs.map((ip: string) => (
+                        <SelectItem key={ip} value={ip}>
+                          <span className="font-mono">{ip}</span>
+                        </SelectItem>
+                      ))}
+                      {availableIPs.length === 0 && selectedSubnetId && (
+                        <div className="p-2 text-center text-gray-500 text-sm">
+                          No available IP addresses in this subnet
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -107,31 +211,6 @@ export default function AddDeviceModal() {
                   <FormControl>
                     <Input placeholder="device-hostname" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="subnetId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Subnet</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select subnet" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {subnets.map((subnet: any) => (
-                        <SelectItem key={subnet.id} value={subnet.id.toString()}>
-                          {subnet.network} - {subnet.description}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
