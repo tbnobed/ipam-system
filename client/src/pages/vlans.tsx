@@ -84,8 +84,25 @@ export default function VLANs() {
       const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
       const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
       
-      // Use subnet ID filtering for now
-      deviceData = devices?.data?.filter((device: any) => device.subnetId === subnetId) || [];
+      // Filter devices by IP range using proper IP math
+      deviceData = devices?.data?.filter((device: any) => {
+        if (!device.ipAddress) return false;
+        
+        try {
+          const deviceIPParts = device.ipAddress.split('.').map(Number);
+          if (deviceIPParts.length !== 4 || deviceIPParts.some(part => isNaN(part) || part < 0 || part > 255)) {
+            return false;
+          }
+          
+          const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
+          
+          // Check if device IP falls within subnet range (excluding network and broadcast)
+          return deviceIPInt > networkInt && deviceIPInt < broadcastInt;
+        } catch (error) {
+          console.error('Error processing device IP for metrics:', device.ipAddress, error);
+          return false;
+        }
+      }) || [];
     }
     
     const onlineDevices = deviceData.filter((device: any) => device.status === 'online').length;
@@ -117,9 +134,24 @@ export default function VLANs() {
     const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
     const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
     
-    // For now, fallback to subnet ID filtering since IP range filtering has issues
+    // Get devices that fall within this subnet's IP range using proper IP math
     const deviceData = devices?.data?.filter((device: any) => {
-      return device.subnetId === subnet.id;
+      if (!device.ipAddress) return false;
+      
+      try {
+        const deviceIPParts = device.ipAddress.split('.').map(Number);
+        if (deviceIPParts.length !== 4 || deviceIPParts.some(part => isNaN(part) || part < 0 || part > 255)) {
+          return false;
+        }
+        
+        const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
+        
+        // Check if device IP falls within subnet range (excluding network and broadcast)
+        return deviceIPInt > networkInt && deviceIPInt < broadcastInt;
+      } catch (error) {
+        console.error('Error processing device IP:', device.ipAddress, error);
+        return false;
+      }
     }) || [];
     
     const usedIPs = new Set(deviceData.map((device: any) => device.ipAddress));
