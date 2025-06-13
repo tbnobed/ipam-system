@@ -195,45 +195,11 @@ export class DatabaseStorage implements IStorage {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     
-    // Build the base query
-    let query = db.select().from(devices);
-    
-    // Apply where clause if conditions exist
-    if (whereClause) {
-      query = query.where(whereClause);
-    }
-    
-    // Apply sorting
-    if (filters.sortBy && filters.sortOrder) {
-      const isDesc = filters.sortOrder === 'desc';
-      switch (filters.sortBy) {
-        case 'ipAddress':
-          query = query.orderBy(isDesc ? desc(devices.ipAddress) : devices.ipAddress);
-          break;
-        case 'hostname':
-          query = query.orderBy(isDesc ? desc(devices.hostname) : devices.hostname);
-          break;
-        case 'status':
-          query = query.orderBy(isDesc ? desc(devices.status) : devices.status);
-          break;
-        case 'deviceType':
-          query = query.orderBy(isDesc ? desc(devices.deviceType) : devices.deviceType);
-          break;
-        case 'lastSeen':
-          query = query.orderBy(isDesc ? desc(devices.lastSeen) : devices.lastSeen);
-          break;
-        case 'vendor':
-          query = query.orderBy(isDesc ? desc(devices.vendor) : devices.vendor);
-          break;
-        default:
-          query = query.orderBy(devices.ipAddress);
-      }
-    } else {
-      query = query.orderBy(devices.ipAddress);
-    }
-    
-    // Apply pagination
-    const data = await query
+    // Simple query without complex sorting since frontend handles it
+    const data = await db.select()
+      .from(devices)
+      .where(whereClause)
+      .orderBy(devices.ipAddress)
       .limit(limit)
       .offset(offset);
 

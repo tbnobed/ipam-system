@@ -124,14 +124,6 @@ export default function DeviceTable() {
     
     setSortField(field);
     setSortDirection(newDirection);
-    
-    // Update filters to trigger API request with sorting
-    setFilters(prev => ({ 
-      ...prev, 
-      sortBy: field, 
-      sortOrder: newDirection,
-      page: 1 
-    }));
   };
 
   const getSortIcon = (field: string) => {
@@ -243,8 +235,49 @@ export default function DeviceTable() {
   const totalPages = deviceData?.totalPages || 1;
   const currentPage = deviceData?.page || 1;
 
-  // Devices are already sorted by backend
-  const devices = rawDevices;
+  // Apply client-side sorting since backend sorting has issues
+  const devices = [...rawDevices].sort((a, b) => {
+    if (!sortField) return 0;
+    
+    let aValue = a[sortField as keyof Device];
+    let bValue = b[sortField as keyof Device];
+    
+    // Handle null/undefined values
+    if (aValue === null || aValue === undefined) aValue = "";
+    if (bValue === null || bValue === undefined) bValue = "";
+    
+    // Special handling for IP addresses
+    if (sortField === 'ipAddress') {
+      const aIP = String(aValue).split('.').map(Number);
+      const bIP = String(bValue).split('.').map(Number);
+      
+      for (let i = 0; i < 4; i++) {
+        if (aIP[i] !== bIP[i]) {
+          const result = aIP[i] - bIP[i];
+          return sortDirection === "asc" ? result : -result;
+        }
+      }
+      return 0;
+    }
+    
+    // For dates
+    if (sortField === 'lastSeen') {
+      const aDate = aValue ? new Date(aValue as string).getTime() : 0;
+      const bDate = bValue ? new Date(bValue as string).getTime() : 0;
+      const result = aDate - bDate;
+      return sortDirection === "asc" ? result : -result;
+    }
+    
+    // Convert to string for text comparison
+    const aStr = String(aValue).toLowerCase();
+    const bStr = String(bValue).toLowerCase();
+    
+    if (sortDirection === "asc") {
+      return aStr.localeCompare(bStr);
+    } else {
+      return bStr.localeCompare(aStr);
+    }
+  });
 
   return (
     <div>
