@@ -174,6 +174,16 @@ class NetworkScanner {
         results: results,
       });
 
+      // Broadcast completion summary
+      const summary = this.generateScanSummary(results, subnetIds);
+      this.broadcastScanUpdate({
+        status: 'scan_completed',
+        summary,
+        totalDevicesFound: results.length,
+        onlineDevices: results.filter(d => d.isAlive).length,
+        subnetsScanned: subnetIds.length
+      });
+
       console.log(`Network scan ${scanId} completed. Found ${results.length} devices.`);
     } catch (error) {
       console.error(`Network scan ${scanId} failed:`, error);
@@ -227,6 +237,45 @@ class NetworkScanner {
     }
 
     return results;
+  }
+
+  private generateScanSummary(results: DeviceDiscovery[], subnetIds: number[]) {
+    const onlineDevices = results.filter(d => d.isAlive);
+    const devicesByVendor = onlineDevices.reduce((acc, device) => {
+      const vendor = device.vendor || 'Unknown';
+      acc[vendor] = (acc[vendor] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const devicesByType = onlineDevices.reduce((acc, device) => {
+      // Guess device type based on open ports or hostname
+      let type = 'Unknown';
+      if (device.openPorts?.includes(80) || device.openPorts?.includes(443)) {
+        type = 'Web Server';
+      } else if (device.openPorts?.includes(22)) {
+        type = 'SSH Server';
+      } else if (device.openPorts?.includes(23)) {
+        type = 'Telnet Device';
+      } else if (device.hostname?.toLowerCase().includes('camera')) {
+        type = 'Camera';
+      } else if (device.hostname?.toLowerCase().includes('switch')) {
+        type = 'Network Switch';
+      } else if (device.hostname?.toLowerCase().includes('router')) {
+        type = 'Router';
+      }
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      totalScanned: results.length,
+      onlineDevices: onlineDevices.length,
+      offlineDevices: results.length - onlineDevices.length,
+      subnetsScanned: subnetIds.length,
+      vendorBreakdown: devicesByVendor,
+      deviceTypeBreakdown: devicesByType,
+      timestamp: new Date().toISOString()
+    };
   }
 
   private async scanIP(ipAddress: string): Promise<DeviceDiscovery> {

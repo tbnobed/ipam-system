@@ -16,6 +16,17 @@ interface ScanUpdate {
   devices?: any[];
   devicesFound?: number;
   newDevices?: any[];
+  summary?: ScanSummary;
+  timestamp: string;
+}
+
+interface ScanSummary {
+  totalScanned: number;
+  onlineDevices: number;
+  offlineDevices: number;
+  subnetsScanned: number;
+  vendorBreakdown: Record<string, number>;
+  deviceTypeBreakdown: Record<string, number>;
   timestamp: string;
 }
 
@@ -28,6 +39,9 @@ interface NetworkScanWebSocket {
   scanStatus: string | null;
   lastUpdate: string | null;
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
+  scanSummary: ScanSummary | null;
+  showSummary: boolean;
+  dismissSummary: () => void;
 }
 
 export function useNetworkScanWebSocket(): NetworkScanWebSocket {
@@ -39,6 +53,8 @@ export function useNetworkScanWebSocket(): NetworkScanWebSocket {
   const [scanStatus, setScanStatus] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
+  const [scanSummary, setScanSummary] = useState<ScanSummary | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
   
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -86,6 +102,12 @@ export function useNetworkScanWebSocket(): NetworkScanWebSocket {
             } else if (update.status === 'devices_found' && Array.isArray(update.devices)) {
               setFoundDevices(prev => [...prev, ...update.devices]);
             } else if (update.status === 'subnet_complete') {
+              setCurrentSubnet(null);
+            } else if (update.status === 'scan_completed') {
+              setScanSummary(update.summary || null);
+              setShowSummary(true);
+              setIsScanning(false);
+              setCurrentScanId(null);
               setCurrentSubnet(null);
             }
           }
@@ -140,6 +162,9 @@ export function useNetworkScanWebSocket(): NetworkScanWebSocket {
     foundDevices,
     scanStatus,
     lastUpdate,
-    connectionStatus
+    connectionStatus,
+    scanSummary,
+    showSummary,
+    dismissSummary: () => setShowSummary(false)
   };
 }
