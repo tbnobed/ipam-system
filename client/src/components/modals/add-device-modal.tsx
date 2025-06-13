@@ -29,7 +29,7 @@ export default function AddDeviceModal() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
 
-  const { data: subnets } = useQuery({
+  const { data: subnets = [] } = useQuery<any[]>({
     queryKey: ['/api/subnets'],
   });
 
@@ -42,7 +42,7 @@ export default function AddDeviceModal() {
 
   const onSubmit = async (data: DeviceFormData) => {
     try {
-      await apiRequest('POST', '/api/devices', {
+      await apiRequest('/api/devices', 'POST', {
         ...data,
         subnetId: parseInt(data.subnetId),
       });
@@ -122,7 +122,7 @@ export default function AddDeviceModal() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {subnets?.map((subnet: any) => (
+                      {subnets.map((subnet: any) => (
                         <SelectItem key={subnet.id} value={subnet.id.toString()}>
                           {subnet.network} - {subnet.description}
                         </SelectItem>
@@ -140,9 +140,25 @@ export default function AddDeviceModal() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Device Type</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Camera, Router, Switch, etc." {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select device type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Camera">Camera</SelectItem>
+                      <SelectItem value="Router">Router</SelectItem>
+                      <SelectItem value="Switch">Switch</SelectItem>
+                      <SelectItem value="Audio">Audio Equipment</SelectItem>
+                      <SelectItem value="Server">Server</SelectItem>
+                      <SelectItem value="Workstation">Workstation</SelectItem>
+                      <SelectItem value="Firewall">Firewall</SelectItem>
+                      <SelectItem value="Storage">Storage Device</SelectItem>
+                      <SelectItem value="Printer">Printer</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

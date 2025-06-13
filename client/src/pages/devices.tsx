@@ -1,5 +1,6 @@
 import Header from "@/components/layout/header";
 import DeviceTable from "@/components/dashboard/device-table";
+import AddDeviceModal from "@/components/modals/add-device-modal";
 
 export default function Devices() {
   return (
@@ -10,6 +11,15 @@ export default function Devices() {
       />
       
       <main className="flex-1 overflow-y-auto p-6">
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">All Devices</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Manually add devices that may not be discoverable through network scanning
+            </p>
+          </div>
+          <AddDeviceModal />
+        </div>
         <DeviceTable />
       </main>
     </>
