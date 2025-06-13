@@ -413,7 +413,7 @@ export default function DeviceTable() {
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             </div>
-            <Select onValueChange={handleVlanFilter}>
+            <Select onValueChange={handleVlanFilter} value={filters.vlan || "all"}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="All VLANs" />
               </SelectTrigger>
@@ -426,7 +426,7 @@ export default function DeviceTable() {
                 ))}
               </SelectContent>
             </Select>
-            <Select onValueChange={handleStatusFilter}>
+            <Select onValueChange={handleStatusFilter} value={filters.status || "all"}>
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>

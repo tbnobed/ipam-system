@@ -193,6 +193,13 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(devices.status, filters.status));
     }
 
+    if (filters.vlan) {
+      // Filter by VLAN through subnet relationship
+      conditions.push(sql`${devices.subnetId} IN (
+        SELECT id FROM ${subnets} WHERE vlan_id = ${parseInt(filters.vlan)}
+      )`);
+    }
+
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     
     // Simple query without complex sorting since frontend handles it
