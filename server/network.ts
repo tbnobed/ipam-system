@@ -146,12 +146,31 @@ class NetworkScanner {
       result.isAlive = pingResult.success;
 
       if (result.isAlive) {
-        // Try to get hostname
+        // Try to get hostname using multiple methods
         try {
+          // First try reverse DNS lookup
           const hostnames = await dns.promises.reverse(ipAddress);
-          result.hostname = hostnames[0];
+          result.hostname = hostnames[0]?.replace(/\.$/, ''); // Remove trailing dot
         } catch (error) {
-          // Hostname resolution failed, that's okay
+          // If reverse DNS fails, try nslookup
+          try {
+            const { stdout } = await execAsync(`nslookup ${ipAddress}`);
+            const nameMatch = stdout.match(/name = ([^\s]+)/);
+            if (nameMatch) {
+              result.hostname = nameMatch[1].replace(/\.$/, '');
+            }
+          } catch (nslookupError) {
+            // Try nbtscan for Windows machines
+            try {
+              const { stdout } = await execAsync(`timeout 5 nbtscan ${ipAddress}`);
+              const nameMatch = stdout.match(/(\S+)\s+<00>/);
+              if (nameMatch) {
+                result.hostname = nameMatch[1];
+              }
+            } catch (nbtError) {
+              // All hostname resolution methods failed
+            }
+          }
         }
 
         // Try to get MAC address (works for local network)
@@ -189,17 +208,47 @@ class NetworkScanner {
     } catch (error) {
       return {
         success: false,
-        error: error.message,
+        error: String(error),
       };
     }
   }
 
   private async getMacAddress(ipAddress: string): Promise<string | undefined> {
     try {
-      // Try ARP table lookup
-      const { stdout } = await execAsync(`arp -n ${ipAddress}`);
-      const match = stdout.match(/([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})/i);
-      return match ? match[1].toLowerCase() : undefined;
+      // First ping the IP to populate ARP table
+      await execAsync(`ping -c 1 -W 1 ${ipAddress}`);
+      
+      // Try ARP table lookup with multiple formats
+      try {
+        const { stdout } = await execAsync(`arp -n ${ipAddress}`);
+        // Match different MAC address formats
+        let match = stdout.match(/([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})/i);
+        if (!match) {
+          // Try hyphen format
+          match = stdout.match(/([0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2})/i);
+          if (match) {
+            return match[1].replace(/-/g, ':').toLowerCase();
+          }
+        }
+        return match ? match[1].toLowerCase() : undefined;
+      } catch (arpError) {
+        // Try alternative methods
+        try {
+          // Try ip neighbor (Linux)
+          const { stdout } = await execAsync(`ip neighbor show ${ipAddress}`);
+          const match = stdout.match(/lladdr ([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})/i);
+          return match ? match[1].toLowerCase() : undefined;
+        } catch (ipError) {
+          // Try arping for more reliable MAC detection
+          try {
+            const { stdout } = await execAsync(`timeout 3 arping -c 1 ${ipAddress}`);
+            const match = stdout.match(/([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})/i);
+            return match ? match[1].toLowerCase() : undefined;
+          } catch (arpingError) {
+            return undefined;
+          }
+        }
+      }
     } catch (error) {
       return undefined;
     }
@@ -210,14 +259,47 @@ class NetworkScanner {
       // Extract OUI (first 3 octets)
       const oui = macAddress.split(':').slice(0, 3).join(':');
       
-      // This is a simplified vendor lookup
-      // In a real implementation, you'd use a proper OUI database
+      // Common vendor OUI database for broadcast equipment
       const vendors: { [key: string]: string } = {
-        '00:11:22': 'Cisco Systems',
-        'aa:bb:cc': 'Sony Corp',
-        '11:22:33': 'Yamaha Corp',
-        '00:50:56': 'VMware',
-        '08:00:27': 'Oracle VirtualBox',
+        // Cisco Systems
+        '00:11:bb': 'Cisco Systems', '00:1e:7a': 'Cisco Systems', '00:26:0a': 'Cisco Systems',
+        '88:f0:31': 'Cisco Systems', '00:d0:d3': 'Cisco Systems', '00:0c:85': 'Cisco Systems',
+        
+        // Sony Professional
+        '00:09:d3': 'Sony Corp', '00:1c:a8': 'Sony Corp', '08:96:d7': 'Sony Corp',
+        
+        // Panasonic Broadcast
+        '00:0d:f0': 'Panasonic', '00:80:45': 'Panasonic', '9c:04:eb': 'Panasonic',
+        
+        // Canon Professional
+        '00:12:18': 'Canon Inc', '00:1e:8f': 'Canon Inc', 'dc:ef:80': 'Canon Inc',
+        
+        // Blackmagic Design
+        '00:12:ba': 'Blackmagic Design', '00:17:c4': 'Blackmagic Design',
+        
+        // Grass Valley / Belden
+        '00:02:a1': 'Grass Valley', '00:0e:d6': 'Grass Valley',
+        
+        // Harris Broadcast
+        '00:06:4f': 'Harris Corp', '00:0f:ff': 'Harris Corp',
+        
+        // Evertz Microsystems
+        '00:1b:67': 'Evertz Microsystems', '00:21:27': 'Evertz Microsystems',
+        
+        // Ross Video
+        '00:0c:8b': 'Ross Video', '00:16:9d': 'Ross Video',
+        
+        // Hewlett Packard Enterprise
+        '00:11:85': 'HPE', '28:80:23': 'HPE', '70:10:6f': 'HPE',
+        
+        // Dell Technologies
+        '00:14:22': 'Dell Inc', '84:7b:eb': 'Dell Inc', 'f4:8e:38': 'Dell Inc',
+        
+        // Ubiquiti Networks
+        '04:18:d6': 'Ubiquiti', '24:a4:3c': 'Ubiquiti', 'f0:9f:c2': 'Ubiquiti',
+        
+        // Virtualization
+        '00:50:56': 'VMware', '08:00:27': 'Oracle VirtualBox', '00:15:5d': 'Microsoft Hyper-V',
       };
 
       return vendors[oui] || 'Unknown';
@@ -302,7 +384,7 @@ class NetworkScanner {
           hostname: discovery.hostname || existingDevice.hostname,
           macAddress: discovery.macAddress || existingDevice.macAddress,
           vendor: discovery.vendor || existingDevice.vendor,
-          openPorts: discovery.openPorts || existingDevice.openPorts,
+          openPorts: discovery.openPorts?.map(String) || existingDevice.openPorts,
         });
       } else if (discovery.isAlive) {
         // Create new device for discovered IP
@@ -314,7 +396,7 @@ class NetworkScanner {
           subnetId,
           status: 'online',
           lastSeen: new Date(),
-          openPorts: discovery.openPorts,
+          openPorts: discovery.openPorts?.map(String),
           assignmentType: 'dhcp', // Assume DHCP for discovered devices
         });
       }
