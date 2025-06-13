@@ -23,6 +23,9 @@ interface DeviceDiscovery {
 class NetworkScanner {
   private activeScan: boolean = false;
   private scanInterval: NodeJS.Timeout | null = null;
+  private currentScanId: number | null = null;
+  private scanProgress: { current: number; total: number; currentIP?: string } = { current: 0, total: 0 };
+  private wsClients: Set<any> = new Set();
 
   async startPeriodicScanning(intervalMinutes: number = 5) {
     if (this.scanInterval) {
@@ -44,6 +47,58 @@ class NetworkScanner {
     console.log(`Periodic network scanning started (every ${intervalMinutes} minutes)`);
   }
 
+  addWebSocketClient(ws: any) {
+    this.wsClients.add(ws);
+    
+    // Send current scan status if one is active
+    if (this.activeScan && this.currentScanId) {
+      this.broadcastProgress();
+    }
+  }
+
+  removeWebSocketClient(ws: any) {
+    this.wsClients.delete(ws);
+  }
+
+  private broadcastProgress() {
+    const message = {
+      type: 'scan_progress',
+      scanId: this.currentScanId,
+      isActive: this.activeScan,
+      progress: this.scanProgress,
+      timestamp: new Date()
+    };
+
+    this.wsClients.forEach(client => {
+      if (client.readyState === 1) { // WebSocket.OPEN
+        client.send(JSON.stringify(message));
+      }
+    });
+  }
+
+  private broadcastScanUpdate(update: any) {
+    const message = {
+      type: 'scan_update',
+      scanId: this.currentScanId,
+      ...update,
+      timestamp: new Date()
+    };
+
+    this.wsClients.forEach(client => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify(message));
+      }
+    });
+  }
+
+  getScanStatus() {
+    return {
+      isActive: this.activeScan,
+      scanId: this.currentScanId,
+      progress: this.scanProgress
+    };
+  }
+
   async startScan(subnetIds: number[]): Promise<number> {
     if (this.activeScan) {
       throw new Error('Scan already in progress');
@@ -61,9 +116,15 @@ class NetworkScanner {
         results: null,
       });
 
+      this.currentScanId = scan.id;
+      this.scanProgress = { current: 0, total: 0 };
+      
       // Start scanning in background
       this.performScan(scan.id, subnetIds).finally(() => {
         this.activeScan = false;
+        this.currentScanId = null;
+        this.scanProgress = { current: 0, total: 0 };
+        this.broadcastProgress();
       });
 
       return scan.id;
@@ -83,6 +144,11 @@ class NetworkScanner {
         const subnet = await storage.getSubnet(subnetId);
         if (!subnet) continue;
 
+        this.broadcastScanUpdate({ 
+          status: 'scanning_subnet', 
+          subnet: subnet.network 
+        });
+
         const subnetResults = await this.scanSubnet(subnet.network);
         results.push(...subnetResults);
 
@@ -90,6 +156,14 @@ class NetworkScanner {
         for (const result of subnetResults) {
           await this.updateDeviceFromScan(result, subnetId);
         }
+
+        // Broadcast found devices
+        this.broadcastScanUpdate({
+          status: 'subnet_complete',
+          subnet: subnet.network,
+          devicesFound: subnetResults.length,
+          newDevices: subnetResults.filter(d => d.isAlive)
+        });
       }
 
       // Update scan record
@@ -117,6 +191,11 @@ class NetworkScanner {
 
     console.log(`Scanning subnet ${network} (${ipRange.length} IPs)`);
 
+    // Update total progress count
+    this.scanProgress.total = ipRange.length;
+    this.scanProgress.current = 0;
+    this.broadcastProgress();
+
     // Scan IPs in batches to avoid overwhelming the network
     const batchSize = 20;
     for (let i = 0; i < ipRange.length; i += batchSize) {
@@ -125,7 +204,23 @@ class NetworkScanner {
         batch.map(ip => this.scanIP(ip))
       );
       
-      results.push(...batchResults.filter(result => result.isAlive));
+      const aliveResults = batchResults.filter(result => result.isAlive);
+      results.push(...aliveResults);
+      
+      // Update progress
+      this.scanProgress.current = Math.min(i + batchSize, ipRange.length);
+      this.scanProgress.currentIP = batch[batch.length - 1];
+      this.broadcastProgress();
+
+      // Broadcast any newly found devices
+      if (aliveResults.length > 0) {
+        this.broadcastScanUpdate({
+          status: 'devices_found',
+          subnet: network,
+          devices: aliveResults,
+          progress: this.scanProgress
+        });
+      }
       
       // Small delay between batches
       await new Promise(resolve => setTimeout(resolve, 100));
