@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Search, Edit, Activity, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -243,27 +243,8 @@ export default function DeviceTable() {
   const totalPages = deviceData?.totalPages || 1;
   const currentPage = deviceData?.page || 1;
 
-  // Sort devices based on current sort settings
-  const devices = [...rawDevices].sort((a, b) => {
-    if (!sortField) return 0;
-    
-    let aValue = a[sortField as keyof Device];
-    let bValue = b[sortField as keyof Device];
-    
-    // Handle null/undefined values
-    if (aValue === null || aValue === undefined) aValue = "";
-    if (bValue === null || bValue === undefined) bValue = "";
-    
-    // Convert to string for comparison
-    const aStr = String(aValue).toLowerCase();
-    const bStr = String(bValue).toLowerCase();
-    
-    if (sortDirection === "asc") {
-      return aStr.localeCompare(bStr);
-    } else {
-      return bStr.localeCompare(aStr);
-    }
-  });
+  // Devices are already sorted by backend
+  const devices = rawDevices;
 
   return (
     <div>
@@ -271,6 +252,9 @@ export default function DeviceTable() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Device</DialogTitle>
+            <DialogDescription>
+              Update device information including hostname, type, location, and other details.
+            </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmitEdit)} className="space-y-4">
@@ -300,11 +284,21 @@ export default function DeviceTable() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Camera">Camera</SelectItem>
+                          <SelectItem value="Video Server">Video Server</SelectItem>
+                          <SelectItem value="Audio Mixer">Audio Mixer</SelectItem>
+                          <SelectItem value="Video Mixer">Video Mixer</SelectItem>
                           <SelectItem value="Router">Router</SelectItem>
                           <SelectItem value="Switch">Switch</SelectItem>
-                          <SelectItem value="Audio">Audio Equipment</SelectItem>
+                          <SelectItem value="Audio Equipment">Audio Equipment</SelectItem>
+                          <SelectItem value="Video Monitor">Video Monitor</SelectItem>
+                          <SelectItem value="Encoder">Encoder</SelectItem>
+                          <SelectItem value="Decoder">Decoder</SelectItem>
+                          <SelectItem value="NAS">NAS Storage</SelectItem>
                           <SelectItem value="Server">Server</SelectItem>
                           <SelectItem value="Workstation">Workstation</SelectItem>
+                          <SelectItem value="Media Player">Media Player</SelectItem>
+                          <SelectItem value="Streaming Device">Streaming Device</SelectItem>
+                          <SelectItem value="KVM">KVM Switch</SelectItem>
                           <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
                       </Select>
