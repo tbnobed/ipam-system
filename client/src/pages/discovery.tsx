@@ -39,6 +39,15 @@ export default function Discovery() {
     refetchInterval: activeScan ? 2000 : false,
   });
 
+  // Sync WebSocket scan state with local state
+  useEffect(() => {
+    if (wsIsScanning && currentScanId && !activeScan) {
+      setActiveScan(currentScanId);
+    } else if (!wsIsScanning && activeScan) {
+      setActiveScan(null);
+    }
+  }, [wsIsScanning, currentScanId, activeScan]);
+
   const handleStartScan = async () => {
     try {
       const subnetIds = selectedSubnet ? [parseInt(selectedSubnet)] : [];
@@ -68,6 +77,12 @@ export default function Discovery() {
   };
 
   const getScanProgress = () => {
+    // Use WebSocket progress if available and scan is active
+    if (wsIsScanning && scanProgress.total > 0) {
+      return (scanProgress.current / scanProgress.total) * 100;
+    }
+    
+    // Fallback to legacy scan result estimation
     if (!scanResult) return 0;
     
     if (scanResult.status === 'completed') return 100;
@@ -79,6 +94,20 @@ export default function Discovery() {
     const estimatedTotal = 5 * 60 * 1000; // 5 minutes estimated
     
     return Math.min(90, (elapsed / estimatedTotal) * 100);
+  };
+
+  const getDisplayedDevices = () => {
+    // Use real-time WebSocket devices if scanning
+    if (wsIsScanning && foundDevices.length > 0) {
+      return foundDevices;
+    }
+    
+    // Fallback to scan result devices
+    if (scanResult?.results && Array.isArray(scanResult.results)) {
+      return scanResult.results;
+    }
+    
+    return [];
   };
 
   return (
@@ -111,8 +140,19 @@ export default function Discovery() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex space-x-2">
-                {activeScan ? (
+              <div className="flex items-center space-x-2">
+                {/* WebSocket Connection Status */}
+                <div className="flex items-center space-x-1">
+                  <Wifi className={`w-4 h-4 ${
+                    connectionStatus === 'connected' ? 'text-green-600' : 
+                    connectionStatus === 'connecting' ? 'text-yellow-600' : 'text-red-600'
+                  }`} />
+                  <span className="text-xs text-gray-500">
+                    {connectionStatus === 'connected' ? 'Live' : 
+                     connectionStatus === 'connecting' ? 'Connecting' : 'Offline'}
+                  </span>
+                </div>
+                {activeScan || wsIsScanning ? (
                   <Button onClick={handleStopScan} variant="destructive">
                     <Square className="w-4 h-4 mr-2" />
                     Stop Scan
@@ -131,75 +171,137 @@ export default function Discovery() {
             </div>
 
             {/* Scan Progress */}
-            {activeScan && scanResult && (
+            {(activeScan || wsIsScanning) && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Scan Progress</span>
-                  <Badge variant={
-                    scanResult.status === 'completed' ? 'default' :
-                    scanResult.status === 'failed' ? 'destructive' : 'secondary'
-                  }>
-                    {scanResult.status}
-                  </Badge>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant={
+                      wsIsScanning ? 'secondary' :
+                      scanResult?.status === 'completed' ? 'default' :
+                      scanResult?.status === 'failed' ? 'destructive' : 'secondary'
+                    }>
+                      {wsIsScanning ? 'Running' : scanResult?.status || 'Unknown'}
+                    </Badge>
+                    {wsIsScanning && currentScanId && (
+                      <span className="text-xs text-gray-500">ID: {currentScanId}</span>
+                    )}
+                  </div>
                 </div>
                 <Progress value={getScanProgress()} className="h-2" />
-                <div className="text-sm text-gray-600">
-                  Devices found: {scanResult.devicesFound}
-                  {scanResult.endTime && (
-                    <span className="ml-4">
-                      Completed: {new Date(scanResult.endTime).toLocaleString()}
-                    </span>
-                  )}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                  <div>
+                    <span className="font-medium">Progress: </span>
+                    {wsIsScanning && scanProgress.total > 0 ? (
+                      `${scanProgress.current} / ${scanProgress.total} IPs`
+                    ) : (
+                      `${Math.round(getScanProgress())}%`
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-medium">Devices found: </span>
+                    {wsIsScanning ? foundDevices.length : (scanResult?.devicesFound || 0)}
+                  </div>
+                  <div>
+                    {currentSubnet ? (
+                      <>
+                        <span className="font-medium">Scanning: </span>
+                        {currentSubnet}
+                      </>
+                    ) : scanResult?.endTime ? (
+                      <>
+                        <span className="font-medium">Completed: </span>
+                        {new Date(scanResult.endTime).toLocaleString()}
+                      </>
+                    ) : null}
+                  </div>
                 </div>
+                {wsIsScanning && scanProgress.currentIP && (
+                  <div className="text-xs text-gray-500">
+                    <Globe className="w-3 h-3 inline mr-1" />
+                    Currently scanning: {scanProgress.currentIP}
+                  </div>
+                )}
+                {scanStatus && scanStatus !== 'scanning_subnet' && (
+                  <div className="text-xs text-blue-600">
+                    Status: {scanStatus.replace(/_/g, ' ')}
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
         </Card>
 
         {/* Scan Results */}
-        {scanResult && scanResult.results && (
+        {(getDisplayedDevices().length > 0 || (activeScan || wsIsScanning)) && (
           <Card>
             <CardHeader>
-              <CardTitle>Discovered Devices</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                <span>Discovered Devices</span>
+                {wsIsScanning && foundDevices.length > 0 && (
+                  <Badge variant="secondary" className="animate-pulse">
+                    Live Results
+                  </Badge>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {Array.isArray(scanResult.results) && scanResult.results.map((device: any, index: number) => (
-                  <div key={index} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-4">
-                        <span className="font-mono text-sm font-medium">
-                          {device.ipAddress}
-                        </span>
-                        <Badge variant={device.isAlive ? 'default' : 'secondary'}>
-                          {device.isAlive ? 'Online' : 'Offline'}
-                        </Badge>
+              {getDisplayedDevices().length > 0 ? (
+                <div className="space-y-4">
+                  {getDisplayedDevices().map((device: any, index: number) => (
+                    <div key={`${device.ipAddress}-${index}`} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-4">
+                          <span className="font-mono text-sm font-medium">
+                            {device.ipAddress}
+                          </span>
+                          <Badge variant={device.isAlive ? 'default' : 'secondary'}>
+                            {device.isAlive ? 'Online' : 'Offline'}
+                          </Badge>
+                          {wsIsScanning && foundDevices.includes(device) && (
+                            <Badge variant="outline" className="text-xs">
+                              Just Found
+                            </Badge>
+                          )}
+                        </div>
+                        <Button size="sm" variant="outline">
+                          Add to Inventory
+                        </Button>
                       </div>
-                      <Button size="sm" variant="outline">
-                        Add to Inventory
-                      </Button>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                        <div>
+                          <span className="font-medium">Hostname: </span>
+                          {device.hostname || 'Unknown'}
+                        </div>
+                        <div>
+                          <span className="font-medium">MAC: </span>
+                          <span className="font-mono">{device.macAddress || 'Unknown'}</span>
+                        </div>
+                        <div>
+                          <span className="font-medium">Vendor: </span>
+                          {device.vendor || 'Unknown'}
+                        </div>
+                        <div>
+                          <span className="font-medium">Open Ports: </span>
+                          {device.openPorts?.join(', ') || 'None detected'}
+                        </div>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
-                      <div>
-                        <span className="font-medium">Hostname: </span>
-                        {device.hostname || 'Unknown'}
-                      </div>
-                      <div>
-                        <span className="font-medium">MAC: </span>
-                        <span className="font-mono">{device.macAddress || 'Unknown'}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium">Vendor: </span>
-                        {device.vendor || 'Unknown'}
-                      </div>
-                      <div>
-                        <span className="font-medium">Open Ports: </span>
-                        {device.openPorts?.join(', ') || 'None detected'}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (wsIsScanning || activeScan) ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Globe className="w-8 h-8 mx-auto mb-2 animate-spin" />
+                  <p>Scanning network for devices...</p>
+                  {currentSubnet && (
+                    <p className="text-sm mt-1">Currently scanning: {currentSubnet}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No devices discovered yet. Start a scan to find devices on your network.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
