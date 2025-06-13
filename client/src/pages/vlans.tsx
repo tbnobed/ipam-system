@@ -84,13 +84,19 @@ export default function VLANs() {
       const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
       const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
       
-      // Filter devices by IP range using proper IP math
+      // Use subnet ID assignment as primary method, IP range as fallback
       deviceData = devices?.data?.filter((device: any) => {
+        // First try subnet ID matching (more reliable)
+        if (device.subnetId === subnetId) {
+          return true;
+        }
+        
+        // Fallback to IP range matching for discovered devices
         if (!device.ipAddress) return false;
         
         try {
           const deviceIPParts = device.ipAddress.split('.').map(Number);
-          if (deviceIPParts.length !== 4 || deviceIPParts.some(part => isNaN(part) || part < 0 || part > 255)) {
+          if (deviceIPParts.length !== 4 || deviceIPParts.some((part: number) => isNaN(part) || part < 0 || part > 255)) {
             return false;
           }
           
@@ -134,8 +140,14 @@ export default function VLANs() {
     const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
     const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
     
-    // Get devices that fall within this subnet's IP range using proper IP math
+    // Get devices that fall within this subnet's IP range - use subnet ID assignment as fallback
     const deviceData = devices?.data?.filter((device: any) => {
+      // First try subnet ID matching (more reliable for manually assigned devices)
+      if (device.subnetId === subnet.id) {
+        return true;
+      }
+      
+      // Fallback to IP range matching for discovered devices
       if (!device.ipAddress) return false;
       
       try {
