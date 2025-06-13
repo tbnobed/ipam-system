@@ -5,7 +5,7 @@ import {
   type NetworkScan, type InsertNetworkScan, type ActivityLog, type InsertActivityLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, and, desc, sql } from "drizzle-orm";
+import { eq, like, and, desc, asc, sql } from "drizzle-orm";
 import type { DashboardMetrics, DeviceFilters, PaginatedResponse } from "@/lib/types";
 
 interface IStorage {
@@ -195,10 +195,37 @@ export class DatabaseStorage implements IStorage {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     
+    // Build order by clause based on sortBy and sortOrder
+    let orderByClause;
+    if (filters.sortBy && filters.sortOrder) {
+      const isDesc = filters.sortOrder === 'desc';
+      switch (filters.sortBy) {
+        case 'ipAddress':
+          orderByClause = isDesc ? desc(devices.ipAddress) : devices.ipAddress;
+          break;
+        case 'hostname':
+          orderByClause = isDesc ? desc(devices.hostname) : devices.hostname;
+          break;
+        case 'status':
+          orderByClause = isDesc ? desc(devices.status) : devices.status;
+          break;
+        case 'deviceType':
+          orderByClause = isDesc ? desc(devices.deviceType) : devices.deviceType;
+          break;
+        case 'lastSeen':
+          orderByClause = isDesc ? desc(devices.lastSeen) : devices.lastSeen;
+          break;
+        default:
+          orderByClause = devices.ipAddress;
+      }
+    } else {
+      orderByClause = devices.ipAddress;
+    }
+    
     const data = await db.select()
       .from(devices)
       .where(whereClause)
-      .orderBy(devices.ipAddress)
+      .orderBy(orderByClause)
       .limit(limit)
       .offset(offset);
 

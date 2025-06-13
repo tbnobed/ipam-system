@@ -117,12 +117,21 @@ export default function DeviceTable() {
   };
 
   const handleSort = (field: string) => {
+    let newDirection: "asc" | "desc" = "asc";
     if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
+      newDirection = sortDirection === "asc" ? "desc" : "asc";
     }
+    
+    setSortField(field);
+    setSortDirection(newDirection);
+    
+    // Update filters to trigger API request with sorting
+    setFilters(prev => ({ 
+      ...prev, 
+      sortBy: field, 
+      sortOrder: newDirection,
+      page: 1 
+    }));
   };
 
   const getSortIcon = (field: string) => {
