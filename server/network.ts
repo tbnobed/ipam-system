@@ -396,7 +396,7 @@ class NetworkScanner {
           subnetId,
           status: 'online',
           lastSeen: new Date(),
-          openPorts: discovery.openPorts?.map(String),
+          openPorts: discovery.openPorts?.map(String) || null,
           assignmentType: 'dhcp', // Assume DHCP for discovered devices
         });
       }
