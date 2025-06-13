@@ -89,7 +89,8 @@ export default function VLANs() {
         if (!device.ipAddress) return false;
         const deviceIPParts = device.ipAddress.split('.').map(Number);
         const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
-        return deviceIPInt > networkInt && deviceIPInt < broadcastInt;
+        // Include devices that fall within the subnet range (excluding network and broadcast addresses)
+        return deviceIPInt >= networkInt + 1 && deviceIPInt <= broadcastInt - 1;
       }) || [];
     }
     
@@ -127,7 +128,7 @@ export default function VLANs() {
       if (!device.ipAddress) return false;
       const deviceIPParts = device.ipAddress.split('.').map(Number);
       const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
-      return deviceIPInt > networkInt && deviceIPInt < broadcastInt;
+      return deviceIPInt >= networkInt + 1 && deviceIPInt <= broadcastInt - 1;
     }) || [];
     
     const usedIPs = new Set(deviceData.map((device: any) => device.ipAddress));
