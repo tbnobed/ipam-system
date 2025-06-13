@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, AlertTriangle, Edit, RefreshCw } from "lucide-react";
+import { Plus, AlertTriangle, Edit, RefreshCw, CheckCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { ActivityItem } from "@/lib/types";
 
