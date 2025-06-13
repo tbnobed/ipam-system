@@ -62,12 +62,21 @@ export default function AddDeviceModal() {
     const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
     const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
     
-    // Get used IPs in this subnet
-    const usedIPs = new Set(
-      devices.data
-        .filter((device: any) => device.subnetId?.toString() === selectedSubnetId)
-        .map((device: any) => device.ipAddress)
-    );
+    // Get used IPs by checking if IP falls within this subnet range
+    const usedIPs = new Set();
+    
+    devices.data.forEach((device: any) => {
+      if (device.ipAddress) {
+        // Check if this IP falls within the selected subnet range
+        const deviceIPParts = device.ipAddress.split('.').map(Number);
+        const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
+        
+        // Check if device IP is within this subnet's range
+        if (deviceIPInt > networkInt && deviceIPInt < broadcastInt) {
+          usedIPs.add(device.ipAddress);
+        }
+      }
+    });
     
     // Add gateway to used IPs
     usedIPs.add(subnet.gateway);
