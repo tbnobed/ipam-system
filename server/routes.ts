@@ -267,7 +267,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Network scan status endpoint
+  app.get("/api/network/scan/status", async (req, res) => {
+    try {
+      const status = networkScanner.getScanStatus();
+      res.json(status);
+    } catch (error) {
+      console.error("Error getting scan status:", error);
+      res.status(500).json({ error: "Failed to get scan status" });
+    }
+  });
+
+  // Create WebSocket server for real-time scan updates
   const httpServer = createServer(app);
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+
+  wss.on('connection', (ws) => {
+    console.log('WebSocket client connected');
+    
+    // Add client to network scanner for real-time updates
+    networkScanner.addWebSocketClient(ws);
+    
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+      networkScanner.removeWebSocketClient(ws);
+    });
+
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      networkScanner.removeWebSocketClient(ws);
+    });
+  });
+
   return httpServer;
 }
 

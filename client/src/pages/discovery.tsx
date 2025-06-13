@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,16 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Square, RefreshCw } from "lucide-react";
+import { Play, Square, RefreshCw, Wifi, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { NetworkScanResult } from "@/lib/types";
 import type { Subnet } from "@shared/schema";
+import { useNetworkScanWebSocket } from "@/hooks/use-network-scan-websocket";
 
 export default function Discovery() {
   const { toast } = useToast();
   const [selectedSubnet, setSelectedSubnet] = useState<string>("");
   const [activeScan, setActiveScan] = useState<number | null>(null);
+  
+  // WebSocket hook for real-time scan updates
+  const {
+    scanProgress,
+    isScanning: wsIsScanning,
+    currentScanId,
+    currentSubnet,
+    foundDevices,
+    scanStatus,
+    connectionStatus
+  } = useNetworkScanWebSocket();
 
   const { data: subnets } = useQuery<Subnet[]>({
     queryKey: ['/api/subnets'],
