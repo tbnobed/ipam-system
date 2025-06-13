@@ -1,24 +1,53 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Search, Edit, Activity, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import type { DeviceFilters, PaginatedResponse } from "@/lib/types";
 import type { Device } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
+const editDeviceSchema = z.object({
+  hostname: z.string().optional(),
+  deviceType: z.string().optional(),
+  location: z.string().optional(),
+  purpose: z.string().optional(),
+  vendor: z.string().optional(),
+});
+
+type EditDeviceFormData = z.infer<typeof editDeviceSchema>;
+
 export default function DeviceTable() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<DeviceFilters>({
     page: 1,
     limit: 50,
+  });
+  const [editingDevice, setEditingDevice] = useState<Device | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  const form = useForm<EditDeviceFormData>({
+    resolver: zodResolver(editDeviceSchema),
+    defaultValues: {
+      hostname: "",
+      deviceType: "",
+      location: "",
+      purpose: "",
+      vendor: "",
+    },
   });
 
   const { data: deviceData, isLoading, refetch } = useQuery<PaginatedResponse<Device>>({
@@ -27,6 +56,26 @@ export default function DeviceTable() {
 
   const { data: vlans = [] } = useQuery<any[]>({
     queryKey: ['/api/vlans'],
+  });
+
+  const updateDeviceMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: EditDeviceFormData }) => 
+      apiRequest(`/api/devices/${id}`, 'PUT', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
+      setEditDialogOpen(false);
+      setEditingDevice(null);
+      form.reset();
+      toast({
+        title: "Device updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Failed to update device",
+        variant: "destructive",
+      });
+    },
   });
 
   const handleSearch = (search: string) => {
@@ -45,9 +94,27 @@ export default function DeviceTable() {
     setFilters(prev => ({ ...prev, page }));
   };
 
+  const handleEditDevice = (device: Device) => {
+    setEditingDevice(device);
+    form.reset({
+      hostname: device.hostname || "",
+      deviceType: device.deviceType || "",
+      location: device.location || "",
+      purpose: device.purpose || "",
+      vendor: device.vendor || "",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const onSubmitEdit = (data: EditDeviceFormData) => {
+    if (editingDevice) {
+      updateDeviceMutation.mutate({ id: editingDevice.id, data });
+    }
+  };
+
   const handlePingDevice = async (device: Device) => {
     try {
-      const response = await apiRequest('POST', `/api/devices/${device.id}/ping`);
+      const response = await apiRequest(`/api/devices/${device.id}/ping`, 'POST');
       const result = await response.json();
       
       if (result.success) {
@@ -77,7 +144,7 @@ export default function DeviceTable() {
     }
 
     try {
-      await apiRequest('DELETE', `/api/devices/${device.id}`);
+      await apiRequest(`/api/devices/${device.id}`, 'DELETE');
       toast({
         title: "Success",
         description: "Device deleted successfully",
@@ -128,7 +195,113 @@ export default function DeviceTable() {
   const currentPage = deviceData?.page || 1;
 
   return (
-    <Card>
+    <div>
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Device</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmitEdit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="hostname"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Hostname</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter hostname" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="deviceType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Device Type</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select device type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Camera">Camera</SelectItem>
+                          <SelectItem value="Router">Router</SelectItem>
+                          <SelectItem value="Switch">Switch</SelectItem>
+                          <SelectItem value="Audio">Audio Equipment</SelectItem>
+                          <SelectItem value="Server">Server</SelectItem>
+                          <SelectItem value="Workstation">Workstation</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter location" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="purpose"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Purpose</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter purpose/description" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="vendor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vendor</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter vendor" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={updateDeviceMutation.isPending}
+                >
+                  {updateDeviceMutation.isPending ? "Updating..." : "Update Device"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Device Status</h3>
@@ -224,7 +397,7 @@ export default function DeviceTable() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {}}
+                        onClick={() => handleEditDevice(device)}
                         className="text-primary hover:text-primary-dark"
                       >
                         <Edit className="w-4 h-4" />
@@ -284,5 +457,6 @@ export default function DeviceTable() {
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }
