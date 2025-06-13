@@ -138,6 +138,14 @@ class NetworkScanner {
     try {
       console.log(`Starting network scan ${scanId} for subnets:`, subnetIds);
       
+      // Log scan start activity
+      await storage.createActivityLog({
+        action: 'scan_started',
+        entityType: 'network_scan',
+        entityId: scanId,
+        details: { subnetIds, scanId },
+      });
+      
       const results: DeviceDiscovery[] = [];
       
       for (const subnetId of subnetIds) {
@@ -184,9 +192,31 @@ class NetworkScanner {
         subnetsScanned: subnetIds.length
       });
 
+      // Log scan completion activity
+      await storage.createActivityLog({
+        action: 'scan_completed',
+        entityType: 'network_scan',
+        entityId: scanId,
+        details: { 
+          devicesFound: results.length,
+          onlineDevices: results.filter(d => d.isAlive).length,
+          subnetsScanned: subnetIds.length,
+          scanId 
+        },
+      });
+
       console.log(`Network scan ${scanId} completed. Found ${results.length} devices.`);
     } catch (error) {
       console.error(`Network scan ${scanId} failed:`, error);
+      
+      // Log scan failure activity
+      await storage.createActivityLog({
+        action: 'scan_failed',
+        entityType: 'network_scan',
+        entityId: scanId,
+        details: { error: error instanceof Error ? error.message : 'Unknown error', scanId },
+      });
+      
       await storage.updateNetworkScan(scanId, {
         endTime: new Date(),
         status: 'failed',

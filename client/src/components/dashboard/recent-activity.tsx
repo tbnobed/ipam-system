@@ -12,13 +12,26 @@ export default function RecentActivity({ activities }: RecentActivityProps) {
   const getActivityIcon = (action: string) => {
     switch (action) {
       case 'device_discovered':
+      case 'device_added':
         return <Plus className="w-3 h-3 text-green-600" />;
       case 'device_offline':
         return <AlertTriangle className="w-3 h-3 text-red-600" />;
+      case 'device_online':
+        return <CheckCircle className="w-3 h-3 text-green-600" />;
       case 'device_updated':
         return <Edit className="w-3 h-3 text-primary" />;
-      case 'network_scan':
+      case 'scan_started':
         return <RefreshCw className="w-3 h-3 text-orange-600" />;
+      case 'scan_completed':
+        return <CheckCircle className="w-3 h-3 text-green-600" />;
+      case 'scan_failed':
+        return <AlertTriangle className="w-3 h-3 text-red-600" />;
+      case 'vlan_created':
+      case 'subnet_created':
+        return <Plus className="w-3 h-3 text-blue-600" />;
+      case 'vlan_updated':
+      case 'subnet_updated':
+        return <Edit className="w-3 h-3 text-blue-600" />;
       default:
         return <RefreshCw className="w-3 h-3 text-gray-600" />;
     }
@@ -27,13 +40,22 @@ export default function RecentActivity({ activities }: RecentActivityProps) {
   const getActivityColor = (action: string) => {
     switch (action) {
       case 'device_discovered':
+      case 'device_added':
+      case 'device_online':
+      case 'scan_completed':
         return 'bg-green-100';
       case 'device_offline':
+      case 'scan_failed':
         return 'bg-red-100';
       case 'device_updated':
         return 'bg-primary/10';
-      case 'network_scan':
+      case 'scan_started':
         return 'bg-orange-100';
+      case 'vlan_created':
+      case 'vlan_updated':
+      case 'subnet_created':
+      case 'subnet_updated':
+        return 'bg-blue-100';
       default:
         return 'bg-gray-100';
     }
@@ -44,13 +66,29 @@ export default function RecentActivity({ activities }: RecentActivityProps) {
     
     switch (activity.action) {
       case 'device_discovered':
-        return `New device detected: ${details.hostname || details.ipAddress}`;
+        return `New device discovered: ${details.hostname || details.ipAddress}${details.vendor ? ` (${details.vendor})` : ''}`;
+      case 'device_added':
+        return `Device manually added: ${details.hostname || details.ipAddress}`;
       case 'device_offline':
         return `Device went offline: ${details.hostname || details.ipAddress}`;
+      case 'device_online':
+        return `Device came online: ${details.hostname || details.ipAddress}`;
       case 'device_updated':
-        return `IP assignment updated: ${details.ipAddress}`;
-      case 'network_scan':
-        return `Network scan completed for ${details.subnet || 'all subnets'}`;
+        return `Device updated: ${details.hostname || details.ipAddress}`;
+      case 'scan_started':
+        return `Network scan started for ${details.subnetIds?.length || 0} subnet${details.subnetIds?.length !== 1 ? 's' : ''}`;
+      case 'scan_completed':
+        return `Network scan completed - Found ${details.devicesFound || 0} devices (${details.onlineDevices || 0} online)`;
+      case 'scan_failed':
+        return `Network scan failed: ${details.error || 'Unknown error'}`;
+      case 'vlan_created':
+        return `VLAN created: ${details.name || `VLAN ${details.vlanId}`}`;
+      case 'vlan_updated':
+        return `VLAN updated: ${details.name || `VLAN ${details.vlanId}`}`;
+      case 'subnet_created':
+        return `Subnet created: ${details.network || 'Unknown network'}`;
+      case 'subnet_updated':
+        return `Subnet updated: ${details.network || 'Unknown network'}`;
       default:
         return activity.action.replace('_', ' ');
     }
