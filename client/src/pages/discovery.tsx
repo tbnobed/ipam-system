@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Square, RefreshCw, Wifi, Globe } from "lucide-react";
+import { Play, Square, RefreshCw, Wifi, Globe, CheckCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { NetworkScanResult } from "@/lib/types";
 import type { Subnet } from "@shared/schema";
 import { useNetworkScanWebSocket } from "@/hooks/use-network-scan-websocket";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function Discovery() {
   const { toast } = useToast();
@@ -26,7 +27,10 @@ export default function Discovery() {
     currentSubnet,
     foundDevices,
     scanStatus,
-    connectionStatus
+    connectionStatus,
+    scanSummary,
+    showSummary,
+    dismissSummary
   } = useNetworkScanWebSocket();
 
   const { data: subnets } = useQuery<Subnet[]>({
@@ -305,6 +309,71 @@ export default function Discovery() {
             </CardContent>
           </Card>
         )}
+
+        {/* Scan Completion Summary Dialog */}
+        <Dialog open={showSummary} onOpenChange={(open) => !open && dismissSummary()}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                Network Scan Complete
+              </DialogTitle>
+              <DialogDescription>
+                Scan finished successfully. Here's what was discovered on your network.
+              </DialogDescription>
+            </DialogHeader>
+            {scanSummary && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">{scanSummary.onlineDevices}</div>
+                    <div className="text-sm text-gray-600">Online Devices</div>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-gray-600">{scanSummary.subnetsScanned}</div>
+                    <div className="text-sm text-gray-600">Subnets Scanned</div>
+                  </div>
+                </div>
+                
+                {Object.keys(scanSummary.vendorBreakdown).length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2">Devices by Vendor:</h4>
+                    <div className="space-y-1">
+                      {Object.entries(scanSummary.vendorBreakdown).map(([vendor, count]) => (
+                        <div key={vendor} className="flex justify-between text-sm">
+                          <span>{vendor}</span>
+                          <span className="font-medium">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {Object.keys(scanSummary.deviceTypeBreakdown).length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2">Devices by Type:</h4>
+                    <div className="space-y-1">
+                      {Object.entries(scanSummary.deviceTypeBreakdown).map(([type, count]) => (
+                        <div key={type} className="flex justify-between text-sm">
+                          <span>{type}</span>
+                          <span className="font-medium">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-xs text-gray-500 text-center">
+                  Scan completed at {new Date(scanSummary.timestamp).toLocaleString()}
+                </div>
+                
+                <Button onClick={dismissSummary} className="w-full">
+                  Close Summary
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </>
   );
