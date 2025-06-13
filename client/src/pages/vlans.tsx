@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Network, Users, Activity, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Vlan, Subnet, InsertVlan, InsertSubnet } from "@shared/schema";
@@ -53,8 +54,36 @@ export default function VLANs() {
     queryKey: ['/api/subnets'],
   });
 
+  const { data: subnetUtilization } = useQuery<any[]>({
+    queryKey: ['/api/dashboard/subnet-utilization'],
+    refetchInterval: 30000,
+  });
+
+  const { data: devices } = useQuery<{data: any[]}>({
+    queryKey: ['/api/devices'],
+    refetchInterval: 30000,
+  });
+
   const getSubnetsForVlan = (vlanId: number) => {
     return subnets?.filter(subnet => subnet.vlanId === vlanId) || [];
+  };
+
+  const getSubnetMetrics = (subnetId: number) => {
+    const utilData = subnetUtilization?.find((util: any) => util.id === subnetId);
+    const deviceData = devices?.data?.filter((device: any) => device.subnetId === subnetId) || [];
+    const onlineDevices = deviceData.filter((device: any) => device.status === 'online').length;
+    const offlineDevices = deviceData.filter((device: any) => device.status === 'offline').length;
+    
+    return {
+      totalIPs: utilData?.total || 0,
+      usedIPs: (utilData?.total || 0) - (utilData?.available || 0),
+      availableIPs: utilData?.available || 0,
+      utilization: utilData?.utilization || 0,
+      totalDevices: deviceData.length,
+      onlineDevices,
+      offlineDevices,
+      healthStatus: onlineDevices > offlineDevices ? 'healthy' : offlineDevices > 0 ? 'warning' : 'inactive'
+    };
   };
 
   // VLAN mutations
@@ -267,67 +296,147 @@ export default function VLANs() {
                     <h4 className="font-medium text-gray-900">Subnets</h4>
                     {vlanSubnets.length > 0 ? (
                       <div className="grid gap-4">
-                        {vlanSubnets.map((subnet) => (
-                          <div key={subnet.id} className="p-4 border rounded-lg bg-gray-50">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center space-x-4">
-                                <span className="font-mono text-sm font-medium">
-                                  {subnet.network}
-                                </span>
-                                <Badge variant="outline">
-                                  {subnet.assignmentType.toUpperCase()}
-                                </Badge>
+                        {vlanSubnets.map((subnet) => {
+                          const metrics = getSubnetMetrics(subnet.id);
+                          
+                          return (
+                            <div key={subnet.id} className="p-6 border rounded-lg bg-white shadow-sm">
+                              {/* Subnet Header */}
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center space-x-4">
+                                  <span className="font-mono text-lg font-medium">
+                                    {subnet.network}
+                                  </span>
+                                  <Badge variant="outline">
+                                    {subnet.assignmentType.toUpperCase()}
+                                  </Badge>
+                                  <Badge 
+                                    variant={
+                                      metrics.healthStatus === 'healthy' ? 'default' : 
+                                      metrics.healthStatus === 'warning' ? 'destructive' : 'secondary'
+                                    }
+                                  >
+                                    {metrics.healthStatus === 'healthy' ? 'Healthy' : 
+                                     metrics.healthStatus === 'warning' ? 'Issues' : 'Inactive'}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => {
+                                      setEditingSubnet(subnet);
+                                      setSubnetDialogOpen(true);
+                                    }}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="text-red-600">
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Subnet</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to delete subnet {subnet.network}? 
+                                          This action cannot be undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => deleteSubnetMutation.mutate(subnet.id)}
+                                          className="bg-red-600 hover:bg-red-700"
+                                        >
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => {
-                                    setEditingSubnet(subnet);
-                                    setSubnetDialogOpen(true);
-                                  }}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="text-red-600">
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Delete Subnet</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Are you sure you want to delete subnet {subnet.network}? 
-                                        This action cannot be undone.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => deleteSubnetMutation.mutate(subnet.id)}
-                                        className="bg-red-600 hover:bg-red-700"
-                                      >
-                                        Delete
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+
+                              {/* Network Metrics Grid */}
+                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                                <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                                  <Network className="w-8 h-8 text-blue-600" />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-700">Total IPs</p>
+                                    <p className="text-xl font-bold text-blue-600">{metrics.totalIPs.toLocaleString()}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                                  <Activity className="w-8 h-8 text-green-600" />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-700">Available</p>
+                                    <p className="text-xl font-bold text-green-600">{metrics.availableIPs.toLocaleString()}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
+                                  <Users className="w-8 h-8 text-orange-600" />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-700">Used IPs</p>
+                                    <p className="text-xl font-bold text-orange-600">{metrics.usedIPs.toLocaleString()}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
+                                  <AlertTriangle className={`w-8 h-8 ${metrics.offlineDevices > 0 ? 'text-red-600' : 'text-purple-600'}`} />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-700">Devices</p>
+                                    <p className="text-xl font-bold text-purple-600">
+                                      {metrics.onlineDevices}/{metrics.totalDevices}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Utilization Progress Bar */}
+                              <div className="mb-4">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-sm font-medium text-gray-700">Network Utilization</span>
+                                  <span className="text-sm text-gray-600">{metrics.utilization.toFixed(1)}%</span>
+                                </div>
+                                <Progress 
+                                  value={metrics.utilization} 
+                                  className={`w-full ${
+                                    metrics.utilization > 90 ? 'text-red-600' : 
+                                    metrics.utilization > 70 ? 'text-yellow-600' : 'text-green-600'
+                                  }`}
+                                />
+                              </div>
+
+                              {/* Subnet Details */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 pt-4 border-t">
+                                <div>
+                                  <span className="font-medium">Gateway: </span>
+                                  <span className="font-mono">{subnet.gateway}</span>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Description: </span>
+                                  {subnet.description || 'No description'}
+                                </div>
+                                {metrics.totalDevices > 0 && (
+                                  <>
+                                    <div>
+                                      <span className="font-medium">Online Devices: </span>
+                                      <span className="text-green-600 font-medium">{metrics.onlineDevices}</span>
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">Offline Devices: </span>
+                                      <span className="text-red-600 font-medium">{metrics.offlineDevices}</span>
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                              <div>
-                                <span className="font-medium">Gateway: </span>
-                                <span className="font-mono">{subnet.gateway}</span>
-                              </div>
-                              <div>
-                                <span className="font-medium">Description: </span>
-                                {subnet.description}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <p className="text-sm text-gray-500">No subnets configured</p>
