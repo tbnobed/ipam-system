@@ -104,7 +104,7 @@ export default function RecentActivity({ activities }: RecentActivityProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {activities.map((activity) => (
+          {activities.slice(0, 10).map((activity) => (
             <div key={activity.id} className="flex items-start space-x-3">
               <div className={`flex-shrink-0 w-8 h-8 ${getActivityColor(activity.action)} rounded-full flex items-center justify-center`}>
                 {getActivityIcon(activity.action)}
