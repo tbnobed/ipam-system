@@ -230,9 +230,31 @@ export default function DeviceTable() {
     return <div className="flex items-center justify-center h-64">Loading devices...</div>;
   }
 
-  const devices = deviceData?.data || [];
+  const rawDevices = deviceData?.data || [];
   const totalPages = deviceData?.totalPages || 1;
   const currentPage = deviceData?.page || 1;
+
+  // Sort devices based on current sort settings
+  const devices = [...rawDevices].sort((a, b) => {
+    if (!sortField) return 0;
+    
+    let aValue = a[sortField as keyof Device];
+    let bValue = b[sortField as keyof Device];
+    
+    // Handle null/undefined values
+    if (aValue === null || aValue === undefined) aValue = "";
+    if (bValue === null || bValue === undefined) bValue = "";
+    
+    // Convert to string for comparison
+    const aStr = String(aValue).toLowerCase();
+    const bStr = String(bValue).toLowerCase();
+    
+    if (sortDirection === "asc") {
+      return aStr.localeCompare(bStr);
+    } else {
+      return bStr.localeCompare(aStr);
+    }
+  });
 
   return (
     <div>
@@ -387,19 +409,83 @@ export default function DeviceTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Status</TableHead>
-                <TableHead>IP Address</TableHead>
-                <TableHead>Hostname</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 font-semibold"
+                    onClick={() => handleSort("status")}
+                  >
+                    Status
+                    {getSortIcon("status")}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 font-semibold"
+                    onClick={() => handleSort("ipAddress")}
+                  >
+                    IP Address
+                    {getSortIcon("ipAddress")}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 font-semibold"
+                    onClick={() => handleSort("hostname")}
+                  >
+                    Hostname
+                    {getSortIcon("hostname")}
+                  </Button>
+                </TableHead>
                 <TableHead>VLAN/Subnet</TableHead>
-                <TableHead>Device Type</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 font-semibold"
+                    onClick={() => handleSort("deviceType")}
+                  >
+                    Device Type
+                    {getSortIcon("deviceType")}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 font-semibold"
+                    onClick={() => handleSort("location")}
+                  >
+                    Location
+                    {getSortIcon("location")}
+                  </Button>
+                </TableHead>
                 <TableHead>MAC Address</TableHead>
-                <TableHead>Last Seen</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 font-semibold"
+                    onClick={() => handleSort("lastSeen")}
+                  >
+                    Last Seen
+                    {getSortIcon("lastSeen")}
+                  </Button>
+                </TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {devices.map((device) => (
+              {devices.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                    {filters.search || filters.vlan || filters.status ? 
+                      "No devices found matching your filters. Try adjusting your search criteria." :
+                      "No devices found. Start a network scan to discover devices on your network."
+                    }
+                  </TableCell>
+                </TableRow>
+              ) : (
+                devices.map((device) => (
                 <TableRow key={device.id} className="hover:bg-gray-50">
                   <TableCell>{getStatusBadge(device.status)}</TableCell>
                   <TableCell>
@@ -462,7 +548,8 @@ export default function DeviceTable() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
