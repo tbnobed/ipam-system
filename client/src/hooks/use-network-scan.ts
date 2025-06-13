@@ -23,7 +23,7 @@ export function useNetworkScan(): NetworkScanHook {
 
   const startScan = useCallback(async (subnetIds: number[] = []) => {
     try {
-      const response = await apiRequest('POST', '/api/network/scan', { subnetIds });
+      const response = await apiRequest('/api/network/scan', 'POST', { subnetIds });
       const result = await response.json();
       
       setActiveScanId(result.scanId);
@@ -51,11 +51,11 @@ export function useNetworkScan(): NetworkScanHook {
   const getScanProgress = useCallback(() => {
     if (!scanResult) return 0;
     
-    if (scanResult.status === 'completed') return 100;
-    if (scanResult.status === 'failed') return 0;
+    if ((scanResult as any).status === 'completed') return 100;
+    if ((scanResult as any).status === 'failed') return 0;
     
     // For running scans, estimate progress based on time elapsed
-    const startTime = new Date(scanResult.startTime).getTime();
+    const startTime = new Date((scanResult as any).startTime).getTime();
     const elapsed = Date.now() - startTime;
     const estimatedTotal = 5 * 60 * 1000; // 5 minutes estimated
     
@@ -66,7 +66,7 @@ export function useNetworkScan(): NetworkScanHook {
     startScan,
     stopScan,
     scanResult,
-    isScanning: !!activeScanId && scanResult?.status === 'running',
+    isScanning: !!activeScanId && (scanResult as any)?.status === 'running',
     scanProgress: getScanProgress(),
   };
 }

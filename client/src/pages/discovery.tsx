@@ -30,7 +30,7 @@ export default function Discovery() {
   const handleStartScan = async () => {
     try {
       const subnetIds = selectedSubnet ? [parseInt(selectedSubnet)] : [];
-      const response = await apiRequest('POST', '/api/network/scan', { subnetIds });
+      const response = await apiRequest('/api/network/scan', 'POST', { subnetIds });
       const result = await response.json();
       
       setActiveScan(result.scanId);

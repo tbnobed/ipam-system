@@ -248,18 +248,42 @@ class NetworkScanner {
     const [baseIP, cidr] = network.split('/');
     const cidrNum = parseInt(cidr);
     
-    // For simplicity, only handle /24 networks
-    if (cidrNum !== 24) {
-      console.warn(`Unsupported CIDR: ${cidr}. Only /24 networks are supported.`);
+    // Support common CIDR ranges
+    if (cidrNum < 16 || cidrNum > 30) {
+      console.warn(`Unsupported CIDR: ${cidr}. Supported ranges: /16 to /30`);
       return [];
     }
 
     const baseParts = baseIP.split('.').map(Number);
     const ips: string[] = [];
+    
+    // Calculate network size
+    const hostBits = 32 - cidrNum;
+    const totalHosts = Math.pow(2, hostBits);
+    
+    // For large networks, limit scanning to avoid performance issues
+    const maxScanIPs = 1024; // Limit to 1024 IPs for practical scanning
+    const actualScanCount = Math.min(totalHosts - 2, maxScanIPs); // Exclude network and broadcast
+    
+    if (totalHosts > maxScanIPs + 2) {
+      console.log(`Large network detected (${totalHosts} hosts). Limiting scan to ${maxScanIPs} IPs.`);
+    }
 
-    // Generate all IPs in the /24 range (skip network and broadcast addresses)
-    for (let i = 1; i < 255; i++) {
-      ips.push(`${baseParts[0]}.${baseParts[1]}.${baseParts[2]}.${i}`);
+    // Convert base IP to integer for calculations
+    const baseIPInt = (baseParts[0] << 24) + (baseParts[1] << 16) + (baseParts[2] << 8) + baseParts[3];
+    const networkMask = (0xFFFFFFFF << hostBits) >>> 0;
+    const networkAddress = (baseIPInt & networkMask) >>> 0;
+
+    // Generate IP addresses
+    for (let i = 1; i <= actualScanCount; i++) {
+      const ipInt = networkAddress + i;
+      const ip = [
+        (ipInt >>> 24) & 0xFF,
+        (ipInt >>> 16) & 0xFF,
+        (ipInt >>> 8) & 0xFF,
+        ipInt & 0xFF
+      ].join('.');
+      ips.push(ip);
     }
 
     return ips;
