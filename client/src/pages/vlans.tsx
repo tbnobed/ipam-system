@@ -631,7 +631,7 @@ function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {details.usedRanges.map(({ ip, device }) => (
+                  {details.usedRanges.map(({ ip, device }: { ip: string; device: any }) => (
                     <tr key={ip} className="hover:bg-gray-50">
                       <td className="px-3 py-2 font-mono text-sm">{ip}</td>
                       <td className="px-3 py-2 text-sm">
@@ -667,7 +667,7 @@ function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
           <div className="border rounded-lg max-h-64 overflow-y-auto">
             {details.availableRanges.length > 0 ? (
               <div className="p-3 space-y-1">
-                {details.availableRanges.map((ip) => (
+                {details.availableRanges.map((ip: string) => (
                   <div key={ip} className="font-mono text-sm p-2 bg-green-50 rounded border hover:bg-green-100">
                     {ip}
                   </div>
