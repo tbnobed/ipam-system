@@ -44,6 +44,7 @@ interface IStorage {
   
   // Activity Logs
   getRecentActivity(limit: number): Promise<ActivityLog[]>;
+  createActivityLog(insertLog: InsertActivityLog): Promise<ActivityLog>;
   
   // Dashboard
   getDashboardMetrics(): Promise<DashboardMetrics>;
@@ -297,6 +298,14 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
+  async createActivityLog(insertLog: InsertActivityLog): Promise<ActivityLog> {
+    const [log] = await db
+      .insert(activityLogs)
+      .values(insertLog)
+      .returning();
+    return log;
+  }
+
   async getDashboardMetrics(): Promise<DashboardMetrics> {
     // Get device counts by status
     const deviceCounts = await db
@@ -324,9 +333,59 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`count(*)` })
       .from(devices);
 
+    // Get total IP capacity from subnets
+    const subnetCapacity = await db
+      .select({
+        network: subnets.network
+      })
+      .from(subnets);
+
+    let totalCapacity = 0;
+    subnetCapacity.forEach(subnet => {
+      const cidr = parseInt(subnet.network.split('/')[1]);
+      const hostBits = 32 - cidr;
+      const capacity = Math.pow(2, hostBits) - 2; // Subtract network and broadcast
+      totalCapacity += capacity;
+    });
+
+    // Get vendor breakdown
+    const vendorCounts = await db
+      .select({
+        vendor: devices.vendor,
+        count: sql<number>`count(*)`
+      })
+      .from(devices)
+      .where(sql`${devices.vendor} IS NOT NULL AND ${devices.vendor} != ''`)
+      .groupBy(devices.vendor)
+      .orderBy(sql`count(*) DESC`)
+      .limit(5);
+
+    // Get recent scans count (last 24 hours)
+    const recentScans = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(networkScans)
+      .where(sql`${networkScans.startTime} > NOW() - INTERVAL '24 hours'`);
+
+    // Get last scan time
+    const lastScan = await db
+      .select({ startTime: networkScans.startTime })
+      .from(networkScans)
+      .orderBy(desc(networkScans.startTime))
+      .limit(1);
+
+    // Calculate network utilization
+    const networkUtilization = totalCapacity > 0 ? Math.round((deviceCount.count / totalCapacity) * 100) : 0;
+
+    // Count critical alerts (offline devices that were recently online)
+    const criticalAlerts = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(devices)
+      .where(sql`${devices.status} = 'offline' AND ${devices.lastSeen} > NOW() - INTERVAL '1 hour'`);
+
     return {
-      totalIPs: deviceCount.count,
+      totalIPs: totalCapacity,
       allocatedIPs: deviceCount.count,
+      availableIPs: totalCapacity - deviceCount.count,
       onlineDevices,
       offlineDevices,
       totalVLANs: vlanCount.count,
@@ -335,6 +394,12 @@ export class DatabaseStorage implements IStorage {
         online: 0,
         offline: 0,
       },
+      lastScanTime: lastScan[0]?.startTime?.toISOString() || undefined,
+      scanningStatus: 'idle',
+      networkUtilization,
+      criticalAlerts: criticalAlerts[0]?.count || 0,
+      recentScansCount: recentScans[0]?.count || 0,
+      topVendors: vendorCounts.map(v => ({ name: v.vendor || 'Unknown', count: v.count })),
     };
   }
 }

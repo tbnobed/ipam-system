@@ -1,6 +1,7 @@
 export interface DashboardMetrics {
   totalIPs: number;
   allocatedIPs: number;
+  availableIPs: number;
   onlineDevices: number;
   offlineDevices: number;
   totalVLANs: number;
@@ -9,6 +10,12 @@ export interface DashboardMetrics {
     online: number;
     offline: number;
   };
+  lastScanTime?: string;
+  scanningStatus: 'idle' | 'scanning' | 'completed';
+  networkUtilization: number;
+  criticalAlerts: number;
+  recentScansCount: number;
+  topVendors: Array<{ name: string; count: number }>;
 }
 
 export interface SubnetUtilization {
