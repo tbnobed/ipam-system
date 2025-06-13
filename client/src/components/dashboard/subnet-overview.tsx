@@ -9,8 +9,6 @@ interface SubnetOverviewProps {
 }
 
 export default function SubnetOverview({ subnets }: SubnetOverviewProps) {
-  console.log('SubnetOverview received subnets:', subnets);
-  
   const getUtilizationColor = (utilization: number) => {
     if (utilization >= 90) return "bg-red-500";
     if (utilization >= 75) return "bg-orange-500";

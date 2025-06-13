@@ -28,7 +28,7 @@ export default function Dashboard() {
 
   const handleNetworkScan = async () => {
     try {
-      const response = await apiRequest('POST', '/api/network/scan', {
+      const response = await apiRequest('/api/network/scan', 'POST', {
         subnetIds: [], // Empty array means scan all subnets
       });
       const result = await response.json();
@@ -48,7 +48,7 @@ export default function Dashboard() {
 
   const handleExport = async () => {
     try {
-      const response = await apiRequest('GET', '/api/export/devices');
+      const response = await apiRequest('/api/export/devices', 'GET');
       const blob = await response.blob();
       
       // Create download link
