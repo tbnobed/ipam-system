@@ -40,8 +40,10 @@ type SubnetFormData = z.infer<typeof subnetSchema>;
 export default function VLANs() {
   const [vlanDialogOpen, setVlanDialogOpen] = useState(false);
   const [subnetDialogOpen, setSubnetDialogOpen] = useState(false);
+  const [subnetDetailsOpen, setSubnetDetailsOpen] = useState(false);
   const [editingVlan, setEditingVlan] = useState<Vlan | null>(null);
   const [editingSubnet, setEditingSubnet] = useState<Subnet | null>(null);
+  const [selectedSubnet, setSelectedSubnet] = useState<Subnet | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -84,6 +86,76 @@ export default function VLANs() {
       offlineDevices,
       healthStatus: onlineDevices > offlineDevices ? 'healthy' : offlineDevices > 0 ? 'warning' : 'inactive'
     };
+  };
+
+  const getSubnetDetails = (subnet: Subnet) => {
+    const deviceData = devices?.data?.filter((device: any) => device.subnetId === subnet.id) || [];
+    const metrics = getSubnetMetrics(subnet.id);
+    
+    // Parse network CIDR
+    const [networkAddr, cidrBits] = subnet.network.split('/');
+    const cidr = parseInt(cidrBits);
+    const hostBits = 32 - cidr;
+    const totalHosts = Math.pow(2, hostBits) - 2; // Subtract network and broadcast
+    
+    // Generate IP range
+    const networkParts = networkAddr.split('.').map(Number);
+    const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
+    const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
+    
+    const usedIPs = new Set(deviceData.map((device: any) => device.ipAddress));
+    const availableRanges: string[] = [];
+    const usedRanges: { ip: string; device: any }[] = [];
+    
+    // Generate available and used IP lists
+    for (let i = networkInt + 1; i < broadcastInt; i++) {
+      const ip = [
+        (i >>> 24) & 255,
+        (i >>> 16) & 255,
+        (i >>> 8) & 255,
+        i & 255
+      ].join('.');
+      
+      const device = deviceData.find((d: any) => d.ipAddress === ip);
+      if (device) {
+        usedRanges.push({ ip, device });
+      } else {
+        availableRanges.push(ip);
+      }
+    }
+    
+    return {
+      subnet,
+      metrics,
+      totalHosts,
+      networkAddress: networkAddr,
+      broadcastAddress: [
+        (broadcastInt >>> 24) & 255,
+        (broadcastInt >>> 16) & 255,
+        (broadcastInt >>> 8) & 255,
+        broadcastInt & 255
+      ].join('.'),
+      firstUsableIP: [
+        ((networkInt + 1) >>> 24) & 255,
+        ((networkInt + 1) >>> 16) & 255,
+        ((networkInt + 1) >>> 8) & 255,
+        (networkInt + 1) & 255
+      ].join('.'),
+      lastUsableIP: [
+        ((broadcastInt - 1) >>> 24) & 255,
+        ((broadcastInt - 1) >>> 16) & 255,
+        ((broadcastInt - 1) >>> 8) & 255,
+        (broadcastInt - 1) & 255
+      ].join('.'),
+      availableRanges: availableRanges.slice(0, 50), // Limit for performance
+      usedRanges,
+      deviceData
+    };
+  };
+
+  const handleSubnetCardClick = (subnet: Subnet) => {
+    setSelectedSubnet(subnet);
+    setSubnetDetailsOpen(true);
   };
 
   // VLAN mutations
@@ -359,33 +431,45 @@ export default function VLANs() {
                                 </div>
                               </div>
 
-                              {/* Network Metrics Grid */}
+                              {/* Network Metrics Grid - Clickable */}
                               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                                <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                                <button 
+                                  onClick={() => handleSubnetCardClick(subnet)}
+                                  className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+                                >
                                   <Network className="w-8 h-8 text-blue-600" />
                                   <div>
                                     <p className="text-sm font-medium text-gray-700">Total IPs</p>
                                     <p className="text-xl font-bold text-blue-600">{metrics.totalIPs.toLocaleString()}</p>
                                   </div>
-                                </div>
+                                </button>
                                 
-                                <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                                <button 
+                                  onClick={() => handleSubnetCardClick(subnet)}
+                                  className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors cursor-pointer"
+                                >
                                   <Activity className="w-8 h-8 text-green-600" />
                                   <div>
                                     <p className="text-sm font-medium text-gray-700">Available</p>
                                     <p className="text-xl font-bold text-green-600">{metrics.availableIPs.toLocaleString()}</p>
                                   </div>
-                                </div>
+                                </button>
                                 
-                                <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
+                                <button 
+                                  onClick={() => handleSubnetCardClick(subnet)}
+                                  className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer"
+                                >
                                   <Users className="w-8 h-8 text-orange-600" />
                                   <div>
                                     <p className="text-sm font-medium text-gray-700">Used IPs</p>
                                     <p className="text-xl font-bold text-orange-600">{metrics.usedIPs.toLocaleString()}</p>
                                   </div>
-                                </div>
+                                </button>
                                 
-                                <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
+                                <button 
+                                  onClick={() => handleSubnetCardClick(subnet)}
+                                  className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors cursor-pointer"
+                                >
                                   <AlertTriangle className={`w-8 h-8 ${metrics.offlineDevices > 0 ? 'text-red-600' : 'text-purple-600'}`} />
                                   <div>
                                     <p className="text-sm font-medium text-gray-700">Devices</p>
@@ -393,7 +477,7 @@ export default function VLANs() {
                                       {metrics.onlineDevices}/{metrics.totalDevices}
                                     </p>
                                   </div>
-                                </div>
+                                </button>
                               </div>
 
                               {/* Utilization Progress Bar */}
@@ -447,8 +531,200 @@ export default function VLANs() {
             );
           })}
         </div>
+
+        {/* Subnet Details Dialog */}
+        <Dialog open={subnetDetailsOpen} onOpenChange={setSubnetDetailsOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                Subnet Details: {selectedSubnet?.network}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedSubnet && (
+              <SubnetDetailsDialog 
+                subnet={selectedSubnet} 
+                details={getSubnetDetails(selectedSubnet)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </>
+  );
+}
+
+// Subnet Details Dialog Component
+interface SubnetDetailsDialogProps {
+  subnet: Subnet;
+  details: {
+    subnet: Subnet;
+    metrics: {
+      totalIPs: number;
+      usedIPs: number;
+      availableIPs: number;
+      utilization: number;
+      totalDevices: number;
+      onlineDevices: number;
+      offlineDevices: number;
+      healthStatus: string;
+    };
+    totalHosts: number;
+    networkAddress: string;
+    broadcastAddress: string;
+    firstUsableIP: string;
+    lastUsableIP: string;
+    availableRanges: string[];
+    usedRanges: { ip: string; device: any }[];
+    deviceData: any[];
+  };
+}
+
+function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
+  return (
+    <div className="space-y-6">
+      {/* Overview Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="p-4 bg-blue-50 rounded-lg">
+          <p className="text-sm font-medium text-gray-700">Network Range</p>
+          <p className="text-lg font-bold text-blue-600">{subnet.network}</p>
+          <p className="text-xs text-gray-500">
+            {details.firstUsableIP} - {details.lastUsableIP}
+          </p>
+        </div>
+        <div className="p-4 bg-green-50 rounded-lg">
+          <p className="text-sm font-medium text-gray-700">Available IPs</p>
+          <p className="text-lg font-bold text-green-600">{details.metrics.availableIPs}</p>
+          <p className="text-xs text-gray-500">
+            {((details.metrics.availableIPs / details.totalHosts) * 100).toFixed(1)}% free
+          </p>
+        </div>
+        <div className="p-4 bg-orange-50 rounded-lg">
+          <p className="text-sm font-medium text-gray-700">Used IPs</p>
+          <p className="text-lg font-bold text-orange-600">{details.metrics.usedIPs}</p>
+          <p className="text-xs text-gray-500">
+            {details.usedRanges.length} devices
+          </p>
+        </div>
+        <div className="p-4 bg-purple-50 rounded-lg">
+          <p className="text-sm font-medium text-gray-700">Gateway</p>
+          <p className="text-lg font-bold text-purple-600 font-mono">{subnet.gateway}</p>
+          <p className="text-xs text-gray-500">{subnet.assignmentType.toUpperCase()}</p>
+        </div>
+      </div>
+
+      {/* IP Allocation Tables */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Used IPs */}
+        <div>
+          <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+            <Users className="w-4 h-4 mr-2" />
+            Used IP Addresses ({details.usedRanges.length})
+          </h4>
+          <div className="border rounded-lg max-h-64 overflow-y-auto">
+            {details.usedRanges.length > 0 ? (
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium text-gray-700">IP Address</th>
+                    <th className="px-3 py-2 text-left font-medium text-gray-700">Device</th>
+                    <th className="px-3 py-2 text-left font-medium text-gray-700">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {details.usedRanges.map(({ ip, device }) => (
+                    <tr key={ip} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 font-mono text-sm">{ip}</td>
+                      <td className="px-3 py-2 text-sm">
+                        {device.hostname || 'Unknown Device'}
+                        {device.vendor && (
+                          <div className="text-xs text-gray-500">{device.vendor}</div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        <Badge 
+                          variant={device.status === 'online' ? 'default' : 'destructive'}
+                          className="text-xs"
+                        >
+                          {device.status}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="p-4 text-center text-gray-500">No IP addresses in use</div>
+            )}
+          </div>
+        </div>
+
+        {/* Available IPs */}
+        <div>
+          <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+            <Activity className="w-4 h-4 mr-2" />
+            Available IP Addresses ({details.availableRanges.length > 50 ? '50+' : details.availableRanges.length})
+          </h4>
+          <div className="border rounded-lg max-h-64 overflow-y-auto">
+            {details.availableRanges.length > 0 ? (
+              <div className="p-3 space-y-1">
+                {details.availableRanges.map((ip) => (
+                  <div key={ip} className="font-mono text-sm p-2 bg-green-50 rounded border hover:bg-green-100">
+                    {ip}
+                  </div>
+                ))}
+                {details.metrics.availableIPs > 50 && (
+                  <div className="text-center text-gray-500 text-sm p-2">
+                    ... and {details.metrics.availableIPs - 50} more available IPs
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 text-center text-gray-500">No IP addresses available</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Network Information */}
+      <div className="border-t pt-4">
+        <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+          <Network className="w-4 h-4 mr-2" />
+          Network Information
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <span className="font-medium text-gray-700">Network Address:</span>
+            <div className="font-mono">{details.networkAddress}</div>
+          </div>
+          <div>
+            <span className="font-medium text-gray-700">Broadcast Address:</span>
+            <div className="font-mono">{details.broadcastAddress}</div>
+          </div>
+          <div>
+            <span className="font-medium text-gray-700">Subnet Mask:</span>
+            <div className="font-mono">/{subnet.network.split('/')[1]}</div>
+          </div>
+          <div>
+            <span className="font-medium text-gray-700">Total Hosts:</span>
+            <div>{details.totalHosts.toLocaleString()}</div>
+          </div>
+          <div>
+            <span className="font-medium text-gray-700">Utilization:</span>
+            <div>{details.metrics.utilization.toFixed(1)}%</div>
+          </div>
+          <div>
+            <span className="font-medium text-gray-700">Assignment Type:</span>
+            <div className="capitalize">{subnet.assignmentType}</div>
+          </div>
+        </div>
+        {subnet.description && (
+          <div className="mt-3">
+            <span className="font-medium text-gray-700">Description:</span>
+            <div className="mt-1">{subnet.description}</div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
