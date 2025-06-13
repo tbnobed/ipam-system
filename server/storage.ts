@@ -194,9 +194,11 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (filters.vlan) {
-      // Filter by VLAN through subnet relationship
+      // First find the VLAN record ID by vlanId number
       conditions.push(sql`${devices.subnetId} IN (
-        SELECT id FROM ${subnets} WHERE vlan_id = ${parseInt(filters.vlan)}
+        SELECT s.id FROM ${subnets} s 
+        JOIN ${vlans} v ON s.vlan_id = v.id 
+        WHERE v.vlan_id = ${parseInt(filters.vlan)}
       )`);
     }
 
