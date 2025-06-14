@@ -623,13 +623,8 @@ class NetworkScanner {
 
   private async updateDeviceFromScan(discovery: DeviceDiscovery, originalSubnetId: number) {
     try {
-      // Find the correct subnet for this IP address
-      const correctSubnetId = await this.findSubnetForIP(discovery.ipAddress);
-      
-      if (!correctSubnetId) {
-        console.warn(`No subnet found for IP ${discovery.ipAddress}, skipping device`);
-        return;
-      }
+      // Find the correct subnet for this IP address, but use original subnet as fallback
+      const correctSubnetId = await this.findSubnetForIP(discovery.ipAddress) || originalSubnetId;
       
       // Check if device already exists
       const existingDevice = await storage.getDeviceByIP(discovery.ipAddress);
@@ -653,21 +648,20 @@ class NetworkScanner {
         }
         
         await storage.updateDevice(existingDevice.id, updateData);
-      } else {
-        // Create new device with correct subnet (save all discovered devices)
+      } else if (discovery.isAlive) {
+        // Create new device only if it's alive (save all live discovered devices)
         await storage.createDevice({
           ipAddress: discovery.ipAddress,
           hostname: discovery.hostname,
           macAddress: discovery.macAddress,
           vendor: discovery.vendor,
           subnetId: correctSubnetId,
-          status: discovery.isAlive ? 'online' : 'offline',
-          lastSeen: discovery.isAlive ? new Date() : null,
+          status: 'online',
+          lastSeen: new Date(),
           openPorts: discovery.openPorts?.map(String) || null,
-          assignmentType: 'dhcp', // Assume DHCP for discovered devices
         });
         
-        console.log(`Created new device ${discovery.ipAddress} in subnet ${correctSubnetId} with status ${discovery.isAlive ? 'online' : 'offline'}`);
+        console.log(`Created new device ${discovery.ipAddress} in subnet ${correctSubnetId} with status online`);
       }
     } catch (error) {
       console.error(`Error updating device ${discovery.ipAddress}:`, error);

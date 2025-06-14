@@ -758,7 +758,7 @@ function VlanForm({ vlan, onSubmit, isLoading }: VlanFormProps) {
       vlanId: vlan?.vlanId || 0,
       name: vlan?.name || "",
       description: vlan?.description || "",
-      cableColor: vlan?.cableColor || ""
+      cableColor: ""
     }
   });
 
@@ -852,7 +852,7 @@ function SubnetForm({ subnet, vlans, onSubmit, isLoading }: SubnetFormProps) {
       network: subnet?.network || "",
       gateway: subnet?.gateway || "",
       vlanId: subnet?.vlanId || 0,
-      assignmentType: (subnet?.assignmentType as "static" | "dhcp") || "static",
+      assignmentType: "dhcp" as "static" | "dhcp",
       description: subnet?.description || ""
     }
   });
