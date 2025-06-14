@@ -320,10 +320,7 @@ export class DatabaseStorage implements IStorage {
   async createDevice(insertDevice: InsertDevice): Promise<Device> {
     const [device] = await db
       .insert(devices)
-      .values({
-        ...insertDevice,
-        updatedAt: new Date(),
-      })
+      .values(insertDevice)
       .returning();
     return device;
   }

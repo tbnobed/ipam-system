@@ -106,7 +106,6 @@ class NetworkScanner {
     
     const scanRecord = await storage.createNetworkScan({
       subnetId: null,
-      startTime: new Date(),
       status: 'running',
       devicesFound: 0,
       results: { subnets: subnetIds }

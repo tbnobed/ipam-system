@@ -71,52 +71,31 @@ export const migrations = pgTable("migrations", {
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users, {
-  id: z.number().optional(),
-}).omit({
-  id: true,
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(6, "Password must be at least 6 characters")
 });
 
 export const insertVlanSchema = createInsertSchema(vlans, {
-  id: z.number().optional(),
-}).omit({
-  id: true,
+  name: z.string().min(1, "Name is required"),
+  vlanId: z.number().min(1, "VLAN ID is required")
 });
 
 export const insertSubnetSchema = createInsertSchema(subnets, {
-  id: z.number().optional(),
-  assignmentType: z.enum(["static", "dhcp"]).default("dhcp"),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+  network: z.string().min(1, "Network is required"),
+  assignmentType: z.enum(["static", "dhcp"]).default("dhcp")
 });
 
 export const insertDeviceSchema = createInsertSchema(devices, {
-  id: z.number().optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+  ipAddress: z.string().min(1, "IP address is required")
 });
 
 export const insertNetworkScanSchema = createInsertSchema(networkScans, {
-  id: z.number().optional(),
-  startTime: z.date().optional(),
-}).omit({
-  id: true,
-  startTime: true,
+  status: z.string().optional()
 });
 
 export const insertActivityLogSchema = createInsertSchema(activityLogs, {
-  id: z.number().optional(),
-  timestamp: z.date().optional(),
-}).omit({
-  id: true,
-  timestamp: true,
+  action: z.string().min(1, "Action is required"),
+  entityType: z.string().min(1, "Entity type is required")
 });
 
 // Types

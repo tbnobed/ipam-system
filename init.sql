@@ -67,15 +67,7 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   timestamp TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
--- Insert sample data
-INSERT INTO vlans (vlan_id, name, description, cable_color) VALUES
-(320, 'Engineering Control', 'Engineering control network', '#ff6b35'),
-(321, 'Production Equipment', 'Production equipment network', '#ff0000')
-ON CONFLICT (vlan_id) DO NOTHING;
-
-INSERT INTO subnets (id, network, gateway, vlan_id, assignment_type, description) VALUES
-(19, '10.63.20.0/24', '10.63.20.1', 1, 'static', 'Engineering control subnet'),
-(20, '10.63.21.0/24', '10.63.20.1', 1, 'static', 'Production equipment subnet');
+-- No automatic data population - database starts clean
 
 -- Function to find correct subnet for an IP address
 CREATE OR REPLACE FUNCTION find_subnet_for_ip(ip_addr TEXT)
