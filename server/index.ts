@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { migrationManager } from "./migrations";
+import { networkScanner } from "./network";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +39,25 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Run database migrations on startup
+  try {
+    await migrationManager.runPendingMigrations();
+  } catch (error) {
+    console.error("Migration failed on startup:", error);
+  }
+
+  // Fix existing device subnet assignments
+  try {
+    console.log("Starting to fix existing device subnet assignments...");
+    await networkScanner.fixExistingDeviceSubnets();
+  } catch (error) {
+    console.error("Error fixing device subnets:", error);
+  }
+
+  // Start periodic network scanning
+  networkScanner.startPeriodicScanning(5);
+  console.log("Periodic network scanning started (every 5 minutes)");
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { insertDeviceSchema, insertVlanSchema, insertSubnetSchema } from "@shared/schema";
 import { networkScanner } from "./network";
+import { migrationManager } from "./migrations";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -59,6 +60,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fixing device subnet assignments:", error);
       res.status(500).json({ error: "Failed to fix device subnet assignments" });
+    }
+  });
+
+  // Migration management endpoints
+  app.post("/api/admin/migrations/apply", async (req, res) => {
+    try {
+      await migrationManager.runPendingMigrations();
+      res.json({ message: "Migrations applied successfully" });
+    } catch (error) {
+      console.error("Migration error:", error);
+      res.status(500).json({ error: "Failed to apply migrations" });
+    }
+  });
+
+  app.get("/api/admin/migrations/status", async (req, res) => {
+    try {
+      const applied = await migrationManager.getAppliedMigrations();
+      const available = await migrationManager.getMigrationFiles();
+      const pending = available.filter(m => !applied.includes(m.version));
+      
+      res.json({
+        applied: applied.length,
+        pending: pending.length,
+        appliedMigrations: applied,
+        pendingMigrations: pending.map(m => ({ version: m.version, name: m.name }))
+      });
+    } catch (error) {
+      console.error("Migration status error:", error);
+      res.status(500).json({ error: "Failed to get migration status" });
     }
   });
 
