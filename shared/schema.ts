@@ -21,7 +21,7 @@ export const vlans = pgTable("vlans", {
 
 export const subnets = pgTable("subnets", {
   id: serial("id").primaryKey(),
-  network: text("network").notNull(), // e.g., "192.168.1.0/24"
+  network: text("network").notNull().unique(), // e.g., "192.168.1.0/24"
   gateway: text("gateway").notNull(),
   vlanId: integer("vlan_id").references(() => vlans.id),
   assignmentType: text("assignment_type").notNull(), // "static" or "dhcp"
