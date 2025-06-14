@@ -232,16 +232,29 @@ export class DatabaseStorage implements IStorage {
     const subnet = await this.getSubnet(subnetId);
     if (!subnet) return null;
     
-    const [deviceCountResult] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(devices)
-      .where(eq(devices.subnetId, subnetId));
+    // Get devices that actually belong to this subnet's IP range, not just assigned subnet ID
+    const [network, prefixLength] = subnet.network.split('/');
+    const cidr = parseInt(prefixLength);
+    const hostBits = 32 - cidr;
     
-    const deviceCount = Number(deviceCountResult.count);
+    // Convert network to integer for comparison
+    const networkParts = network.split('.').map(Number);
+    const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
+    const mask = (0xFFFFFFFF << hostBits) >>> 0;
+    
+    // Get all devices and filter by IP range
+    const allDevices = await db.select().from(devices);
+    const devicesInRange = allDevices.filter(device => {
+      if (!device.ipAddress) return false;
+      const deviceParts = device.ipAddress.split('.').map(Number);
+      const deviceInt = (deviceParts[0] << 24) + (deviceParts[1] << 16) + (deviceParts[2] << 8) + deviceParts[3];
+      return (deviceInt & mask) === (networkInt & mask);
+    });
+    
+    const deviceCount = devicesInRange.length;
     
     // Calculate total IPs from CIDR notation
-    const [network, prefixLength] = subnet.network.split('/');
-    const totalIPs = Math.pow(2, 32 - parseInt(prefixLength)) - 2; // Subtract network and broadcast addresses
+    const totalIPs = Math.pow(2, hostBits) - 2; // Subtract network and broadcast addresses
     const availableIPs = totalIPs - deviceCount;
     const utilizationPercent = totalIPs > 0 ? Math.round((deviceCount / totalIPs) * 100) : 0;
     
