@@ -604,33 +604,49 @@ class NetworkScanner {
       // Get all subnets
       const subnets = await storage.getAllSubnets();
       
-      // Convert IP to integer for range checking
-      const ipParts = ipAddress.split('.').map(Number);
-      const ipInt = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3];
+      console.log(`Finding subnet for IP ${ipAddress}`);
       
-      console.log(`Finding subnet for IP ${ipAddress} (int: ${ipInt})`);
-      
-      // Find which subnet this IP belongs to
+      // Find which subnet this IP belongs to using precise string matching
       for (const subnet of subnets) {
         const [networkAddr, cidrBits] = subnet.network.split('/');
         const cidr = parseInt(cidrBits);
-        const hostBits = 32 - cidr;
         
-        const networkParts = networkAddr.split('.').map(Number);
-        const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
-        const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
-        
-        console.log(`  Checking subnet ${subnet.id} (${subnet.network}): network=${networkInt}, broadcast=${broadcastInt}`);
-        
-        // Check if IP falls within this subnet range (excluding network and broadcast addresses)
-        if (ipInt > networkInt && ipInt < broadcastInt) {
-          console.log(`  ✓ IP ${ipAddress} belongs to subnet ${subnet.id} (${subnet.network})`);
-          return subnet.id;
+        // For /24 networks, use simple third octet matching
+        if (cidr === 24) {
+          const networkParts = networkAddr.split('.');
+          const ipParts = ipAddress.split('.');
+          
+          // Match first 3 octets exactly for /24 networks
+          if (networkParts[0] === ipParts[0] && 
+              networkParts[1] === ipParts[1] && 
+              networkParts[2] === ipParts[2]) {
+            
+            const hostPart = parseInt(ipParts[3]);
+            // Ensure it's a valid host address (1-254 for /24)
+            if (hostPart >= 1 && hostPart <= 254) {
+              console.log(`  ✓ IP ${ipAddress} belongs to subnet ${subnet.id} (${subnet.network})`);
+              return subnet.id;
+            }
+          }
+        } else {
+          // For other CIDR ranges, use bit-wise calculation
+          const ipParts = ipAddress.split('.').map(Number);
+          const ipInt = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3];
+          
+          const hostBits = 32 - cidr;
+          const networkParts = networkAddr.split('.').map(Number);
+          const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
+          const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
+          
+          if (ipInt > networkInt && ipInt < broadcastInt) {
+            console.log(`  ✓ IP ${ipAddress} belongs to subnet ${subnet.id} (${subnet.network})`);
+            return subnet.id;
+          }
         }
       }
       
       console.log(`  ✗ IP ${ipAddress} doesn't match any subnet`);
-      return null; // IP doesn't match any subnet
+      return null;
     } catch (error) {
       console.error(`Error finding subnet for IP ${ipAddress}:`, error);
       return null;
