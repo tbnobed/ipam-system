@@ -284,7 +284,8 @@ export class DatabaseStorage implements IStorage {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     
-    // Query all devices - ensure subnet assignment doesn't filter out valid devices
+    // Query all devices - no longer restrict by specific subnet IDs
+    // This ensures devices show up regardless of which subnet ID they're assigned to
     const data = await db.select()
       .from(devices)
       .where(whereClause)
