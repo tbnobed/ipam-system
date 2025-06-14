@@ -50,10 +50,14 @@ export default function VLANs() {
 
   const { data: vlans, isLoading: vlansLoading } = useQuery<Vlan[]>({
     queryKey: ['/api/vlans'],
+    staleTime: 0,
+    cacheTime: 0,
   });
 
   const { data: subnets, isLoading: subnetsLoading } = useQuery<Subnet[]>({
     queryKey: ['/api/subnets'],
+    staleTime: 0,
+    cacheTime: 0,
   });
 
   const { data: subnetUtilization } = useQuery<any[]>({
