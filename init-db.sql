@@ -30,7 +30,7 @@ CREATE TABLE vlans (
 -- Create subnets table
 CREATE TABLE subnets (
     id SERIAL PRIMARY KEY,
-    network TEXT NOT NULL,
+    network TEXT NOT NULL UNIQUE,
     gateway TEXT NOT NULL,
     vlan_id INTEGER REFERENCES vlans(id) ON DELETE CASCADE,
     assignment_type TEXT NOT NULL DEFAULT 'static',
@@ -80,13 +80,30 @@ CREATE TABLE activity_logs (
     timestamp TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
--- Insert default data
-INSERT INTO vlans (vlan_id, name, description) VALUES 
-    (320, 'Plex Engineering Control', 'Engineering control network'),
-    (321, 'Production Network', 'Production equipment network')
-ON CONFLICT (vlan_id) DO NOTHING;
-
-INSERT INTO subnets (network, gateway, vlan_id, assignment_type, description) VALUES 
-    ('10.63.20.0/24', '10.63.20.1', 1, 'static', 'Engineering control subnet'),
-    ('10.63.21.0/22', '10.63.21.1', 2, 'static', 'Production equipment subnet')
-ON CONFLICT DO NOTHING;
+-- Insert default data with proper relationships
+WITH vlan_inserts AS (
+    INSERT INTO vlans (vlan_id, name, description) VALUES 
+        (320, 'Plex Engineering Control', 'Engineering control network'),
+        (321, 'Production Network', 'Production equipment network')
+    ON CONFLICT (vlan_id) DO UPDATE SET
+        name = EXCLUDED.name,
+        description = EXCLUDED.description
+    RETURNING id, vlan_id
+)
+INSERT INTO subnets (network, gateway, vlan_id, assignment_type, description) 
+SELECT 
+    subnet_data.network,
+    subnet_data.gateway,
+    v.id,
+    subnet_data.assignment_type,
+    subnet_data.description
+FROM (VALUES 
+    ('10.63.20.0/24', '10.63.20.1', 320, 'static', 'Engineering control subnet'),
+    ('10.63.21.0/22', '10.63.21.1', 321, 'static', 'Production equipment subnet')
+) AS subnet_data(network, gateway, vlan_id_ref, assignment_type, description)
+JOIN vlan_inserts v ON v.vlan_id = subnet_data.vlan_id_ref
+ON CONFLICT (network) DO UPDATE SET
+    gateway = EXCLUDED.gateway,
+    vlan_id = EXCLUDED.vlan_id,
+    assignment_type = EXCLUDED.assignment_type,
+    description = EXCLUDED.description;
