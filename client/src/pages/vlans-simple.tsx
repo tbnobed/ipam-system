@@ -80,6 +80,9 @@ export default function VlansPage() {
           <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle>Subnet Details: {selectedSubnet?.network}</DialogTitle>
+              <DialogDescription>
+                View IP addresses, device assignments, and network utilization
+              </DialogDescription>
             </DialogHeader>
             {selectedSubnet && (
               <div className="space-y-4">
