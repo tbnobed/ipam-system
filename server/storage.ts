@@ -143,9 +143,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteSubnet(id: number): Promise<void> {
-    // First, delete all devices in this subnet
+    // Check if there are any network scans referencing this subnet
+    const scansWithSubnet = await db
+      .select({ id: networkScans.id })
+      .from(networkScans)
+      .where(eq(networkScans.subnetId, id));
+    
+    if (scansWithSubnet.length > 0) {
+      // Update network scans to remove the subnet reference instead of deleting them
+      await db
+        .update(networkScans)
+        .set({ subnetId: null })
+        .where(eq(networkScans.subnetId, id));
+    }
+    
+    // Delete all devices in this subnet
     await db.delete(devices).where(eq(devices.subnetId, id));
-    // Then delete the subnet
+    
+    // Delete any activity logs that reference this subnet
+    await db.delete(activityLogs).where(
+      and(
+        eq(activityLogs.entityType, 'subnet'),
+        eq(activityLogs.entityId, id)
+      )
+    );
+    
+    // Finally, delete the subnet
     await db.delete(subnets).where(eq(subnets.id, id));
   }
 
