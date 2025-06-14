@@ -160,8 +160,34 @@ export class DatabaseStorage implements IStorage {
         .where(eq(networkScans.subnetId, id));
     }
     
-    // Delete all devices in this subnet
-    await db.delete(devices).where(eq(devices.subnetId, id));
+    // Get the subnet being deleted to check if we need to reassign devices
+    const subnetToDelete = await this.getSubnet(id);
+    if (subnetToDelete) {
+      console.log(`Deleting subnet ${subnetToDelete.network} (ID: ${id})`);
+      
+      // Get devices in this subnet that might need reassignment
+      const devicesInSubnet = await db
+        .select({ ipAddress: devices.ipAddress, id: devices.id })
+        .from(devices)
+        .where(eq(devices.subnetId, id));
+      
+      console.log(`Found ${devicesInSubnet.length} devices in subnet ${subnetToDelete.network}`);
+      
+      // Try to reassign devices to correct subnets based on their IP addresses
+      for (const device of devicesInSubnet) {
+        const correctSubnetId = await this.findCorrectSubnetForIP(device.ipAddress, id);
+        if (correctSubnetId) {
+          await db.update(devices)
+            .set({ subnetId: correctSubnetId })
+            .where(eq(devices.id, device.id));
+          console.log(`Reassigned device ${device.ipAddress} to subnet ${correctSubnetId}`);
+        } else {
+          // If no correct subnet found, delete the device
+          await db.delete(devices).where(eq(devices.id, device.id));
+          console.log(`Deleted device ${device.ipAddress} (no suitable subnet found)`);
+        }
+      }
+    }
     
     // Delete any activity logs that reference this subnet
     await db.delete(activityLogs).where(
@@ -173,6 +199,33 @@ export class DatabaseStorage implements IStorage {
     
     // Finally, delete the subnet
     await db.delete(subnets).where(eq(subnets.id, id));
+  }
+
+  private async findCorrectSubnetForIP(ipAddress: string, excludeSubnetId: number): Promise<number | null> {
+    const subnets = await this.getAllSubnets();
+    
+    for (const subnet of subnets) {
+      if (subnet.id === excludeSubnetId) continue; // Skip the subnet being deleted
+      
+      const [networkAddr, cidrBits] = subnet.network.split('/');
+      const cidr = parseInt(cidrBits);
+      
+      if (cidr === 24) {
+        const ipOctets = ipAddress.split('.');
+        const networkOctets = networkAddr.split('.');
+        const ipPrefix = `${ipOctets[0]}.${ipOctets[1]}.${ipOctets[2]}`;
+        const networkPrefix = `${networkOctets[0]}.${networkOctets[1]}.${networkOctets[2]}`;
+        
+        if (ipPrefix === networkPrefix) {
+          const hostOctet = parseInt(ipOctets[3]);
+          if (hostOctet >= 1 && hostOctet <= 254) {
+            return subnet.id;
+          }
+        }
+      }
+    }
+    
+    return null;
   }
 
   async getSubnetUtilization(subnetId: number): Promise<any> {
