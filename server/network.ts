@@ -545,29 +545,80 @@ class NetworkScanner {
     return ips;
   }
 
-  private async updateDeviceFromScan(discovery: DeviceDiscovery, subnetId: number) {
+  private async findSubnetForIP(ipAddress: string): Promise<number | null> {
     try {
+      // Get all subnets
+      const subnets = await storage.getAllSubnets();
+      
+      // Convert IP to integer for comparison
+      const ipParts = ipAddress.split('.').map(Number);
+      const ipInt = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3];
+      
+      // Find the subnet that contains this IP
+      for (const subnet of subnets) {
+        const [networkAddr, cidrBits] = subnet.network.split('/');
+        const cidr = parseInt(cidrBits);
+        const hostBits = 32 - cidr;
+        
+        // Calculate network range
+        const networkParts = networkAddr.split('.').map(Number);
+        const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
+        const networkMask = (0xFFFFFFFF << hostBits) >>> 0;
+        const networkAddress = (networkInt & networkMask) >>> 0;
+        const broadcastAddress = (networkAddress + Math.pow(2, hostBits) - 1) >>> 0;
+        
+        // Check if IP is within this subnet's range (excluding network and broadcast)
+        if (ipInt > networkAddress && ipInt < broadcastAddress) {
+          return subnet.id;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`Error finding subnet for IP ${ipAddress}:`, error);
+      return null;
+    }
+  }
+
+  private async updateDeviceFromScan(discovery: DeviceDiscovery, originalSubnetId: number) {
+    try {
+      // Find the correct subnet for this IP address
+      const correctSubnetId = await this.findSubnetForIP(discovery.ipAddress);
+      
+      if (!correctSubnetId) {
+        console.warn(`No subnet found for IP ${discovery.ipAddress}, skipping device`);
+        return;
+      }
+      
       // Check if device already exists
       const existingDevice = await storage.getDeviceByIP(discovery.ipAddress);
       
       if (existingDevice) {
-        // Update existing device
-        await storage.updateDevice(existingDevice.id, {
+        // Update existing device with correct subnet if needed
+        const updateData: any = {
           status: discovery.isAlive ? 'online' : 'offline',
           lastSeen: discovery.isAlive ? new Date() : existingDevice.lastSeen,
           hostname: discovery.hostname || existingDevice.hostname,
           macAddress: discovery.macAddress || existingDevice.macAddress,
           vendor: discovery.vendor || existingDevice.vendor,
           openPorts: discovery.openPorts?.map(String) || existingDevice.openPorts,
-        });
+        };
+        
+        // Update subnet if it's incorrect
+        if (existingDevice.subnetId !== correctSubnetId) {
+          updateData.subnetId = correctSubnetId;
+          console.log(`Correcting subnet for device ${discovery.ipAddress} from ${existingDevice.subnetId} to ${correctSubnetId}`);
+        }
+        
+        await storage.updateDevice(existingDevice.id, updateData);
       } else if (discovery.isAlive) {
-        // Create new device for discovered IP
+        // Create new device with correct subnet
         await storage.createDevice({
           ipAddress: discovery.ipAddress,
           hostname: discovery.hostname,
           macAddress: discovery.macAddress,
           vendor: discovery.vendor,
-          subnetId,
+          subnetId: correctSubnetId,
           status: 'online',
           lastSeen: new Date(),
           openPorts: discovery.openPorts?.map(String) || null,
@@ -578,9 +629,46 @@ class NetworkScanner {
       console.error(`Error updating device ${discovery.ipAddress}:`, error);
     }
   }
+
+  // Method to fix existing device subnet assignments
+  async fixExistingDeviceSubnets() {
+    try {
+      console.log('Starting to fix existing device subnet assignments...');
+      
+      // Get all devices
+      const allDevices = await storage.getAllDevicesForExport();
+      let correctedCount = 0;
+      
+      for (const device of allDevices) {
+        if (!device.ipAddress) continue;
+        
+        // Find correct subnet for this device
+        const correctSubnetId = await this.findSubnetForIP(device.ipAddress);
+        
+        if (correctSubnetId && device.subnetId !== correctSubnetId) {
+          console.log(`Correcting subnet for device ${device.ipAddress} from ${device.subnetId} to ${correctSubnetId}`);
+          
+          await storage.updateDevice(device.id, {
+            subnetId: correctSubnetId
+          });
+          
+          correctedCount++;
+        }
+      }
+      
+      console.log(`Fixed ${correctedCount} device subnet assignments`);
+      return correctedCount;
+    } catch (error) {
+      console.error('Error fixing device subnet assignments:', error);
+      return 0;
+    }
+  }
 }
 
 export const networkScanner = new NetworkScanner();
+
+// Fix existing device subnet assignments on startup
+networkScanner.fixExistingDeviceSubnets();
 
 // Start periodic scanning when the server starts
 networkScanner.startPeriodicScanning(5); // Scan every 5 minutes
