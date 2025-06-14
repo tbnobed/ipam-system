@@ -5,7 +5,7 @@ import {
   type NetworkScan, type InsertNetworkScan, type ActivityLog, type InsertActivityLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, and, desc, asc, sql, ne } from "drizzle-orm";
+import { eq, like, and, or, desc, asc, sql, ne } from "drizzle-orm";
 import type { DashboardMetrics, DeviceFilters, PaginatedResponse } from "@/lib/types";
 
 interface IStorage {
@@ -287,12 +287,31 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (filters.vlan) {
-      // First find the VLAN record ID by vlanId number
-      conditions.push(sql`${devices.subnetId} IN (
-        SELECT s.id FROM ${subnets} s 
-        JOIN ${vlans} v ON s.vlan_id = v.id 
-        WHERE v.vlan_id = ${parseInt(filters.vlan)}
-      )`);
+      // Get all subnets for this VLAN and filter devices by IP range
+      const vlanSubnets = await db
+        .select({ network: subnets.network })
+        .from(subnets)
+        .innerJoin(vlans, eq(subnets.vlanId, vlans.id))
+        .where(eq(vlans.vlanId, parseInt(filters.vlan)));
+      
+      if (vlanSubnets.length > 0) {
+        const ipRangeConditions = vlanSubnets.map(subnet => {
+          const [network, prefixLength] = subnet.network.split('/');
+          const cidr = parseInt(prefixLength);
+          const hostBits = 32 - cidr;
+          const networkParts = network.split('.');
+          
+          // For /24 networks, use simple prefix matching for performance
+          if (cidr === 24) {
+            return sql`${devices.ipAddress} LIKE ${networkParts.slice(0, 3).join('.') + '.%'}`;
+          } else {
+            // For other CIDR blocks, use more complex matching
+            return sql`inet '${devices.ipAddress}' << inet '${subnet.network}'`;
+          }
+        });
+        
+        conditions.push(or(...ipRangeConditions));
+      }
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -471,20 +490,38 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`count(*)` })
       .from(devices);
 
-    // Get total IP capacity from subnets
+    // Get total IP capacity from subnets - handle overlapping ranges
     const subnetCapacity = await db
       .select({
         network: subnets.network
       })
       .from(subnets);
 
+    const ipRanges = new Set<string>();
     let totalCapacity = 0;
+    
     subnetCapacity.forEach(subnet => {
-      const cidr = parseInt(subnet.network.split('/')[1]);
+      const [network, prefixLength] = subnet.network.split('/');
+      const cidr = parseInt(prefixLength);
       const hostBits = 32 - cidr;
-      const capacity = Math.pow(2, hostBits) - 2; // Subtract network and broadcast
-      totalCapacity += capacity;
+      
+      // Generate all IPs in this subnet to detect overlaps
+      const networkParts = network.split('.').map(Number);
+      const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
+      
+      for (let i = 1; i < Math.pow(2, hostBits) - 1; i++) {
+        const ipInt = networkInt + i;
+        const ip = [
+          (ipInt >>> 24) & 255,
+          (ipInt >>> 16) & 255,
+          (ipInt >>> 8) & 255,
+          ipInt & 255
+        ].join('.');
+        ipRanges.add(ip);
+      }
     });
+    
+    totalCapacity = ipRanges.size;
 
     // Get vendor breakdown
     const vendorCounts = await db

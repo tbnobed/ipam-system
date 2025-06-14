@@ -142,6 +142,16 @@ class NetworkScanner {
         ? subnets.filter(subnet => subnetIds.includes(subnet.id))
         : subnets;
       
+      // Calculate total IPs across all subnets for accurate progress tracking
+      const totalIPs = selectedSubnets.reduce((total, subnet) => {
+        const ipRange = this.getIPRange(subnet.network);
+        return total + ipRange.length;
+      }, 0);
+      
+      // Initialize progress tracking for all subnets
+      this.scanProgress = { current: 0, total: totalIPs };
+      this.broadcastProgress();
+      
       let results: DeviceDiscovery[] = [];
 
       for (const subnet of selectedSubnets) {
@@ -258,10 +268,8 @@ class NetworkScanner {
 
     console.log(`Scanning subnet ${network} (${ipRange.length} IPs)`);
 
-    // Update total progress count
-    this.scanProgress.total = ipRange.length;
-    this.scanProgress.current = 0;
-    this.broadcastProgress();
+    // Don't reset progress - maintain cumulative progress across all subnets
+    const previousCurrent = this.scanProgress.current;
 
     // Scan IPs in batches to avoid overwhelming the network
     const batchSize = 20;
@@ -274,8 +282,8 @@ class NetworkScanner {
       const aliveResults = batchResults.filter(result => result.isAlive);
       results.push(...aliveResults);
       
-      // Update progress
-      this.scanProgress.current = Math.min(i + batchSize, ipRange.length);
+      // Update cumulative progress across all subnets
+      this.scanProgress.current = previousCurrent + Math.min(i + batchSize, ipRange.length);
       this.broadcastProgress();
 
       // Small delay to prevent network flooding
