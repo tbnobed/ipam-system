@@ -27,6 +27,12 @@ class NetworkScanner {
   private scanProgress: { current: number; total: number; currentIP?: string } = { current: 0, total: 0 };
   private wsClients: Set<any> = new Set();
 
+  constructor() {
+    // Reset scanning state on startup
+    this.activeScan = false;
+    this.currentScanId = null;
+  }
+
   async startPeriodicScanning(intervalMinutes: number = 5) {
     if (this.scanInterval) {
       clearInterval(this.scanInterval);
