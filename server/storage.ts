@@ -209,19 +209,18 @@ export class DatabaseStorage implements IStorage {
       
       const [networkAddr, cidrBits] = subnet.network.split('/');
       const cidr = parseInt(cidrBits);
+      const hostBits = 32 - cidr;
       
-      if (cidr === 24) {
-        const ipOctets = ipAddress.split('.');
-        const networkOctets = networkAddr.split('.');
-        const ipPrefix = `${ipOctets[0]}.${ipOctets[1]}.${ipOctets[2]}`;
-        const networkPrefix = `${networkOctets[0]}.${networkOctets[1]}.${networkOctets[2]}`;
-        
-        if (ipPrefix === networkPrefix) {
-          const hostOctet = parseInt(ipOctets[3]);
-          if (hostOctet >= 1 && hostOctet <= 254) {
-            return subnet.id;
-          }
-        }
+      // Use proper CIDR calculations for any subnet size
+      const networkParts = networkAddr.split('.').map(Number);
+      const ipParts = ipAddress.split('.').map(Number);
+      
+      const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
+      const ipInt = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3];
+      const mask = hostBits >= 32 ? 0 : (0xFFFFFFFF << hostBits) >>> 0;
+      
+      if ((ipInt & mask) === (networkInt & mask)) {
+        return subnet.id;
       }
     }
     
@@ -490,14 +489,13 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`count(*)` })
       .from(devices);
 
-    // Get total IP capacity from subnets - handle overlapping ranges
+    // Get total IP capacity from subnets - calculate mathematically without generating IPs
     const subnetCapacity = await db
       .select({
         network: subnets.network
       })
       .from(subnets);
 
-    const ipRanges = new Set<string>();
     let totalCapacity = 0;
     
     subnetCapacity.forEach(subnet => {
@@ -505,23 +503,10 @@ export class DatabaseStorage implements IStorage {
       const cidr = parseInt(prefixLength);
       const hostBits = 32 - cidr;
       
-      // Generate all IPs in this subnet to detect overlaps
-      const networkParts = network.split('.').map(Number);
-      const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
-      
-      for (let i = 1; i < Math.pow(2, hostBits) - 1; i++) {
-        const ipInt = networkInt + i;
-        const ip = [
-          (ipInt >>> 24) & 255,
-          (ipInt >>> 16) & 255,
-          (ipInt >>> 8) & 255,
-          ipInt & 255
-        ].join('.');
-        ipRanges.add(ip);
-      }
+      // Calculate capacity mathematically (subtract network and broadcast addresses)
+      const subnetCapacity = Math.pow(2, hostBits) - 2;
+      totalCapacity += subnetCapacity;
     });
-    
-    totalCapacity = ipRanges.size;
 
     // Get vendor breakdown
     const vendorCounts = await db
