@@ -1,0 +1,106 @@
+ ✔ Container ipam-system-ipam-app-1  Started                                                                                                  10.8s
+Following logs...
+postgres-1  |
+postgres-1  | PostgreSQL Database directory appears to contain a database; Skipping initialization
+postgres-1  |
+postgres-1  | 2025-06-14 20:01:49.585 UTC [1] LOG:  starting PostgreSQL 15.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+postgres-1  | 2025-06-14 20:01:49.585 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+postgres-1  | 2025-06-14 20:01:49.585 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+postgres-1  | 2025-06-14 20:01:49.587 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+postgres-1  | 2025-06-14 20:01:49.590 UTC [29] LOG:  database system was shut down at 2025-06-14 20:01:47 UTC
+postgres-1  | 2025-06-14 20:01:49.596 UTC [1] LOG:  database system is ready to accept connections
+ipam-app-1  | Waiting for PostgreSQL to be ready...
+ipam-app-1  | Connection to postgres (172.18.0.2) 5432 port [tcp/postgresql] succeeded!
+ipam-app-1  | PostgreSQL is ready - starting application...
+ipam-app-1  | Setting up database schema...
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 db:push
+ipam-app-1  | > drizzle-kit push
+ipam-app-1  |
+ipam-app-1  | No config path provided, using default 'drizzle.config.ts'
+ipam-app-1  | Reading config file '/app/drizzle.config.ts'
+ipam-app-1  | Using 'pg' driver for database querying
+ipam-app-1  | [⣷] Pulling schema from database...
+[⣯] Pulling schema from database...
+[✓] Pulling schema from database...
+ipam-app-1  | · You're about to add vlans_vlan_id_unique unique constraint to the table, which contains 1 items. If this statement fails, you will receive an error from the database. Do you want to truncate vlans table?
+ipam-app-1  |
+ipam-app-1  | ❯ No, add the constraint without truncating the table
+ipam-app-1  | npm notice
+ipam-app-1  | npm notice New major version of npm available! 10.8.2 -> 11.4.2
+ipam-app-1  | npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+ipam-app-1  | npm notice To update run: npm install -g npm@11.4.2
+ipam-app-1  | npm notice
+ipam-app-1  |   Yes, truncate the tableDatabase schema setup completed successfully
+ipam-app-1  | Starting IPAM application...
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 dev
+ipam-app-1  | > NODE_ENV=development tsx server/index.ts
+ipam-app-1  |
+ipam-app-1  | Found 1 pending migrations
+ipam-app-1  | Applying migration: 002_database_triggers.sql
+postgres-1  | 2025-06-14 20:02:13.102 UTC [50] ERROR:  column "name" of relation "migrations" does not exist at character 43
+postgres-1  | 2025-06-14 20:02:13.102 UTC [50] STATEMENT:
+postgres-1  |           INSERT INTO migrations (version, name)
+postgres-1  |           VALUES ($1, $2)
+postgres-1  |
+ipam-app-1  | ✗ Migration 002_database_triggers.sql failed: error: column "name" of relation "migrations" does not exist
+ipam-app-1  |     at /app/node_modules/pg-pool/index.js:45:11
+ipam-app-1  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+ipam-app-1  |     at async MigrationManager.runMigration (/app/server/migrations.ts:73:7)
+ipam-app-1  |     at async MigrationManager.runPendingMigrations (/app/server/migrations.ts:103:7)
+ipam-app-1  |     at async <anonymous> (/app/server/index.ts:44:5) {
+ipam-app-1  |   length: 127,
+ipam-app-1  |   severity: 'ERROR',
+ipam-app-1  |   code: '42703',
+ipam-app-1  |   detail: undefined,
+ipam-app-1  |   hint: undefined,
+ipam-app-1  |   position: '43',
+ipam-app-1  |   internalPosition: undefined,
+ipam-app-1  |   internalQuery: undefined,
+ipam-app-1  |   where: undefined,
+ipam-app-1  |   schema: undefined,
+ipam-app-1  |   table: undefined,
+ipam-app-1  |   column: undefined,
+ipam-app-1  |   dataType: undefined,
+ipam-app-1  |   constraint: undefined,
+ipam-app-1  |   file: 'parse_target.c',
+ipam-app-1  |   line: '1075',
+ipam-app-1  |   routine: 'checkInsertTargets'
+ipam-app-1  | }
+ipam-app-1  | Migration failed on startup: error: column "name" of relation "migrations" does not exist
+ipam-app-1  |     at /app/node_modules/pg-pool/index.js:45:11
+ipam-app-1  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+ipam-app-1  |     at async MigrationManager.runMigration (/app/server/migrations.ts:73:7)
+ipam-app-1  |     at async MigrationManager.runPendingMigrations (/app/server/migrations.ts:103:7)
+ipam-app-1  |     at async <anonymous> (/app/server/index.ts:44:5) {
+ipam-app-1  |   length: 127,
+ipam-app-1  |   severity: 'ERROR',
+ipam-app-1  |   code: '42703',
+ipam-app-1  |   detail: undefined,
+ipam-app-1  |   hint: undefined,
+ipam-app-1  |   position: '43',
+ipam-app-1  |   internalPosition: undefined,
+ipam-app-1  |   internalQuery: undefined,
+ipam-app-1  |   where: undefined,
+ipam-app-1  |   schema: undefined,
+ipam-app-1  |   table: undefined,
+ipam-app-1  |   column: undefined,
+ipam-app-1  |   dataType: undefined,
+ipam-app-1  |   constraint: undefined,
+ipam-app-1  |   file: 'parse_target.c',
+ipam-app-1  |   line: '1075',
+ipam-app-1  |   routine: 'checkInsertTargets'
+ipam-app-1  | }
+ipam-app-1  | Starting to fix existing device subnet assignments...
+ipam-app-1  | Starting to fix existing device subnet assignments...
+ipam-app-1  | Fixed 0 device subnet assignments
+ipam-app-1  | Periodic network scanning started (every 5 minutes)
+ipam-app-1  | Periodic network scanning started (every 5 minutes)
+ipam-app-1  | 8:02:13 PM [express] serving on port 5000
+ipam-app-1  | WebSocket client connected
+ipam-app-1  | 8:02:35 PM [express] GET /api/dashboard/metrics 200 in 27ms :: {"totalIPs":254,"allocatedIPs":"0","a…
+ipam-app-1  | 8:02:39 PM [express] GET /api/dashboard/last-scan 200 in 34ms
+ipam-app-1  | Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+ipam-app-1  |   npx update-browserslist-db@latest
+ipam-app-1  |   Why you should do it regularly: https://github.com/browserslist/update-db#readme
