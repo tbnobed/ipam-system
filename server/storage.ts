@@ -334,30 +334,35 @@ export class DatabaseStorage implements IStorage {
 
   async fixDeviceSubnetAssignments(subnet20Id: number, subnet21Id: number): Promise<{correctedCount: number, details: string}> {
     try {
+      // First, get current device distribution
+      const currentDevices = await db.select({
+        ipAddress: devices.ipAddress,
+        subnetId: devices.subnetId,
+        id: devices.id
+      }).from(devices).where(
+        sql`${devices.ipAddress} LIKE '10.63.20.%' OR ${devices.ipAddress} LIKE '10.63.21.%'`
+      );
+      
+      console.log(`Found ${currentDevices.length} devices with 10.63.20.x or 10.63.21.x IPs`);
+      
       // Update devices with 10.63.20.x IPs to subnet20Id
       const result20 = await db.update(devices)
         .set({ subnetId: subnet20Id })
-        .where(and(
-          like(devices.ipAddress, '10.63.20.%'),
-          sql`${devices.subnetId} != ${subnet20Id}`
-        ))
-        .returning({ id: devices.id, ipAddress: devices.ipAddress });
+        .where(like(devices.ipAddress, '10.63.20.%'))
+        .returning({ id: devices.id, ipAddress: devices.ipAddress, oldSubnetId: devices.subnetId });
 
       // Update devices with 10.63.21.x IPs to subnet21Id  
       const result21 = await db.update(devices)
         .set({ subnetId: subnet21Id })
-        .where(and(
-          like(devices.ipAddress, '10.63.21.%'),
-          sql`${devices.subnetId} != ${subnet21Id}`
-        ))
-        .returning({ id: devices.id, ipAddress: devices.ipAddress });
+        .where(like(devices.ipAddress, '10.63.21.%'))
+        .returning({ id: devices.id, ipAddress: devices.ipAddress, oldSubnetId: devices.subnetId });
 
       const totalCorrected = result20.length + result21.length;
-      const details = `Updated ${result20.length} devices in 10.63.20.x subnet, ${result21.length} devices in 10.63.21.x subnet`;
+      const details = `Fixed ${result20.length} devices in 10.63.20.x range, ${result21.length} devices in 10.63.21.x range`;
       
       console.log(details);
-      result20.forEach((d: any) => console.log(`Fixed ${d.ipAddress} -> subnet ${subnet20Id}`));
-      result21.forEach((d: any) => console.log(`Fixed ${d.ipAddress} -> subnet ${subnet21Id}`));
+      result20.forEach((d: any) => console.log(`Fixed ${d.ipAddress}: subnet ${d.oldSubnetId} -> ${subnet20Id}`));
+      result21.forEach((d: any) => console.log(`Fixed ${d.ipAddress}: subnet ${d.oldSubnetId} -> ${subnet21Id}`));
       
       return { correctedCount: totalCorrected, details };
     } catch (error) {
