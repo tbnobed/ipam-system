@@ -72,16 +72,17 @@ export default function VLANs() {
 
   const getSubnetMetrics = (subnetId: number) => {
     const utilData = subnetUtilization?.find((util: any) => util.id === subnetId);
-    const subnet = subnets?.find((s: any) => s.id === subnetId);
     
-    // Simple approach: get devices assigned to this subnet
-    const deviceData = devices?.data?.filter((device: any) => device.subnetId === subnetId) || [];
+    // Get devices assigned to this subnet - ensure devices data is available
+    if (!devices?.data) return { totalIPs: 254, usedIPs: 0, availableIPs: 254, utilization: 0, totalDevices: 0, onlineDevices: 0, offlineDevices: 0, healthStatus: 'inactive' };
+    
+    const deviceData = devices.data.filter((device: any) => device.subnetId === subnetId);
     
     const onlineDevices = deviceData.filter((device: any) => device.status === 'online').length;
     const offlineDevices = deviceData.filter((device: any) => device.status === 'offline').length;
     
     return {
-      totalIPs: utilData?.total || 254, // Default to /24 subnet size
+      totalIPs: utilData?.total || 254,
       usedIPs: deviceData.length,
       availableIPs: (utilData?.total || 254) - deviceData.length,
       utilization: utilData?.total ? (deviceData.length / utilData.total) * 100 : 0,
@@ -106,14 +107,19 @@ export default function VLANs() {
     const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
     const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
     
-    // Get devices assigned to this subnet
-    const deviceData = devices?.data?.filter((device: any) => device.subnetId === subnet.id) || [];
+    // Get devices assigned to this subnet - ensure devices data is available
+    const deviceData = devices?.data ? devices.data.filter((device: any) => device.subnetId === subnet.id) : [];
+    
+    // Create used ranges directly from device data
+    const usedRanges: { ip: string; device: any }[] = deviceData.map((device: any) => ({
+      ip: device.ipAddress,
+      device: device
+    }));
     
     const usedIPs = new Set(deviceData.map((device: any) => device.ipAddress));
     const availableRanges: string[] = [];
-    const usedRanges: { ip: string; device: any }[] = [];
     
-    // Generate available and used IP lists
+    // Generate available IP list (excluding used IPs)
     for (let i = networkInt + 1; i < broadcastInt; i++) {
       const ip = [
         (i >>> 24) & 255,
@@ -122,10 +128,7 @@ export default function VLANs() {
         i & 255
       ].join('.');
       
-      const device = deviceData.find((d: any) => d.ipAddress === ip);
-      if (device) {
-        usedRanges.push({ ip, device });
-      } else {
+      if (!usedIPs.has(ip)) {
         availableRanges.push(ip);
       }
     }
