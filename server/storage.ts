@@ -396,39 +396,48 @@ export class DatabaseStorage implements IStorage {
     return log;
   }
 
-  async fixDeviceSubnetAssignments(subnet20Id: number, subnet21Id: number): Promise<{correctedCount: number, details: string}> {
+  async fixDeviceSubnetAssignments(): Promise<{correctedCount: number, details: string}> {
     try {
-      // First, get current device distribution
-      const currentDevices = await db.select({
-        ipAddress: devices.ipAddress,
-        subnetId: devices.subnetId,
-        id: devices.id
-      }).from(devices).where(
-        sql`${devices.ipAddress} LIKE '10.63.20.%' OR ${devices.ipAddress} LIKE '10.63.21.%'`
-      );
+      const allDevices = await db.select().from(devices);
+      const allSubnets = await db.select().from(subnets);
       
-      console.log(`Found ${currentDevices.length} devices with 10.63.20.x or 10.63.21.x IPs`);
+      let correctedCount = 0;
+      const corrections: string[] = [];
       
-      // Update devices with 10.63.20.x IPs to subnet20Id
-      const result20 = await db.update(devices)
-        .set({ subnetId: subnet20Id })
-        .where(like(devices.ipAddress, '10.63.20.%'))
-        .returning({ id: devices.id, ipAddress: devices.ipAddress, oldSubnetId: devices.subnetId });
-
-      // Update devices with 10.63.21.x IPs to subnet21Id  
-      const result21 = await db.update(devices)
-        .set({ subnetId: subnet21Id })
-        .where(like(devices.ipAddress, '10.63.21.%'))
-        .returning({ id: devices.id, ipAddress: devices.ipAddress, oldSubnetId: devices.subnetId });
-
-      const totalCorrected = result20.length + result21.length;
-      const details = `Fixed ${result20.length} devices in 10.63.20.x range, ${result21.length} devices in 10.63.21.x range`;
+      for (const device of allDevices) {
+        if (!device.ipAddress) continue;
+        
+        // Find correct subnet using CIDR calculations
+        const correctSubnet = allSubnets.find(subnet => {
+          const [network, prefixLength] = subnet.network.split('/');
+          const cidr = parseInt(prefixLength);
+          const hostBits = 32 - cidr;
+          
+          const networkParts = network.split('.').map(Number);
+          const deviceParts = device.ipAddress.split('.').map(Number);
+          
+          const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
+          const deviceInt = (deviceParts[0] << 24) + (deviceParts[1] << 16) + (deviceParts[2] << 8) + deviceParts[3];
+          const mask = (0xFFFFFFFF << hostBits) >>> 0;
+          
+          return (deviceInt & mask) === (networkInt & mask);
+        });
+        
+        if (correctSubnet && device.subnetId !== correctSubnet.id) {
+          await db.update(devices)
+            .set({ subnetId: correctSubnet.id })
+            .where(eq(devices.id, device.id));
+          
+          corrections.push(`${device.ipAddress}: ${device.subnetId} -> ${correctSubnet.id}`);
+          correctedCount++;
+        }
+      }
       
+      const details = `Fixed ${correctedCount} device subnet assignments using CIDR calculations`;
       console.log(details);
-      result20.forEach((d: any) => console.log(`Fixed ${d.ipAddress}: subnet ${d.oldSubnetId} -> ${subnet20Id}`));
-      result21.forEach((d: any) => console.log(`Fixed ${d.ipAddress}: subnet ${d.oldSubnetId} -> ${subnet21Id}`));
+      corrections.forEach(correction => console.log(`Fixed ${correction}`));
       
-      return { correctedCount: totalCorrected, details };
+      return { correctedCount, details };
     } catch (error) {
       console.error("Error in fixDeviceSubnetAssignments:", error);
       throw error;

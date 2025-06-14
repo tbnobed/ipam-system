@@ -587,24 +587,7 @@ class NetworkScanner {
 
   async fixExistingDeviceSubnets() {
     console.log('Starting to fix existing device subnet assignments...');
-    
-    const devices = await storage.getAllDevicesForExport();
-    let fixedCount = 0;
-
-    for (const device of devices) {
-      const correctSubnetId = await this.findSubnetForIP(device.ipAddress);
-      
-      if (correctSubnetId && device.subnetId !== correctSubnetId) {
-        console.log(`Moving device ${device.ipAddress} from subnet ${device.subnetId} to ${correctSubnetId}`);
-        await storage.updateDevice(device.id, {
-          subnetId: correctSubnetId
-        });
-        fixedCount++;
-      }
-    }
-
-    console.log(`Fixed ${fixedCount} device subnet assignments`);
-    return { fixedCount };
+    return await storage.fixDeviceSubnetAssignments();
   }
 }
 

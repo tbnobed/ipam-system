@@ -39,7 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Updating devices: 10.63.20.x -> subnet ${subnet20.id}, 10.63.21.x -> subnet ${subnet21.id}`);
             
             // This will execute in the production database
-            const result = await storage.fixDeviceSubnetAssignments(subnet20.id, subnet21.id);
+            const result = await storage.fixDeviceSubnetAssignments();
             res.json({ 
               message: "Device subnet assignments corrected via SQL", 
               correctedCount: result.correctedCount,
@@ -54,8 +54,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else {
         // Use the regular method if devices exist
-        const correctedCount = await networkScanner.fixExistingDeviceSubnets();
-        res.json({ message: "Device subnet assignments corrected", correctedCount });
+        const result = await networkScanner.fixExistingDeviceSubnets();
+        res.json({ message: "Device subnet assignments corrected", correctedCount: result.correctedCount, details: result.details });
       }
     } catch (error) {
       console.error("Error fixing device subnet assignments:", error);
