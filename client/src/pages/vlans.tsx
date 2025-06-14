@@ -166,7 +166,16 @@ export default function VLANs() {
     }
 
     // Filter devices by subnet ID (primary method for assigned devices)
+    console.log('=== SUBNET FILTERING DEBUG ===');
+    console.log('Subnet ID:', subnet.id);
+    console.log('Subnet Network:', subnet.network);
+    console.log('All devices:', devices.data);
+    console.log('Devices with matching subnet ID:', devices.data.filter(d => d.subnetId === subnet.id));
+    
     const deviceData = devices.data.filter((device: any) => device.subnetId === subnet.id) || [];
+    
+    console.log('Final filtered devices:', deviceData);
+    console.log('=== END DEBUG ===');
     
     const usedIPs = new Set(deviceData.map((device: any) => device.ipAddress));
     const availableRanges: string[] = [];
