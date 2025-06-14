@@ -25,6 +25,7 @@ export default function VlansPage() {
   const devices = devicesResponse?.data || [];
 
   const handleViewSubnet = (subnet: any) => {
+    console.log('Clicked subnet:', subnet);
     setSelectedSubnet(subnet);
     setDialogOpen(true);
   };
@@ -55,7 +56,12 @@ export default function VlansPage() {
                         <div 
                           key={subnet.id} 
                           className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                          onClick={() => handleViewSubnet(subnet)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Card clicked!', subnet.network);
+                            handleViewSubnet(subnet);
+                          }}
                         >
                           <div className="flex items-center gap-3">
                             <span className="font-mono font-medium">{subnet.network}</span>
