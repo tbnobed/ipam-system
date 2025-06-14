@@ -547,15 +547,27 @@ class NetworkScanner {
 
   private async findSubnetForIP(ipAddress: string): Promise<number | null> {
     try {
-      // Get all subnets
+      // Get all subnets and sort by specificity (higher CIDR prefix first)
       const subnets = await storage.getAllSubnets();
       
-      // Find the subnet that contains this IP using proper CIDR matching
-      for (const subnet of subnets) {
+      // Sort subnets by CIDR prefix length (most specific first) then by network address
+      const sortedSubnets = subnets.sort((a, b) => {
+        const aCidr = parseInt(a.network.split('/')[1]);
+        const bCidr = parseInt(b.network.split('/')[1]);
+        if (aCidr !== bCidr) return bCidr - aCidr; // Higher CIDR first (more specific)
+        return a.network.localeCompare(b.network); // Then by network address
+      });
+      
+      console.log(`Finding subnet for IP ${ipAddress} among ${sortedSubnets.length} subnets`);
+      
+      // Find the most specific subnet that contains this IP
+      for (const subnet of sortedSubnets) {
         const [networkAddr, cidrBits] = subnet.network.split('/');
         const cidr = parseInt(cidrBits);
         
-        // For /24 networks (most common), use simple string matching for clarity
+        console.log(`Checking subnet ${subnet.network} (ID: ${subnet.id})`);
+        
+        // For /24 networks, use exact string prefix matching
         if (cidr === 24) {
           const ipPrefix = ipAddress.split('.').slice(0, 3).join('.');
           const networkPrefix = networkAddr.split('.').slice(0, 3).join('.');
@@ -564,7 +576,7 @@ class NetworkScanner {
             // Additional check: ensure it's a valid host IP (not network or broadcast)
             const hostOctet = parseInt(ipAddress.split('.')[3]);
             if (hostOctet > 0 && hostOctet < 255) {
-              console.log(`IP ${ipAddress} matches subnet ${subnet.network} (ID: ${subnet.id})`);
+              console.log(`✓ IP ${ipAddress} exactly matches subnet ${subnet.network} (ID: ${subnet.id})`);
               return subnet.id;
             }
           }
@@ -588,7 +600,7 @@ class NetworkScanner {
             const hostPart = ipInt & ~mask;
             
             if (hostPart > 0 && hostPart < maxHost) {
-              console.log(`IP ${ipAddress} matches subnet ${subnet.network} (ID: ${subnet.id})`);
+              console.log(`✓ IP ${ipAddress} matches subnet ${subnet.network} (ID: ${subnet.id})`);
               return subnet.id;
             }
           }
@@ -627,7 +639,8 @@ class NetworkScanner {
           openPorts: discovery.openPorts?.map(String) || existingDevice.openPorts,
         };
         
-        // Update subnet if it's incorrect
+        // Only update subnet if device is not already correctly assigned
+        // This prevents unnecessary subnet reassignments during scans
         if (existingDevice.subnetId !== correctSubnetId) {
           updateData.subnetId = correctSubnetId;
           console.log(`Correcting subnet for device ${discovery.ipAddress} from ${existingDevice.subnetId} to ${correctSubnetId}`);
