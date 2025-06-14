@@ -54,13 +54,23 @@ export default function Discovery() {
 
   const handleStartScan = async () => {
     try {
+      // Check if any subnets exist
+      if (!subnets || subnets.length === 0) {
+        toast({
+          title: "No Subnets Available",
+          description: "Please create VLANs and subnets first before scanning",
+          variant: "destructive",
+        });
+        return;
+      }
+
       let subnetIds: number[];
       
-      if (selectedSubnet) {
+      if (selectedSubnet && selectedSubnet !== "all") {
         // If a specific subnet is selected, scan only that subnet
         subnetIds = [parseInt(selectedSubnet)];
       } else {
-        // If no subnet is selected, scan all available subnets
+        // If no subnet is selected or "all" is selected, scan all available subnets
         subnetIds = subnets?.map(subnet => subnet.id) || [];
       }
       
@@ -70,7 +80,7 @@ export default function Discovery() {
       setActiveScan(result.scanId);
       toast({
         title: "Network Scan Started",
-        description: selectedSubnet 
+        description: selectedSubnet && selectedSubnet !== "all"
           ? `Scanning selected subnet...` 
           : `Scanning all ${subnetIds.length} subnets...`,
       });
@@ -139,54 +149,69 @@ export default function Discovery() {
             <CardTitle>Network Scanning</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="flex-1">
-                <Select value={selectedSubnet} onValueChange={setSelectedSubnet}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select subnet to scan (or leave empty for all)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Subnets</SelectItem>
-                    {subnets?.map((subnet) => (
-                      <SelectItem key={subnet.id} value={subnet.id.toString()}>
-                        {subnet.network} - {subnet.description}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center space-x-2">
-                {/* WebSocket Connection Status */}
-                <div className="flex items-center space-x-1">
-                  <Wifi className={`w-4 h-4 ${
-                    connectionStatus === 'connected' ? 'text-green-600' : 
-                    connectionStatus === 'connecting' ? 'text-yellow-600' : 'text-red-600'
-                  }`} />
-                  <span className="text-xs text-gray-500">
-                    {connectionStatus === 'connected' ? 'Live' : 
-                     connectionStatus === 'connecting' ? 'Connecting' : 'Offline'}
-                  </span>
+            {(!subnets || subnets.length === 0) ? (
+              <div className="text-center py-8 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <Globe className="w-12 h-12 mx-auto mb-4 text-yellow-600" />
+                <h3 className="text-lg font-semibold text-yellow-800 mb-2">No Network Subnets Configured</h3>
+                <p className="text-yellow-700 mb-4">
+                  You need to create VLANs and subnets before you can scan for devices.
+                </p>
+                <div className="space-x-2">
+                  <Button variant="outline" onClick={() => window.location.href = '/vlans'}>
+                    Go to VLANs & Subnets
+                  </Button>
                 </div>
-                {activeScan || wsIsScanning ? (
-                  <Button onClick={handleStopScan} variant="destructive">
-                    <Square className="w-4 h-4 mr-2" />
-                    Stop Scan
-                  </Button>
-                ) : (
-                  <Button onClick={handleStartScan}>
-                    <Play className="w-4 h-4 mr-2" />
-                    Start Scan
-                  </Button>
-                )}
-                <Button variant="outline" onClick={() => refetchScan()}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh
-                </Button>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="flex-1">
+                  <Select value={selectedSubnet} onValueChange={setSelectedSubnet}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select subnet to scan (or leave empty for all)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Subnets</SelectItem>
+                      {subnets?.map((subnet) => (
+                        <SelectItem key={subnet.id} value={subnet.id.toString()}>
+                          {subnet.network} - {subnet.description}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {/* WebSocket Connection Status */}
+                  <div className="flex items-center space-x-1">
+                    <Wifi className={`w-4 h-4 ${
+                      connectionStatus === 'connected' ? 'text-green-600' : 
+                      connectionStatus === 'connecting' ? 'text-yellow-600' : 'text-red-600'
+                    }`} />
+                    <span className="text-xs text-gray-500">
+                      {connectionStatus === 'connected' ? 'Live' : 
+                       connectionStatus === 'connecting' ? 'Connecting' : 'Offline'}
+                    </span>
+                  </div>
+                  {activeScan || wsIsScanning ? (
+                    <Button onClick={handleStopScan} variant="destructive">
+                      <Square className="w-4 h-4 mr-2" />
+                      Stop Scan
+                    </Button>
+                  ) : (
+                    <Button onClick={handleStartScan}>
+                      <Play className="w-4 h-4 mr-2" />
+                      Start Scan
+                    </Button>
+                  )}
+                  <Button variant="outline" onClick={() => refetchScan()}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Scan Progress */}
-            {(activeScan || wsIsScanning) && (
+            {(activeScan || wsIsScanning) && subnets && subnets.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Scan Progress</span>
