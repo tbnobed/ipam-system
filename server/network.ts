@@ -160,17 +160,30 @@ class NetworkScanner {
         const subnetResults = await this.scanSubnet(subnet.network);
         results.push(...subnetResults);
 
-        // Update device statuses in database
+        // Update device statuses in database - only process devices that belong to this subnet
         for (const result of subnetResults) {
-          await this.updateDeviceFromScan(result, subnet.id);
+          const correctSubnetId = await this.findSubnetForIP(result.ipAddress);
+          if (correctSubnetId === subnet.id) {
+            await this.updateDeviceFromScan(result, subnet.id);
+          }
+          // If device belongs to a different subnet, skip it for now - it will be processed when that subnet is scanned
+        }
+
+        // Only broadcast devices that actually belong to this subnet
+        const validDevices = [];
+        for (const result of subnetResults) {
+          const correctSubnetId = await this.findSubnetForIP(result.ipAddress);
+          if (correctSubnetId === subnet.id) {
+            validDevices.push(result);
+          }
         }
 
         // Broadcast found devices
         this.broadcastScanUpdate({
           status: 'subnet_complete',
           subnet: subnet.network,
-          devicesFound: subnetResults.length,
-          newDevices: subnetResults.filter(d => d.isAlive)
+          devicesFound: validDevices.length,
+          newDevices: validDevices.filter(d => d.isAlive)
         });
       }
 
