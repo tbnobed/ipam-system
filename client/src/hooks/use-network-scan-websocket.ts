@@ -98,9 +98,15 @@ export function useNetworkScanWebSocket(): NetworkScanWebSocket {
             
             if (update.status === 'scanning_subnet' && update.subnet) {
               setCurrentSubnet(update.subnet);
-              setFoundDevices([]); // Reset found devices for new subnet
-            } else if (update.status === 'devices_found' && Array.isArray(update.devices)) {
-              setFoundDevices(prev => [...prev, ...update.devices]);
+              // Don't reset devices - accumulate across all subnets
+            } else if (update.status === 'devices_found') {
+              if (update.newDevices && Array.isArray(update.newDevices)) {
+                // Add new devices to the running total
+                setFoundDevices(prev => [...prev, ...update.newDevices!]);
+              } else if (update.devices && Array.isArray(update.devices)) {
+                // Fallback for older message format
+                setFoundDevices(prev => [...prev, ...update.devices!]);
+              }
             } else if (update.status === 'subnet_complete') {
               setCurrentSubnet(null);
             } else if (update.status === 'scan_completed') {
@@ -153,6 +159,13 @@ export function useNetworkScanWebSocket(): NetworkScanWebSocket {
       }
     };
   }, []);
+
+  // Reset devices when a new scan starts
+  useEffect(() => {
+    if (isScanning && currentScanId) {
+      setFoundDevices([]);
+    }
+  }, [isScanning, currentScanId]);
 
   return {
     scanProgress,

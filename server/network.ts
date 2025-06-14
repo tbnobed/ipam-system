@@ -276,11 +276,29 @@ class NetworkScanner {
     for (let i = 0; i < ipRange.length; i += batchSize) {
       const batch = ipRange.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map(ip => this.scanIP(ip))
+        batch.map(async (ip) => {
+          // Update current IP being scanned for real-time display
+          this.scanProgress.currentIP = ip;
+          this.broadcastProgress();
+          return this.scanIP(ip);
+        })
       );
       
       const aliveResults = batchResults.filter(result => result.isAlive);
       results.push(...aliveResults);
+      
+      // Broadcast newly found devices immediately
+      if (aliveResults.length > 0) {
+        this.broadcastScanUpdate({
+          scanId: this.currentScanId,
+          isActive: true,
+          status: 'devices_found',
+          subnet: network,
+          devices: aliveResults,
+          devicesFound: aliveResults.length,
+          newDevices: aliveResults
+        });
+      }
       
       // Update cumulative progress across all subnets
       this.scanProgress.current = previousCurrent + Math.min(i + batchSize, ipRange.length);
