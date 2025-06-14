@@ -7,7 +7,7 @@ import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -61,20 +61,12 @@ export default function VlansPage() {
 
   const devices = devicesResponse?.data || [];
 
-  console.log('VLANs data:', vlans);
-  console.log('Subnets data:', subnets);
-  console.log('Devices data:', devices);
-
   const getSubnetsForVlan = (vlanId: number) => {
-    const result = subnets.filter(subnet => subnet.vlanId === vlanId);
-    console.log(`Subnets for VLAN ${vlanId}:`, result);
-    return result;
+    return subnets.filter(subnet => subnet.vlanId === vlanId);
   };
 
   const getDevicesForSubnet = (subnetId: number) => {
-    const result = devices.filter(device => device.subnetId === subnetId);
-    console.log(`Devices for subnet ${subnetId}:`, result);
-    return result;
+    return devices.filter(device => device.subnetId === subnetId);
   };
 
   const handleSubnetClick = (subnet: Subnet) => {
@@ -189,6 +181,9 @@ export default function VlansPage() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>{editingVlan ? "Edit VLAN" : "Create VLAN"}</DialogTitle>
+                  <DialogDescription>
+                    {editingVlan ? "Update VLAN configuration" : "Create a new VLAN for network segmentation"}
+                  </DialogDescription>
                 </DialogHeader>
                 <VlanForm
                   vlan={editingVlan}
@@ -217,6 +212,9 @@ export default function VlansPage() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>{editingSubnet ? "Edit Subnet" : "Create Subnet"}</DialogTitle>
+                  <DialogDescription>
+                    {editingSubnet ? "Update subnet configuration" : "Create a new subnet within a VLAN"}
+                  </DialogDescription>
                 </DialogHeader>
                 <SubnetForm
                   subnet={editingSubnet}
