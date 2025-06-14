@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS devices (
 CREATE TABLE IF NOT EXISTS network_scans (
   id SERIAL PRIMARY KEY,
   subnet_id INTEGER REFERENCES subnets(id),
-  start_time TIMESTAMP NOT NULL,
+  start_time TIMESTAMP NOT NULL DEFAULT NOW(),
   end_time TIMESTAMP,
   devices_found INTEGER DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'running',
@@ -65,6 +65,13 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   entity_id INTEGER,
   details JSONB,
   timestamp TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS migrations (
+  id SERIAL PRIMARY KEY,
+  version TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  applied_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
 -- No automatic data population - database starts clean
