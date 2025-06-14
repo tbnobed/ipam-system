@@ -78,13 +78,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const applied = await migrationManager.getAppliedMigrations();
       const available = await migrationManager.getMigrationFiles();
-      const pending = available.filter(m => !applied.includes(m.version));
+      const pending = available.filter((m: any) => !applied.includes(m.version));
       
       res.json({
         applied: applied.length,
         pending: pending.length,
         appliedMigrations: applied,
-        pendingMigrations: pending.map(m => ({ version: m.version, name: m.name }))
+        pendingMigrations: pending.map((m: any) => ({ version: m.version, name: m.name }))
       });
     } catch (error) {
       console.error("Migration status error:", error);

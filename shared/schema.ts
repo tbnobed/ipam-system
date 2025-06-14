@@ -1,37 +1,31 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  username: text("username").unique().notNull(),
   password: text("password").notNull(),
-  role: text("role").notNull().default("viewer"), // "admin" or "viewer"
-  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const vlans = pgTable("vlans", {
-  id: serial("id").primaryKey(),
-  vlanId: integer("vlan_id").notNull().unique(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  vlanId: integer("vlan_id").unique().notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  cableColor: text("cable_color"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const subnets = pgTable("subnets", {
-  id: serial("id").primaryKey(),
-  network: text("network").notNull(), // e.g., "192.168.1.0/24"
-  gateway: text("gateway").notNull(),
-  vlanId: integer("vlan_id").references(() => vlans.id),
-  assignmentType: text("assignment_type").notNull(), // "static" or "dhcp"
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  network: text("network").unique().notNull(), // e.g., "192.168.1.0/24"
+  gateway: text("gateway"),
   description: text("description"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  vlanId: integer("vlan_id").references(() => vlans.id),
 });
 
 export const devices = pgTable("devices", {
-  id: serial("id").primaryKey(),
-  ipAddress: text("ip_address").notNull(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  ipAddress: text("ip_address").unique().notNull(),
   hostname: text("hostname"),
   macAddress: text("mac_address"),
   vendor: text("vendor"),
@@ -39,64 +33,87 @@ export const devices = pgTable("devices", {
   purpose: text("purpose"),
   location: text("location"),
   subnetId: integer("subnet_id").references(() => subnets.id),
-  status: text("status").notNull().default("unknown"), // "online", "offline", "unknown"
+  status: text("status").notNull().default("unknown"), // online, offline, unknown
   lastSeen: timestamp("last_seen"),
   openPorts: text("open_ports").array(),
-  assignmentType: text("assignment_type").notNull().default("static"), // "static" or "dhcp"
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  assignmentType: text("assignment_type").default("dhcp"), // dhcp, static, reserved
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const networkScans = pgTable("network_scans", {
-  id: serial("id").primaryKey(),
-  subnetId: integer("subnet_id").references(() => subnets.id),
-  startTime: timestamp("start_time").notNull(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  status: text("status").notNull().default("running"), // running, completed, failed
+  startTime: timestamp("start_time").notNull().defaultNow(),
   endTime: timestamp("end_time"),
   devicesFound: integer("devices_found").default(0),
-  status: text("status").notNull().default("running"), // "running", "completed", "failed"
-  results: jsonb("results"), // Store scan results as JSON
+  subnetId: integer("subnet_id").references(() => subnets.id),
+  results: jsonb("results"),
 });
 
 export const activityLogs = pgTable("activity_logs", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: integer("user_id").references(() => users.id),
   action: text("action").notNull(),
-  entityType: text("entity_type").notNull(), // "device", "vlan", "subnet", etc.
+  entityType: text("entity_type").notNull(),
   entityId: integer("entity_id"),
   details: jsonb("details"),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({
+export const migrations = pgTable("migrations", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  version: text("version").unique().notNull(),
+  name: text("name").notNull(),
+  appliedAt: timestamp("applied_at").notNull().defaultNow(),
+});
+
+// Insert schemas
+export const insertUserSchema = createInsertSchema(users, {
+  id: z.number().optional(),
+}).omit({
   id: true,
-  createdAt: true,
 });
 
-export const insertVlanSchema = createInsertSchema(vlans).omit({
+export const insertVlanSchema = createInsertSchema(vlans, {
+  id: z.number().optional(),
+}).omit({
   id: true,
-  createdAt: true,
 });
 
-export const insertSubnetSchema = createInsertSchema(subnets).omit({
+export const insertSubnetSchema = createInsertSchema(subnets, {
+  id: z.number().optional(),
+}).omit({
   id: true,
-  createdAt: true,
 });
 
-export const insertDeviceSchema = createInsertSchema(devices).omit({
+export const insertDeviceSchema = createInsertSchema(devices, {
+  id: z.number().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
-export const insertNetworkScanSchema = createInsertSchema(networkScans).omit({
+export const insertNetworkScanSchema = createInsertSchema(networkScans, {
+  id: z.number().optional(),
+  startTime: z.date().optional(),
+}).omit({
   id: true,
+  startTime: true,
 });
 
-export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({
+export const insertActivityLogSchema = createInsertSchema(activityLogs, {
+  id: z.number().optional(),
+  timestamp: z.date().optional(),
+}).omit({
   id: true,
   timestamp: true,
 });
 
+// Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
@@ -114,3 +131,5 @@ export type InsertNetworkScan = z.infer<typeof insertNetworkScanSchema>;
 
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+
+export type Migration = typeof migrations.$inferSelect;
