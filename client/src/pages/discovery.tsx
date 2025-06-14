@@ -54,14 +54,25 @@ export default function Discovery() {
 
   const handleStartScan = async () => {
     try {
-      const subnetIds = selectedSubnet ? [parseInt(selectedSubnet)] : [];
+      let subnetIds: number[];
+      
+      if (selectedSubnet) {
+        // If a specific subnet is selected, scan only that subnet
+        subnetIds = [parseInt(selectedSubnet)];
+      } else {
+        // If no subnet is selected, scan all available subnets
+        subnetIds = subnets?.map(subnet => subnet.id) || [];
+      }
+      
       const response = await apiRequest('/api/network/scan', 'POST', { subnetIds });
       const result = await response.json();
       
       setActiveScan(result.scanId);
       toast({
         title: "Network Scan Started",
-        description: `Scanning ${selectedSubnet ? 'selected subnet' : 'all subnets'}...`,
+        description: selectedSubnet 
+          ? `Scanning selected subnet...` 
+          : `Scanning all ${subnetIds.length} subnets...`,
       });
     } catch (error) {
       toast({
