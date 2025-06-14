@@ -50,14 +50,10 @@ export default function VLANs() {
 
   const { data: vlans, isLoading: vlansLoading } = useQuery<Vlan[]>({
     queryKey: ['/api/vlans'],
-    staleTime: 0,
-    cacheTime: 0,
   });
 
   const { data: subnets, isLoading: subnetsLoading } = useQuery<Subnet[]>({
     queryKey: ['/api/subnets'],
-    staleTime: 0,
-    cacheTime: 0,
   });
 
   const { data: subnetUtilization } = useQuery<any[]>({
@@ -88,31 +84,8 @@ export default function VLANs() {
       const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
       const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
       
-      // Use subnet ID assignment as primary method, IP range as fallback
-      deviceData = devices?.data?.filter((device: any) => {
-        // First try subnet ID matching (more reliable)
-        if (device.subnetId === subnetId) {
-          return true;
-        }
-        
-        // Fallback to IP range matching for discovered devices
-        if (!device.ipAddress) return false;
-        
-        try {
-          const deviceIPParts = device.ipAddress.split('.').map(Number);
-          if (deviceIPParts.length !== 4 || deviceIPParts.some((part: number) => isNaN(part) || part < 0 || part > 255)) {
-            return false;
-          }
-          
-          const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
-          
-          // Check if device IP falls within subnet range (excluding network and broadcast)
-          return deviceIPInt > networkInt && deviceIPInt < broadcastInt;
-        } catch (error) {
-          console.error('Error processing device IP for metrics:', device.ipAddress, error);
-          return false;
-        }
-      }) || [];
+      // Filter devices by subnet ID
+      deviceData = devices?.data?.filter((device: any) => device.subnetId === subnetId) || [];
     }
     
     const onlineDevices = deviceData.filter((device: any) => device.status === 'online').length;
@@ -169,17 +142,8 @@ export default function VLANs() {
       };
     }
 
-    // Filter devices by subnet ID (primary method for assigned devices)
-    console.log('=== SUBNET FILTERING DEBUG ===');
-    console.log('Subnet ID:', subnet.id);
-    console.log('Subnet Network:', subnet.network);
-    console.log('All devices:', devices.data);
-    console.log('Devices with matching subnet ID:', devices.data.filter(d => d.subnetId === subnet.id));
-    
+    // Filter devices by subnet ID
     const deviceData = devices.data.filter((device: any) => device.subnetId === subnet.id) || [];
-    
-    console.log('Final filtered devices:', deviceData);
-    console.log('=== END DEBUG ===');
     
     const usedIPs = new Set(deviceData.map((device: any) => device.ipAddress));
     const availableRanges: string[] = [];
