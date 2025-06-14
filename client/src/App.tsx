@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
-import VLANs from "@/pages/vlans-simple";
+import VLANs from "@/pages/vlans";
 import Devices from "@/pages/devices";
 import Discovery from "@/pages/discovery";
 import Analytics from "@/pages/analytics";
