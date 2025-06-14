@@ -369,20 +369,37 @@ class NetworkScanner {
 
   async pingDevice(ipAddress: string): Promise<PingResult> {
     try {
-      const { stdout } = await execAsync(`ping -c 1 -W 2 ${ipAddress}`);
+      const { stdout, stderr } = await execAsync(`ping -c 1 -W 2 ${ipAddress}`);
       
-      // Parse response time from ping output
-      const match = stdout.match(/time=([0-9.]+)/);
-      const responseTime = match ? parseFloat(match[1]) : undefined;
+      // Check if ping was successful by looking for specific success indicators
+      const isSuccess = stdout.includes('1 received') || 
+                       stdout.includes('1 packets received') ||
+                       stdout.match(/time=([0-9.]+)/) !== null;
+      
+      if (isSuccess) {
+        // Parse response time from ping output
+        const match = stdout.match(/time=([0-9.]+)/);
+        const responseTime = match ? parseFloat(match[1]) : undefined;
 
-      return {
-        success: true,
-        responseTime,
-      };
+        return {
+          success: true,
+          responseTime,
+        };
+      } else {
+        return {
+          success: false,
+          error: 'No response from host',
+        };
+      }
     } catch (error) {
+      // Even if ping command fails, check if it's due to network unreachable vs host down
+      const errorStr = String(error);
+      const isNetworkIssue = errorStr.includes('Network is unreachable') || 
+                            errorStr.includes('No route to host');
+      
       return {
         success: false,
-        error: String(error),
+        error: isNetworkIssue ? 'Network unreachable' : 'Host unreachable',
       };
     }
   }
@@ -560,16 +577,16 @@ class NetworkScanner {
           vendor: discovery.vendor || existingDevice.vendor,
           openPorts: discovery.openPorts?.map(String) || existingDevice.openPorts,
         });
-      } else if (discovery.isAlive) {
-        // Create new device for discovered IP
+      } else {
+        // Create new device for any discovered IP (alive or not)
         await storage.createDevice({
           ipAddress: discovery.ipAddress,
           hostname: discovery.hostname,
           macAddress: discovery.macAddress,
           vendor: discovery.vendor,
           subnetId,
-          status: 'online',
-          lastSeen: new Date(),
+          status: discovery.isAlive ? 'online' : 'offline',
+          lastSeen: discovery.isAlive ? new Date() : null,
           openPorts: discovery.openPorts?.map(String) || null,
           assignmentType: 'dhcp', // Assume DHCP for discovered devices
         });
