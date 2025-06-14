@@ -13,12 +13,12 @@ echo "PostgreSQL is ready - starting application..."
 # Set production environment
 export NODE_ENV=production
 
-# Run database migration
-echo "Setting up database schema..."
-if npm run db:push; then
-  echo "Database schema setup completed successfully"
+# Initialize database with clean schema
+echo "Initializing database with clean schema..."
+if PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U $POSTGRES_USER -d $POSTGRES_DB -f /app/init-db.sql; then
+  echo "Database initialization completed successfully"
 else
-  echo "Database schema setup failed, but continuing..."
+  echo "Database initialization failed, but continuing..."
 fi
 
 # Start the application
