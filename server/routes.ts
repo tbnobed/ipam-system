@@ -278,6 +278,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to test subnet assignment
+  app.get("/api/debug/subnet-assignment", async (req, res) => {
+    try {
+      const testIPs = [
+        "10.63.20.1", "10.63.20.10", "10.63.20.100",
+        "10.63.21.1", "10.63.21.10", "10.63.21.100"
+      ];
+      
+      const results = [];
+      for (const ip of testIPs) {
+        const subnetId = await (networkScanner as any).findSubnetForIP(ip);
+        results.push({ ip, assignedSubnetId: subnetId });
+      }
+      
+      res.json({
+        testResults: results,
+        availableSubnets: await storage.getAllSubnets()
+      });
+    } catch (error) {
+      console.error("Error testing subnet assignment:", error);
+      res.status(500).json({ error: "Failed to test subnet assignment" });
+    }
+  });
+
   // Create WebSocket server for real-time scan updates
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });

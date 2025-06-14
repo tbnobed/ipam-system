@@ -551,6 +551,8 @@ class NetworkScanner {
       const correctSubnetId = await this.findSubnetForIP(discovery.ipAddress);
       const useSubnetId = correctSubnetId || subnetId; // Fallback to provided subnetId if calculation fails
       
+      console.log(`Device ${discovery.ipAddress}: passed subnetId=${subnetId}, calculated subnetId=${correctSubnetId}, using subnetId=${useSubnetId}`);
+      
       // Check if device already exists
       const existingDevice = await storage.getDeviceByIP(discovery.ipAddress);
       
@@ -593,6 +595,8 @@ class NetworkScanner {
       const ipParts = ipAddress.split('.').map(Number);
       const ipInt = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3];
       
+      console.log(`Finding subnet for IP ${ipAddress} (int: ${ipInt})`);
+      
       // Find which subnet this IP belongs to
       for (const subnet of subnets) {
         const [networkAddr, cidrBits] = subnet.network.split('/');
@@ -603,12 +607,16 @@ class NetworkScanner {
         const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
         const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
         
-        // Check if IP falls within this subnet range
-        if (ipInt >= networkInt && ipInt <= broadcastInt) {
+        console.log(`  Checking subnet ${subnet.id} (${subnet.network}): network=${networkInt}, broadcast=${broadcastInt}`);
+        
+        // Check if IP falls within this subnet range (excluding network and broadcast addresses)
+        if (ipInt > networkInt && ipInt < broadcastInt) {
+          console.log(`  ✓ IP ${ipAddress} belongs to subnet ${subnet.id} (${subnet.network})`);
           return subnet.id;
         }
       }
       
+      console.log(`  ✗ IP ${ipAddress} doesn't match any subnet`);
       return null; // IP doesn't match any subnet
     } catch (error) {
       console.error(`Error finding subnet for IP ${ipAddress}:`, error);
