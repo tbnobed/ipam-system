@@ -84,8 +84,13 @@ export const insertVlanSchema = createInsertSchema(vlans, {
 
 export const insertSubnetSchema = createInsertSchema(subnets, {
   id: z.number().optional(),
+  assignmentType: z.enum(["static", "dhcp"]).default("dhcp"),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
 }).omit({
   id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 export const insertDeviceSchema = createInsertSchema(devices, {
