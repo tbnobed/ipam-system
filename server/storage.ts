@@ -5,7 +5,7 @@ import {
   type NetworkScan, type InsertNetworkScan, type ActivityLog, type InsertActivityLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, and, desc, asc, sql } from "drizzle-orm";
+import { eq, like, and, desc, asc, sql, ne } from "drizzle-orm";
 import type { DashboardMetrics, DeviceFilters, PaginatedResponse } from "@/lib/types";
 
 interface IStorage {
@@ -335,20 +335,20 @@ export class DatabaseStorage implements IStorage {
   async fixDeviceSubnetAssignments(subnet20Id: number, subnet21Id: number): Promise<{correctedCount: number, details: string}> {
     try {
       // Update devices with 10.63.20.x IPs to subnet20Id
-      const result20 = await this.db.update(devices)
+      const result20 = await db.update(devices)
         .set({ subnetId: subnet20Id })
         .where(and(
           like(devices.ipAddress, '10.63.20.%'),
-          ne(devices.subnetId, subnet20Id)
+          sql`${devices.subnetId} != ${subnet20Id}`
         ))
         .returning({ id: devices.id, ipAddress: devices.ipAddress });
 
       // Update devices with 10.63.21.x IPs to subnet21Id  
-      const result21 = await this.db.update(devices)
+      const result21 = await db.update(devices)
         .set({ subnetId: subnet21Id })
         .where(and(
           like(devices.ipAddress, '10.63.21.%'),
-          ne(devices.subnetId, subnet21Id)
+          sql`${devices.subnetId} != ${subnet21Id}`
         ))
         .returning({ id: devices.id, ipAddress: devices.ipAddress });
 
@@ -356,8 +356,8 @@ export class DatabaseStorage implements IStorage {
       const details = `Updated ${result20.length} devices in 10.63.20.x subnet, ${result21.length} devices in 10.63.21.x subnet`;
       
       console.log(details);
-      result20.forEach(d => console.log(`Fixed ${d.ipAddress} -> subnet ${subnet20Id}`));
-      result21.forEach(d => console.log(`Fixed ${d.ipAddress} -> subnet ${subnet21Id}`));
+      result20.forEach((d: any) => console.log(`Fixed ${d.ipAddress} -> subnet ${subnet20Id}`));
+      result21.forEach((d: any) => console.log(`Fixed ${d.ipAddress} -> subnet ${subnet21Id}`));
       
       return { correctedCount: totalCorrected, details };
     } catch (error) {
