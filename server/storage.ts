@@ -284,7 +284,7 @@ export class DatabaseStorage implements IStorage {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     
-    // Simple query without complex sorting since frontend handles it
+    // Query all devices - ensure subnet assignment doesn't filter out valid devices
     const data = await db.select()
       .from(devices)
       .where(whereClause)
@@ -295,14 +295,14 @@ export class DatabaseStorage implements IStorage {
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)` })
       .from(devices)
-      .where(conditions.length > 0 ? and(...conditions) : undefined);
+      .where(whereClause);
 
     return {
       data,
-      total: count,
+      total: Number(count),
       page,
       limit,
-      totalPages: Math.ceil(count / limit),
+      totalPages: Math.ceil(Number(count) / limit),
     };
   }
 
