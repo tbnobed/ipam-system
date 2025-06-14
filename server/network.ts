@@ -550,29 +550,52 @@ class NetworkScanner {
       // Get all subnets
       const subnets = await storage.getAllSubnets();
       
-      // Convert IP to integer for comparison
-      const ipParts = ipAddress.split('.').map(Number);
-      const ipInt = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3];
-      
-      // Find the subnet that contains this IP
+      // Find the subnet that contains this IP using proper CIDR matching
       for (const subnet of subnets) {
         const [networkAddr, cidrBits] = subnet.network.split('/');
         const cidr = parseInt(cidrBits);
-        const hostBits = 32 - cidr;
         
-        // Calculate network range
-        const networkParts = networkAddr.split('.').map(Number);
-        const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
-        const networkMask = (0xFFFFFFFF << hostBits) >>> 0;
-        const networkAddress = (networkInt & networkMask) >>> 0;
-        const broadcastAddress = (networkAddress + Math.pow(2, hostBits) - 1) >>> 0;
-        
-        // Check if IP is within this subnet's range (excluding network and broadcast)
-        if (ipInt > networkAddress && ipInt < broadcastAddress) {
-          return subnet.id;
+        // For /24 networks (most common), use simple string matching for clarity
+        if (cidr === 24) {
+          const ipPrefix = ipAddress.split('.').slice(0, 3).join('.');
+          const networkPrefix = networkAddr.split('.').slice(0, 3).join('.');
+          
+          if (ipPrefix === networkPrefix) {
+            // Additional check: ensure it's a valid host IP (not network or broadcast)
+            const hostOctet = parseInt(ipAddress.split('.')[3]);
+            if (hostOctet > 0 && hostOctet < 255) {
+              console.log(`IP ${ipAddress} matches subnet ${subnet.network} (ID: ${subnet.id})`);
+              return subnet.id;
+            }
+          }
+        } else {
+          // For non-/24 networks, use proper CIDR calculation
+          const ipParts = ipAddress.split('.').map(Number);
+          const networkParts = networkAddr.split('.').map(Number);
+          
+          // Convert to 32-bit integers
+          const ipInt = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3];
+          const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
+          
+          // Calculate network mask
+          const mask = (0xFFFFFFFF << (32 - cidr)) >>> 0;
+          
+          // Check if IP is in the same network
+          if ((ipInt & mask) === (networkInt & mask)) {
+            // Ensure it's not the network or broadcast address
+            const hostBits = 32 - cidr;
+            const maxHost = Math.pow(2, hostBits) - 1;
+            const hostPart = ipInt & ~mask;
+            
+            if (hostPart > 0 && hostPart < maxHost) {
+              console.log(`IP ${ipAddress} matches subnet ${subnet.network} (ID: ${subnet.id})`);
+              return subnet.id;
+            }
+          }
         }
       }
       
+      console.warn(`No matching subnet found for IP ${ipAddress}`);
       return null;
     } catch (error) {
       console.error(`Error finding subnet for IP ${ipAddress}:`, error);
