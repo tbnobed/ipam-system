@@ -21,7 +21,7 @@ export const vlans = pgTable("vlans", {
 
 export const subnets = pgTable("subnets", {
   id: serial("id").primaryKey(),
-  network: text("network").notNull().unique(), // e.g., "192.168.1.0/24"
+  network: text("network").notNull(), // e.g., "192.168.1.0/24"
   gateway: text("gateway").notNull(),
   vlanId: integer("vlan_id").references(() => vlans.id),
   assignmentType: text("assignment_type").notNull(), // "static" or "dhcp"
@@ -38,7 +38,7 @@ export const devices = pgTable("devices", {
   deviceType: text("device_type"),
   purpose: text("purpose"),
   location: text("location"),
-  subnetId: integer("subnet_id").references(() => subnets.id, { onDelete: "set null" }),
+  subnetId: integer("subnet_id").references(() => subnets.id),
   status: text("status").notNull().default("unknown"), // "online", "offline", "unknown"
   lastSeen: timestamp("last_seen"),
   openPorts: text("open_ports").array(),
@@ -49,7 +49,7 @@ export const devices = pgTable("devices", {
 
 export const networkScans = pgTable("network_scans", {
   id: serial("id").primaryKey(),
-  subnetId: integer("subnet_id").references(() => subnets.id, { onDelete: "cascade" }),
+  subnetId: integer("subnet_id").references(() => subnets.id),
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time"),
   devicesFound: integer("devices_found").default(0),

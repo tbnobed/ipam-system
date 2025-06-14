@@ -39,8 +39,8 @@ export default function Discovery() {
 
   const { data: scanResult, refetch: refetchScan } = useQuery<NetworkScanResult>({
     queryKey: ['/api/network/scan', activeScan],
-    enabled: !!activeScan && !isNaN(activeScan),
-    refetchInterval: activeScan && !isNaN(activeScan) ? 2000 : false,
+    enabled: !!activeScan,
+    refetchInterval: activeScan ? 2000 : false,
   });
 
   // Sync WebSocket scan state with local state
@@ -54,13 +54,7 @@ export default function Discovery() {
 
   const handleStartScan = async () => {
     try {
-      let subnetIds: number[] = [];
-      if (selectedSubnet) {
-        subnetIds = [parseInt(selectedSubnet)];
-      } else {
-        // If no subnet selected, scan all available subnets
-        subnetIds = subnets?.map(s => s.id) || [];
-      }
+      const subnetIds = selectedSubnet ? [parseInt(selectedSubnet)] : [];
       const response = await apiRequest('/api/network/scan', 'POST', { subnetIds });
       const result = await response.json();
       

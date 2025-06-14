@@ -160,30 +160,17 @@ class NetworkScanner {
         const subnetResults = await this.scanSubnet(subnet.network);
         results.push(...subnetResults);
 
-        // Update device statuses in database - only process devices that belong to this subnet
+        // Update device statuses in database
         for (const result of subnetResults) {
-          const correctSubnetId = await this.findSubnetForIP(result.ipAddress);
-          if (correctSubnetId === subnet.id) {
-            await this.updateDeviceFromScan(result, subnet.id);
-          }
-          // If device belongs to a different subnet, skip it for now - it will be processed when that subnet is scanned
-        }
-
-        // Only broadcast devices that actually belong to this subnet
-        const validDevices = [];
-        for (const result of subnetResults) {
-          const correctSubnetId = await this.findSubnetForIP(result.ipAddress);
-          if (correctSubnetId === subnet.id) {
-            validDevices.push(result);
-          }
+          await this.updateDeviceFromScan(result, subnetId);
         }
 
         // Broadcast found devices
         this.broadcastScanUpdate({
           status: 'subnet_complete',
           subnet: subnet.network,
-          devicesFound: validDevices.length,
-          newDevices: validDevices.filter(d => d.isAlive)
+          devicesFound: subnetResults.length,
+          newDevices: subnetResults.filter(d => d.isAlive)
         });
       }
 
@@ -560,12 +547,6 @@ class NetworkScanner {
 
   private async updateDeviceFromScan(discovery: DeviceDiscovery, subnetId: number) {
     try {
-      // Calculate the correct subnet for this device based on its IP address
-      const correctSubnetId = await this.findSubnetForIP(discovery.ipAddress);
-      const useSubnetId = correctSubnetId || subnetId; // Fallback to provided subnetId if calculation fails
-      
-      console.log(`Device ${discovery.ipAddress}: passed subnetId=${subnetId}, calculated subnetId=${correctSubnetId}, using subnetId=${useSubnetId}`);
-      
       // Check if device already exists
       const existingDevice = await storage.getDeviceByIP(discovery.ipAddress);
       
@@ -578,7 +559,6 @@ class NetworkScanner {
           macAddress: discovery.macAddress || existingDevice.macAddress,
           vendor: discovery.vendor || existingDevice.vendor,
           openPorts: discovery.openPorts?.map(String) || existingDevice.openPorts,
-          subnetId: useSubnetId, // Update subnet assignment if needed
         });
       } else if (discovery.isAlive) {
         // Create new device for discovered IP
@@ -587,7 +567,7 @@ class NetworkScanner {
           hostname: discovery.hostname,
           macAddress: discovery.macAddress,
           vendor: discovery.vendor,
-          subnetId: useSubnetId,
+          subnetId,
           status: 'online',
           lastSeen: new Date(),
           openPorts: discovery.openPorts?.map(String) || null,
@@ -596,60 +576,6 @@ class NetworkScanner {
       }
     } catch (error) {
       console.error(`Error updating device ${discovery.ipAddress}:`, error);
-    }
-  }
-
-  private async findSubnetForIP(ipAddress: string): Promise<number | null> {
-    try {
-      // Get all subnets
-      const subnets = await storage.getAllSubnets();
-      
-      console.log(`Finding subnet for IP ${ipAddress}`);
-      
-      // Find which subnet this IP belongs to using precise string matching
-      for (const subnet of subnets) {
-        const [networkAddr, cidrBits] = subnet.network.split('/');
-        const cidr = parseInt(cidrBits);
-        
-        // For /24 networks, use simple third octet matching
-        if (cidr === 24) {
-          const networkParts = networkAddr.split('.');
-          const ipParts = ipAddress.split('.');
-          
-          // Match first 3 octets exactly for /24 networks
-          if (networkParts[0] === ipParts[0] && 
-              networkParts[1] === ipParts[1] && 
-              networkParts[2] === ipParts[2]) {
-            
-            const hostPart = parseInt(ipParts[3]);
-            // Ensure it's a valid host address (1-254 for /24)
-            if (hostPart >= 1 && hostPart <= 254) {
-              console.log(`  ✓ IP ${ipAddress} belongs to subnet ${subnet.id} (${subnet.network})`);
-              return subnet.id;
-            }
-          }
-        } else {
-          // For other CIDR ranges, use bit-wise calculation
-          const ipParts = ipAddress.split('.').map(Number);
-          const ipInt = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3];
-          
-          const hostBits = 32 - cidr;
-          const networkParts = networkAddr.split('.').map(Number);
-          const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
-          const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
-          
-          if (ipInt > networkInt && ipInt < broadcastInt) {
-            console.log(`  ✓ IP ${ipAddress} belongs to subnet ${subnet.id} (${subnet.network})`);
-            return subnet.id;
-          }
-        }
-      }
-      
-      console.log(`  ✗ IP ${ipAddress} doesn't match any subnet`);
-      return null;
-    } catch (error) {
-      console.error(`Error finding subnet for IP ${ipAddress}:`, error);
-      return null;
     }
   }
 }

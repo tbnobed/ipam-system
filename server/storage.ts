@@ -143,11 +143,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteSubnet(id: number): Promise<void> {
-    // First, delete all network scans referencing this subnet
-    await db.delete(networkScans).where(eq(networkScans.subnetId, id));
-    // Then, delete all devices in this subnet
+    // First, delete all devices in this subnet
     await db.delete(devices).where(eq(devices.subnetId, id));
-    // Finally delete the subnet
+    // Then delete the subnet
     await db.delete(subnets).where(eq(subnets.id, id));
   }
 
@@ -207,18 +205,18 @@ export class DatabaseStorage implements IStorage {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     
-    // Query all devices with consistent ordering to prevent pagination issues
+    // Simple query without complex sorting since frontend handles it
     const data = await db.select()
       .from(devices)
       .where(whereClause)
-      .orderBy(devices.id) // Use ID ordering for consistent pagination
+      .orderBy(devices.ipAddress)
       .limit(limit)
       .offset(offset);
 
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)` })
       .from(devices)
-      .where(whereClause);
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
 
     return {
       data,

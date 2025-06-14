@@ -4,7 +4,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install dependencies for health checks and networking
-RUN apk add --no-cache curl netcat-openbsd postgresql-client
+RUN apk add --no-cache curl netcat-openbsd
 
 # Copy package files
 COPY package*.json ./
@@ -14,10 +14,6 @@ RUN npm ci && npm cache clean --force
 
 # Copy source code
 COPY . .
-
-# Copy database initialization and fix scripts
-COPY init-db.sql /app/
-COPY fix-device-clustering.sql /app/
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/
