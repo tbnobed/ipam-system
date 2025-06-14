@@ -162,7 +162,7 @@ class NetworkScanner {
 
         // Update device statuses in database
         for (const result of subnetResults) {
-          await this.updateDeviceFromScan(result, subnetId);
+          await this.updateDeviceFromScan(result, subnet.id);
         }
 
         // Broadcast found devices
