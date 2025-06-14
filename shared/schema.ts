@@ -13,6 +13,7 @@ export const vlans = pgTable("vlans", {
   vlanId: integer("vlan_id").unique().notNull(),
   name: text("name").notNull(),
   description: text("description"),
+  cableColor: text("cable_color"),
 });
 
 export const subnets = pgTable("subnets", {

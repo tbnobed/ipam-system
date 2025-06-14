@@ -340,7 +340,13 @@ export default function VLANs() {
                     <div className="flex items-center space-x-4">
                       <CardTitle>VLAN {vlan.vlanId}</CardTitle>
                       <Badge variant="secondary">{vlan.name}</Badge>
-
+                      {vlan.cableColor && (
+                        <div 
+                          className="w-4 h-4 rounded-full border"
+                          style={{ backgroundColor: vlan.cableColor }}
+                          title={`Cable Color: ${vlan.cableColor}`}
+                        />
+                      )}
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button 
@@ -758,7 +764,7 @@ function VlanForm({ vlan, onSubmit, isLoading }: VlanFormProps) {
       vlanId: vlan?.vlanId || 0,
       name: vlan?.name || "",
       description: vlan?.description || "",
-      cableColor: ""
+      cableColor: vlan?.cableColor || ""
     }
   });
 
