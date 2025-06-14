@@ -72,7 +72,7 @@ export default function AddDeviceModal() {
         const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
         
         // Check if device IP is within this subnet's range
-        if (deviceIPInt >= networkInt + 1 && deviceIPInt <= broadcastInt - 1) {
+        if (deviceIPInt > networkInt && deviceIPInt < broadcastInt) {
           usedIPs.add(device.ipAddress);
         }
       }
