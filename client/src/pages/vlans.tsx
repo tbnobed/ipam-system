@@ -71,16 +71,26 @@ export default function VLANs() {
     
     const onlineDevices = deviceData.filter((device: any) => device.status === 'online').length;
     const offlineDevices = deviceData.filter((device: any) => device.status === 'offline').length;
+    const unknownDevices = deviceData.filter((device: any) => device.status === 'unknown').length;
+    
+    // Determine health status
+    let healthStatus = 'inactive';
+    if (onlineDevices > 0) {
+      healthStatus = 'healthy';
+    } else if (unknownDevices > 0 || offlineDevices > 0) {
+      healthStatus = 'warning';
+    }
     
     return {
       totalIPs: 254, // Default /24 subnet
       usedIPs: deviceData.length,
       availableIPs: 254 - deviceData.length,
-      utilization: (deviceData.length / 254) * 100,
+      utilization: deviceData.length > 0 ? (deviceData.length / 254) * 100 : 0,
       totalDevices: deviceData.length,
       onlineDevices,
       offlineDevices,
-      healthStatus: onlineDevices > offlineDevices ? 'healthy' : offlineDevices > 0 ? 'warning' : 'inactive'
+      unknownDevices,
+      healthStatus
     };
   };
 
