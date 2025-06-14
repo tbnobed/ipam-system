@@ -33,6 +33,12 @@ class NetworkScanner {
     this.currentScanId = null;
   }
 
+  resetScanState() {
+    this.activeScan = false;
+    this.currentScanId = null;
+    this.scanProgress = { current: 0, total: 0 };
+  }
+
   async startPeriodicScanning(intervalMinutes: number = 5) {
     if (this.scanInterval) {
       clearInterval(this.scanInterval);
@@ -105,7 +111,9 @@ class NetworkScanner {
 
   async startScan(subnetIds: number[]): Promise<number> {
     if (this.activeScan) {
-      throw new Error('Scan already in progress');
+      // Force reset if stuck - safety measure
+      console.log('Forcing reset of stuck scan state');
+      this.resetScanState();
     }
 
     this.activeScan = true;
@@ -182,6 +190,10 @@ class NetworkScanner {
     } catch (error) {
       console.error(`Network scan ${scanId} failed:`, error);
       
+      // Reset scan state on error
+      this.activeScan = false;
+      this.currentScanId = null;
+      
       // Log scan failure activity
       await storage.createActivityLog({
         action: 'scan_failed',
@@ -194,6 +206,13 @@ class NetworkScanner {
         endTime: new Date(),
         status: 'failed',
         results: { error: error instanceof Error ? error.message : 'Unknown error' },
+      });
+
+      // Broadcast scan failure
+      this.broadcastScanUpdate({
+        scanId,
+        isActive: false,
+        status: 'failed'
       });
     }
   }

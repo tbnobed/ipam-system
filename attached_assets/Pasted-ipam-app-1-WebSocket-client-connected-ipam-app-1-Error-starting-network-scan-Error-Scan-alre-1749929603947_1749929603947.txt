@@ -1,0 +1,32 @@
+ipam-app-1  | WebSocket client connected
+ipam-app-1  | Error starting network scan: Error: Scan already in progress
+ipam-app-1  |     at NetworkScanner.startScan (/app/server/network.ts:108:13)
+ipam-app-1  |     at <anonymous> (/app/server/routes.ts:290:43)
+ipam-app-1  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+ipam-app-1  |     at next (/app/node_modules/express/lib/router/route.js:149:13)
+ipam-app-1  |     at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
+ipam-app-1  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+ipam-app-1  |     at /app/node_modules/express/lib/router/index.js:284:15
+ipam-app-1  |     at Function.process_params (/app/node_modules/express/lib/router/index.js:346:12)
+ipam-app-1  |     at next (/app/node_modules/express/lib/router/index.js:280:10)
+ipam-app-1  |     at <anonymous> (/app/server/index.ts:38:3)
+ipam-app-1  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+ipam-app-1  |     at trim_prefix (/app/node_modules/express/lib/router/index.js:328:13)
+ipam-app-1  |     at /app/node_modules/express/lib/router/index.js:286:9
+ipam-app-1  |     at Function.process_params (/app/node_modules/express/lib/router/index.js:346:12)
+ipam-app-1  |     at next (/app/node_modules/express/lib/router/index.js:280:10)
+ipam-app-1  |     at urlencodedParser (/app/node_modules/body-parser/lib/types/urlencoded.js:85:7)
+ipam-app-1  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+ipam-app-1  |     at trim_prefix (/app/node_modules/express/lib/router/index.js:328:13)
+ipam-app-1  |     at /app/node_modules/express/lib/router/index.js:286:9
+ipam-app-1  |     at Function.process_params (/app/node_modules/express/lib/router/index.js:346:12)
+ipam-app-1  |     at next (/app/node_modules/express/lib/router/index.js:280:10)
+ipam-app-1  |     at /app/node_modules/body-parser/lib/read.js:137:5
+ipam-app-1  |     at AsyncResource.runInAsyncScope (node:async_hooks:206:9)
+ipam-app-1  |     at invokeCallback (/app/node_modules/raw-body/index.js:238:16)
+ipam-app-1  |     at done (/app/node_modules/raw-body/index.js:227:7)
+ipam-app-1  |     at IncomingMessage.onEnd (/app/node_modules/raw-body/index.js:287:7)
+ipam-app-1  |     at IncomingMessage.emit (node:events:524:28)
+ipam-app-1  |     at endReadableNT (node:internal/streams/readable:1698:12)
+ipam-app-1  |     at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+ipam-app-1  | 7:32:44 PM [express] POST /api/network/scan 500 in 3ms :: {"error":"Failed to start network scan"}
