@@ -7,7 +7,8 @@ import {
   Search, 
   TrendingUp, 
   Settings, 
-  User 
+  User,
+  Shield
 } from "lucide-react";
 
 const navigation = [
@@ -17,6 +18,7 @@ const navigation = [
   { name: "Discovery", href: "/discovery", icon: Search },
   { name: "Analytics", href: "/analytics", icon: TrendingUp },
   { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Administration", href: "/admin", icon: Shield },
 ];
 
 export default function Sidebar() {
