@@ -12,6 +12,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // Fix device subnet assignments (admin endpoint)
+  app.post("/api/admin/fix-device-subnets", async (req, res) => {
+    try {
+      console.log("Starting device subnet assignment fix...");
+      const correctedCount = await networkScanner.fixExistingDeviceSubnets();
+      res.json({ message: "Device subnet assignments corrected", correctedCount });
+    } catch (error) {
+      console.error("Error fixing device subnet assignments:", error);
+      res.status(500).json({ error: "Failed to fix device subnet assignments" });
+    }
+  });
+
   // Dashboard metrics
   app.get("/api/dashboard/metrics", async (req, res) => {
     try {
@@ -200,6 +212,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to delete device" });
     }
   });
+
+
 
   // Network scanning
   app.post("/api/network/scan", async (req, res) => {
