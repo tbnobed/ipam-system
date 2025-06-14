@@ -555,32 +555,27 @@ class NetworkScanner {
 
   private async updateDeviceFromScan(discovery: DeviceDiscovery, originalSubnetId: number) {
     try {
-      // Find the correct subnet for this IP
-      const correctSubnetId = await this.findSubnetForIP(discovery.ipAddress);
-      const subnetId = correctSubnetId || originalSubnetId;
-
       // Check if device already exists
       const existingDevice = await storage.getDeviceByIP(discovery.ipAddress);
       
       if (existingDevice) {
-        // Update existing device
+        // Update existing device - let database triggers handle subnet assignment
         await storage.updateDevice(existingDevice.id, {
           hostname: discovery.hostname || existingDevice.hostname,
           macAddress: discovery.macAddress || existingDevice.macAddress,
           vendor: discovery.vendor || existingDevice.vendor,
-          subnetId: subnetId,
           status: 'online',
           lastSeen: new Date(),
           openPorts: (discovery.openPorts || []).map(String),
         });
       } else {
-        // Create new device
+        // Create new device - let database triggers handle subnet assignment
         await storage.createDevice({
           ipAddress: discovery.ipAddress,
           hostname: discovery.hostname,
           macAddress: discovery.macAddress,
           vendor: discovery.vendor,
-          subnetId: subnetId,
+          subnetId: originalSubnetId, // Triggers will correct this
           status: 'online',
           lastSeen: new Date(),
           openPorts: (discovery.openPorts || []).map(String),

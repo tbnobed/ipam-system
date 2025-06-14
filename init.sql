@@ -81,11 +81,13 @@ CREATE OR REPLACE FUNCTION find_subnet_for_ip(ip_addr TEXT)
 RETURNS INTEGER AS $$
 DECLARE
     subnet_record RECORD;
-    ip_parts INTEGER[];
+    ip_int BIGINT;
+    network_int BIGINT;
+    mask BIGINT;
     network_parts INTEGER[];
-    ip_prefix TEXT;
-    network_prefix TEXT;
-    host_octet INTEGER;
+    ip_parts INTEGER[];
+    cidr INTEGER;
+    host_bits INTEGER;
 BEGIN
     -- Parse IP address
     ip_parts := string_to_array(ip_addr, '.')::INTEGER[];
@@ -95,23 +97,25 @@ BEGIN
         RETURN NULL;
     END IF;
     
-    -- Loop through all subnets to find match
-    FOR subnet_record IN SELECT id, network FROM subnets LOOP
-        -- Handle /24 networks with exact prefix matching
-        IF subnet_record.network LIKE '%/24' THEN
-            network_parts := string_to_array(split_part(subnet_record.network, '/', 1), '.')::INTEGER[];
-            
-            -- Compare first 3 octets
-            ip_prefix := ip_parts[1] || '.' || ip_parts[2] || '.' || ip_parts[3];
-            network_prefix := network_parts[1] || '.' || network_parts[2] || '.' || network_parts[3];
-            
-            IF ip_prefix = network_prefix THEN
-                host_octet := ip_parts[4];
-                -- Validate host octet (1-254 for /24)
-                IF host_octet >= 1 AND host_octet <= 254 THEN
-                    RETURN subnet_record.id;
-                END IF;
-            END IF;
+    -- Convert IP to integer
+    ip_int := (ip_parts[1]::BIGINT << 24) + (ip_parts[2]::BIGINT << 16) + (ip_parts[3]::BIGINT << 8) + ip_parts[4]::BIGINT;
+    
+    -- Loop through all subnets to find CIDR match (most specific first)
+    FOR subnet_record IN SELECT id, network FROM subnets ORDER BY LENGTH(network) DESC LOOP
+        -- Parse network and CIDR
+        network_parts := string_to_array(split_part(subnet_record.network, '/', 1), '.')::INTEGER[];
+        cidr := split_part(subnet_record.network, '/', 2)::INTEGER;
+        host_bits := 32 - cidr;
+        
+        -- Convert network to integer
+        network_int := (network_parts[1]::BIGINT << 24) + (network_parts[2]::BIGINT << 16) + (network_parts[3]::BIGINT << 8) + network_parts[4]::BIGINT;
+        
+        -- Create subnet mask
+        mask := (4294967295::BIGINT << host_bits) & 4294967295::BIGINT;
+        
+        -- Check if IP is in this subnet using proper CIDR calculation
+        IF (ip_int & mask) = (network_int & mask) THEN
+            RETURN subnet_record.id;
         END IF;
     END LOOP;
     
@@ -158,13 +162,6 @@ CREATE TABLE IF NOT EXISTS migrations (
     version TEXT PRIMARY KEY,
     applied_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
-
--- Insert migration records
-INSERT INTO migrations (version) VALUES 
-('001_fix_subnet_assignments'),
-('002_auto_subnet_assignment'),
-('003_fix_assignment_type_default')
-ON CONFLICT (version) DO NOTHING;
 
 -- Create admin user (password: admin123)
 INSERT INTO users (username, password, role) VALUES
