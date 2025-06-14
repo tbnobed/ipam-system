@@ -61,12 +61,20 @@ export default function VlansPage() {
 
   const devices = devicesResponse?.data || [];
 
+  console.log('VLANs data:', vlans);
+  console.log('Subnets data:', subnets);
+  console.log('Devices data:', devices);
+
   const getSubnetsForVlan = (vlanId: number) => {
-    return subnets.filter(subnet => subnet.vlanId === vlanId);
+    const result = subnets.filter(subnet => subnet.vlanId === vlanId);
+    console.log(`Subnets for VLAN ${vlanId}:`, result);
+    return result;
   };
 
   const getDevicesForSubnet = (subnetId: number) => {
-    return devices.filter(device => device.subnetId === subnetId);
+    const result = devices.filter(device => device.subnetId === subnetId);
+    console.log(`Devices for subnet ${subnetId}:`, result);
+    return result;
   };
 
   const handleSubnetClick = (subnet: Subnet) => {
@@ -153,7 +161,7 @@ export default function VlansPage() {
   if (vlansLoading || subnetsLoading) {
     return (
       <>
-        <Header />
+        <Header title="VLANs & Subnets" subtitle="Network configuration and management" />
         <main className="container mx-auto p-6">
           <div className="animate-pulse">Loading...</div>
         </main>
@@ -163,7 +171,7 @@ export default function VlansPage() {
 
   return (
     <>
-      <Header />
+      <Header title="VLANs & Subnets" subtitle="Network configuration and management" />
       <main className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">VLANs & Subnets</h1>
