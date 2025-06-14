@@ -39,8 +39,8 @@ export default function Discovery() {
 
   const { data: scanResult, refetch: refetchScan } = useQuery<NetworkScanResult>({
     queryKey: ['/api/network/scan', activeScan],
-    enabled: !!activeScan,
-    refetchInterval: activeScan ? 2000 : false,
+    enabled: !!activeScan && !isNaN(activeScan),
+    refetchInterval: activeScan && !isNaN(activeScan) ? 2000 : false,
   });
 
   // Sync WebSocket scan state with local state
