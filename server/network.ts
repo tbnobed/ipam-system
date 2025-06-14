@@ -137,20 +137,51 @@ class NetworkScanner {
   private async performScan(scanId: number, subnetIds: number[]) {
     try {
       const subnets = await storage.getAllSubnets();
-      const selectedSubnets = subnets.filter(subnet => subnetIds.includes(subnet.id));
+      // If no specific subnets provided, scan all available subnets
+      const selectedSubnets = subnetIds.length > 0 
+        ? subnets.filter(subnet => subnetIds.includes(subnet.id))
+        : subnets;
       
       let results: DeviceDiscovery[] = [];
 
       for (const subnet of selectedSubnets) {
+        // Broadcast subnet scanning start
+        this.broadcastScanUpdate({
+          scanId,
+          isActive: true,
+          status: 'scanning_subnet',
+          subnet: subnet.network
+        });
+
         const subnetResults = await this.scanSubnet(subnet.network);
         results.push(...subnetResults);
 
         // Update each discovered device in the database
-        for (const device of subnetResults) {
-          if (device.isAlive) {
-            await this.updateDeviceFromScan(device, subnet.id);
-          }
+        const aliveDevices = subnetResults.filter(d => d.isAlive);
+        for (const device of aliveDevices) {
+          await this.updateDeviceFromScan(device, subnet.id);
         }
+
+        // Broadcast devices found for this subnet
+        if (aliveDevices.length > 0) {
+          this.broadcastScanUpdate({
+            scanId,
+            isActive: true,
+            status: 'devices_found',
+            subnet: subnet.network,
+            devices: aliveDevices,
+            devicesFound: aliveDevices.length
+          });
+        }
+
+        // Broadcast subnet completion
+        this.broadcastScanUpdate({
+          scanId,
+          isActive: true,
+          status: 'subnet_complete',
+          subnet: subnet.network,
+          devicesFound: aliveDevices.length
+        });
       }
 
       this.activeScan = false;
@@ -490,52 +521,67 @@ class NetworkScanner {
     const subnets = await storage.getAllSubnets();
     
     for (const subnet of subnets) {
-      const [network, cidr] = subnet.network.split('/');
-      if (cidr === '24') {
-        const [na, nb, nc] = network.split('.').map(Number);
-        const [ia, ib, ic] = ipAddress.split('.').map(Number);
-        
-        if (na === ia && nb === ib && nc === ic) {
-          return subnet.id;
-        }
+      if (this.isIPInSubnet(ipAddress, subnet.network)) {
+        return subnet.id;
       }
     }
     
     return null;
   }
 
-  private async updateDeviceFromScan(discovery: DeviceDiscovery, originalSubnetId: number) {
-    // Find the correct subnet for this IP
-    const correctSubnetId = await this.findSubnetForIP(discovery.ipAddress);
-    const subnetId = correctSubnetId || originalSubnetId;
-
-    // Check if device already exists
-    const existingDevice = await storage.getDeviceByIP(discovery.ipAddress);
+  private isIPInSubnet(ipAddress: string, subnet: string): boolean {
+    const [network, cidr] = subnet.split('/');
+    const cidrNum = parseInt(cidr, 10);
     
-    if (existingDevice) {
-      // Update existing device
-      await storage.updateDevice(existingDevice.id, {
-        hostname: discovery.hostname || existingDevice.hostname,
-        macAddress: discovery.macAddress || existingDevice.macAddress,
-        vendor: discovery.vendor || existingDevice.vendor,
-        subnetId: subnetId,
-        status: 'online',
-        lastSeen: new Date(),
-        openPorts: (discovery.openPorts || []).map(String),
-      });
-    } else {
-      // Create new device
-      await storage.createDevice({
-        ipAddress: discovery.ipAddress,
-        hostname: discovery.hostname,
-        macAddress: discovery.macAddress,
-        vendor: discovery.vendor,
-        subnetId: subnetId,
-        status: 'online',
-        lastSeen: new Date(),
-        openPorts: (discovery.openPorts || []).map(String),
-        assignmentType: 'static',
-      });
+    // Convert IP addresses to 32-bit integers
+    const ipToInt = (ip: string): number => {
+      return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
+    };
+    
+    const ipInt = ipToInt(ipAddress);
+    const networkInt = ipToInt(network);
+    const mask = (0xFFFFFFFF << (32 - cidrNum)) >>> 0;
+    
+    return (ipInt & mask) === (networkInt & mask);
+  }
+
+  private async updateDeviceFromScan(discovery: DeviceDiscovery, originalSubnetId: number) {
+    try {
+      // Find the correct subnet for this IP
+      const correctSubnetId = await this.findSubnetForIP(discovery.ipAddress);
+      const subnetId = correctSubnetId || originalSubnetId;
+
+      // Check if device already exists
+      const existingDevice = await storage.getDeviceByIP(discovery.ipAddress);
+      
+      if (existingDevice) {
+        // Update existing device
+        await storage.updateDevice(existingDevice.id, {
+          hostname: discovery.hostname || existingDevice.hostname,
+          macAddress: discovery.macAddress || existingDevice.macAddress,
+          vendor: discovery.vendor || existingDevice.vendor,
+          subnetId: subnetId,
+          status: 'online',
+          lastSeen: new Date(),
+          openPorts: (discovery.openPorts || []).map(String),
+        });
+      } else {
+        // Create new device
+        await storage.createDevice({
+          ipAddress: discovery.ipAddress,
+          hostname: discovery.hostname,
+          macAddress: discovery.macAddress,
+          vendor: discovery.vendor,
+          subnetId: subnetId,
+          status: 'online',
+          lastSeen: new Date(),
+          openPorts: (discovery.openPorts || []).map(String),
+          assignmentType: 'static',
+        });
+      }
+    } catch (error) {
+      console.error(`Error updating device ${discovery.ipAddress}:`, error);
+      // Continue processing other devices even if one fails
     }
   }
 
