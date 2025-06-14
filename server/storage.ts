@@ -205,26 +205,9 @@ export class DatabaseStorage implements IStorage {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     
-    // Query with proper JOIN to ensure all devices with valid subnets are returned
-    const data = await db.select({
-      id: devices.id,
-      ipAddress: devices.ipAddress,
-      hostname: devices.hostname,
-      macAddress: devices.macAddress,
-      vendor: devices.vendor,
-      deviceType: devices.deviceType,
-      purpose: devices.purpose,
-      location: devices.location,
-      subnetId: devices.subnetId,
-      status: devices.status,
-      lastSeen: devices.lastSeen,
-      openPorts: devices.openPorts,
-      assignmentType: devices.assignmentType,
-      createdAt: devices.createdAt,
-      updatedAt: devices.updatedAt,
-    })
+    // Query all devices with consistent ordering to prevent pagination issues
+    const data = await db.select()
       .from(devices)
-      .leftJoin(subnets, eq(devices.subnetId, subnets.id))
       .where(whereClause)
       .orderBy(devices.id) // Use ID ordering for consistent pagination
       .limit(limit)
@@ -233,7 +216,6 @@ export class DatabaseStorage implements IStorage {
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)` })
       .from(devices)
-      .leftJoin(subnets, eq(devices.subnetId, subnets.id))
       .where(whereClause);
 
     return {

@@ -15,8 +15,9 @@ RUN npm ci && npm cache clean --force
 # Copy source code
 COPY . .
 
-# Copy database initialization script
+# Copy database initialization and fix scripts
 COPY init-db.sql /app/
+COPY fix-device-clustering.sql /app/
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/
