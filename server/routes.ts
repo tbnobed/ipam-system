@@ -16,8 +16,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/fix-device-subnets", async (req, res) => {
     try {
       console.log("Starting device subnet assignment fix...");
-      const correctedCount = await networkScanner.fixExistingDeviceSubnets();
-      res.json({ message: "Device subnet assignments corrected", correctedCount });
+      
+      // First, let's see what devices exist
+      const devices = await storage.getAllDevicesForExport();
+      console.log(`Found ${devices.length} devices in database`);
+      
+      if (devices.length === 0) {
+        // If no devices in this environment, apply SQL-based fix directly
+        console.log("No devices found, applying direct SQL fix for production environment");
+        
+        try {
+          // Get subnets for reference
+          const subnets = await storage.getAllSubnets();
+          console.log("Available subnets:", subnets.map(s => `${s.id}: ${s.network}`));
+          
+          // Apply SQL fix for 10.63.20.x devices
+          const subnet20 = subnets.find(s => s.network === '10.63.20.0/24');
+          const subnet21 = subnets.find(s => s.network === '10.63.21.0/24');
+          
+          if (subnet20 && subnet21) {
+            console.log(`Updating devices: 10.63.20.x -> subnet ${subnet20.id}, 10.63.21.x -> subnet ${subnet21.id}`);
+            
+            // This will execute in the production database
+            const result = await storage.fixDeviceSubnetAssignments(subnet20.id, subnet21.id);
+            res.json({ 
+              message: "Device subnet assignments corrected via SQL", 
+              correctedCount: result.correctedCount,
+              details: result.details 
+            });
+          } else {
+            res.json({ message: "Required subnets not found", correctedCount: 0 });
+          }
+        } catch (sqlError) {
+          console.error("SQL fix error:", sqlError);
+          res.status(500).json({ error: "Failed to apply SQL fix" });
+        }
+      } else {
+        // Use the regular method if devices exist
+        const correctedCount = await networkScanner.fixExistingDeviceSubnets();
+        res.json({ message: "Device subnet assignments corrected", correctedCount });
+      }
     } catch (error) {
       console.error("Error fixing device subnet assignments:", error);
       res.status(500).json({ error: "Failed to fix device subnet assignments" });

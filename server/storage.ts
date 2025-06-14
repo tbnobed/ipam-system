@@ -48,6 +48,9 @@ interface IStorage {
   
   // Dashboard
   getDashboardMetrics(): Promise<DashboardMetrics>;
+  
+  // Device subnet fixes
+  fixDeviceSubnetAssignments(subnet20Id: number, subnet21Id: number): Promise<{correctedCount: number, details: string}>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -327,6 +330,40 @@ export class DatabaseStorage implements IStorage {
       .values(insertLog)
       .returning();
     return log;
+  }
+
+  async fixDeviceSubnetAssignments(subnet20Id: number, subnet21Id: number): Promise<{correctedCount: number, details: string}> {
+    try {
+      // Update devices with 10.63.20.x IPs to subnet20Id
+      const result20 = await this.db.update(devices)
+        .set({ subnetId: subnet20Id })
+        .where(and(
+          like(devices.ipAddress, '10.63.20.%'),
+          ne(devices.subnetId, subnet20Id)
+        ))
+        .returning({ id: devices.id, ipAddress: devices.ipAddress });
+
+      // Update devices with 10.63.21.x IPs to subnet21Id  
+      const result21 = await this.db.update(devices)
+        .set({ subnetId: subnet21Id })
+        .where(and(
+          like(devices.ipAddress, '10.63.21.%'),
+          ne(devices.subnetId, subnet21Id)
+        ))
+        .returning({ id: devices.id, ipAddress: devices.ipAddress });
+
+      const totalCorrected = result20.length + result21.length;
+      const details = `Updated ${result20.length} devices in 10.63.20.x subnet, ${result21.length} devices in 10.63.21.x subnet`;
+      
+      console.log(details);
+      result20.forEach(d => console.log(`Fixed ${d.ipAddress} -> subnet ${subnet20Id}`));
+      result21.forEach(d => console.log(`Fixed ${d.ipAddress} -> subnet ${subnet21Id}`));
+      
+      return { correctedCount: totalCorrected, details };
+    } catch (error) {
+      console.error("Error in fixDeviceSubnetAssignments:", error);
+      throw error;
+    }
   }
 
   async getDashboardMetrics(): Promise<DashboardMetrics> {
