@@ -142,8 +142,25 @@ export default function VLANs() {
       };
     }
 
-    // Filter devices by subnet ID
-    const deviceData = devices.data.filter((device: any) => device.subnetId === subnet.id) || [];
+    // Filter devices by subnet ID OR by IP range for discovered devices
+    const deviceData = devices.data.filter((device: any) => {
+      // First check subnet ID assignment
+      if (device.subnetId === subnet.id) {
+        return true;
+      }
+      
+      // For discovered devices that may not have correct subnet assignment,
+      // check if IP falls within this subnet's range
+      if (device.ipAddress) {
+        const deviceIPParts = device.ipAddress.split('.').map(Number);
+        if (deviceIPParts.length === 4) {
+          const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
+          return deviceIPInt > networkInt && deviceIPInt < broadcastInt;
+        }
+      }
+      
+      return false;
+    }) || [];
     
     const usedIPs = new Set(deviceData.map((device: any) => device.ipAddress));
     const availableRanges: string[] = [];
