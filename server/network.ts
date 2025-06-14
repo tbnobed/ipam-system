@@ -492,7 +492,7 @@ class NetworkScanner {
         subnetId: subnetId,
         status: 'online',
         lastSeen: new Date(),
-        openPorts: discovery.openPorts || [],
+        openPorts: (discovery.openPorts || []).map(String),
       });
     } else {
       // Create new device
@@ -504,7 +504,7 @@ class NetworkScanner {
         subnetId: subnetId,
         status: 'online',
         lastSeen: new Date(),
-        openPorts: discovery.openPorts || [],
+        openPorts: (discovery.openPorts || []).map(String),
         assignmentType: 'static',
       });
     }

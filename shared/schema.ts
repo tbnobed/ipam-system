@@ -81,8 +81,7 @@ export const insertVlanSchema = createInsertSchema(vlans, {
 });
 
 export const insertSubnetSchema = createInsertSchema(subnets, {
-  network: z.string().min(1, "Network is required"),
-  assignmentType: z.enum(["static", "dhcp"]).default("dhcp")
+  network: z.string().min(1, "Network is required")
 });
 
 export const insertDeviceSchema = createInsertSchema(devices, {
