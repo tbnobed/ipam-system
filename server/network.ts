@@ -165,13 +165,17 @@ class NetworkScanner {
 
       // Generate and broadcast scan summary
       const summary = this.generateScanSummary(results, subnetIds);
-      this.broadcastScanUpdate({
-        scanId,
-        isActive: false,
-        summary,
-        devicesFound: results.filter(d => d.isAlive).length,
-        status: 'completed'
-      });
+      
+      // Add a small delay to ensure message is sent before potential connection cleanup
+      setTimeout(() => {
+        this.broadcastScanUpdate({
+          scanId,
+          isActive: false,
+          summary,
+          devicesFound: results.filter(d => d.isAlive).length,
+          status: 'scan_completed'
+        });
+      }, 100);
 
       // Log scan completion activity
       await storage.createActivityLog({
@@ -212,7 +216,7 @@ class NetworkScanner {
       this.broadcastScanUpdate({
         scanId,
         isActive: false,
-        status: 'failed'
+        status: 'scan_failed'
       });
     }
   }

@@ -1,0 +1,82 @@
+ipam-app-1  | WebSocket client connected
+ipam-app-1  | Starting network scan 5 for subnets: [ 1 ]
+ipam-app-1  | 8:57:29 PM [express] POST /api/network/scan 200 in 12ms :: {"scanId":5,"status":"started"}
+ipam-app-1  | Scanning subnet 10.63.21.0/24 (254 IPs)
+ipam-app-1  | 8:57:29 PM [express] GET /api/network/scan 200 in 5ms
+ipam-app-1  | 8:57:31 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:33 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:35 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:38 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:40 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:42 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:44 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:46 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:47 PM [express] GET /api/dashboard/metrics 200 in 20ms :: {"totalIPs":254,"allocatedIPs":"31","…
+ipam-app-1  | 8:57:48 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:50 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:52 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:53 PM [express] GET /api/dashboard/last-scan 200 in 3ms
+ipam-app-1  | 8:57:54 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:56 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:58 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:00 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:02 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:04 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:06 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:08 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:10 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:12 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 8:58:14 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:16 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:17 PM [express] GET /api/dashboard/metrics 200 in 18ms :: {"totalIPs":254,"allocatedIPs":"31","…
+ipam-app-1  | 8:58:18 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:20 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:23 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:23 PM [express] GET /api/dashboard/last-scan 200 in 4ms
+ipam-app-1  | 8:58:25 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 8:58:27 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:29 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 8:58:31 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 8:58:33 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:35 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:37 PM [express] GET /api/network/scan 200 in 2ms
+ipam-app-1  | 8:58:39 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:41 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 8:58:43 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 8:58:45 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:47 PM [express] GET /api/dashboard/metrics 200 in 19ms :: {"totalIPs":254,"allocatedIPs":"31","…
+ipam-app-1  | 8:58:47 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:49 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:51 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:53 PM [express] GET /api/dashboard/last-scan 200 in 3ms
+ipam-app-1  | 8:58:53 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 8:58:55 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:58:57 PM [express] GET /api/network/scan 200 in 2ms
+ipam-app-1  | 8:58:59 PM [express] GET /api/network/scan 200 in 3ms
+postgres-1  | 2025-06-14 20:59:00.256 UTC [27] LOG:  checkpoint starting: time
+postgres-1  | 2025-06-14 20:59:01.164 UTC [27] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.904 s, sync=0.002 s, total=0.909 s; sync files=9, longest=0.002 s, average=0.001 s; distance=19 kB, estimate=3262 kB
+ipam-app-1  | 8:59:01 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:59:03 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:59:06 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:59:08 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:59:10 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 8:59:12 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:59:14 PM [express] GET /api/network/scan 200 in 6ms
+ipam-app-1  | 8:59:16 PM [express] GET /api/network/scan 200 in 5ms
+ipam-app-1  | 8:59:17 PM [express] GET /api/dashboard/metrics 200 in 20ms :: {"totalIPs":254,"allocatedIPs":"31","…
+ipam-app-1  | 8:59:18 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 8:59:20 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:59:22 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | Network scan 5 completed. Found 31 devices.
+ipam-app-1  | 8:59:23 PM [express] GET /api/dashboard/last-scan 200 in 3ms
+ipam-app-1  | 8:59:24 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:59:26 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 8:59:28 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:59:30 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:59:32 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 8:59:34 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:59:36 PM [express] GET /api/network/scan 200 in 2ms
+ipam-app-1  | 8:59:38 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:59:39 PM [express] GET /api/dashboard/last-scan 200 in 2ms
+ipam-app-1  | WebSocket client disconnected
+ipam-app-1  | 8:59:47 PM [express] GET /api/dash

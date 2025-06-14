@@ -370,13 +370,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Add client to network scanner for real-time updates
     networkScanner.addWebSocketClient(ws);
     
+    // Send heartbeat every 30 seconds to keep connection alive
+    const heartbeatInterval = setInterval(() => {
+      if (ws.readyState === ws.OPEN) {
+        ws.ping();
+      } else {
+        clearInterval(heartbeatInterval);
+      }
+    }, 30000);
+    
+    ws.on('pong', () => {
+      // Connection is alive - no action needed
+    });
+    
     ws.on('close', () => {
       console.log('WebSocket client disconnected');
+      clearInterval(heartbeatInterval);
       networkScanner.removeWebSocketClient(ws);
     });
 
     ws.on('error', (error) => {
       console.error('WebSocket error:', error);
+      clearInterval(heartbeatInterval);
       networkScanner.removeWebSocketClient(ws);
     });
   });
