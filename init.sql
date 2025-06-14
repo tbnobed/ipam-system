@@ -110,8 +110,12 @@ BEGIN
         -- Convert network to integer
         network_int := (network_parts[1]::BIGINT << 24) + (network_parts[2]::BIGINT << 16) + (network_parts[3]::BIGINT << 8) + network_parts[4]::BIGINT;
         
-        -- Create subnet mask
-        mask := (4294967295::BIGINT << host_bits) & 4294967295::BIGINT;
+        -- Create subnet mask (handle edge case for /32)
+        IF host_bits >= 32 THEN
+            mask := 0;
+        ELSE
+            mask := (4294967295::BIGINT << host_bits) & 4294967295::BIGINT;
+        END IF;
         
         -- Check if IP is in this subnet using proper CIDR calculation
         IF (ip_int & mask) = (network_int & mask) THEN

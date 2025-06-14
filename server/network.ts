@@ -528,16 +528,34 @@ class NetworkScanner {
     const [baseIP, cidr] = network.split('/');
     const cidrNum = parseInt(cidr, 10);
     
-    if (cidrNum !== 24) {
-      throw new Error('Only /24 networks are currently supported');
+    // Support any valid CIDR notation
+    if (cidrNum < 8 || cidrNum > 30) {
+      throw new Error(`CIDR /${cidrNum} is not supported for scanning (use /8 to /30)`);
     }
 
-    const [a, b, c] = baseIP.split('.').map(Number);
+    const hostBits = 32 - cidrNum;
+    const totalHosts = Math.pow(2, hostBits);
+    
+    // Convert base IP to integer
+    const baseParts = baseIP.split('.').map(Number);
+    const baseInt = (baseParts[0] << 24) + (baseParts[1] << 16) + (baseParts[2] << 8) + baseParts[3];
+    
+    // Calculate network address
+    const mask = (0xFFFFFFFF << hostBits) >>> 0;
+    const networkInt = (baseInt & mask) >>> 0;
+    
     const ips: string[] = [];
 
-    // Generate IPs from 1 to 254 (skip 0 and 255)
-    for (let d = 1; d <= 254; d++) {
-      ips.push(`${a}.${b}.${c}.${d}`);
+    // Generate all usable IPs in the range (skip network and broadcast)
+    for (let i = 1; i < totalHosts - 1; i++) {
+      const ipInt = networkInt + i;
+      const ip = [
+        (ipInt >>> 24) & 255,
+        (ipInt >>> 16) & 255,
+        (ipInt >>> 8) & 255,
+        ipInt & 255
+      ].join('.');
+      ips.push(ip);
     }
 
     return ips;

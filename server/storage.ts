@@ -240,7 +240,7 @@ export class DatabaseStorage implements IStorage {
     // Convert network to integer for comparison
     const networkParts = network.split('.').map(Number);
     const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
-    const mask = (0xFFFFFFFF << hostBits) >>> 0;
+    const mask = hostBits >= 32 ? 0 : (0xFFFFFFFF << hostBits) >>> 0;
     
     // Get all devices and filter by IP range
     const allDevices = await db.select().from(devices);
@@ -437,7 +437,7 @@ export class DatabaseStorage implements IStorage {
           
           const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
           const deviceInt = (deviceParts[0] << 24) + (deviceParts[1] << 16) + (deviceParts[2] << 8) + deviceParts[3];
-          const mask = (0xFFFFFFFF << hostBits) >>> 0;
+          const mask = hostBits >= 32 ? 0 : (0xFFFFFFFF << hostBits) >>> 0;
           
           return (deviceInt & mask) === (networkInt & mask);
         });
