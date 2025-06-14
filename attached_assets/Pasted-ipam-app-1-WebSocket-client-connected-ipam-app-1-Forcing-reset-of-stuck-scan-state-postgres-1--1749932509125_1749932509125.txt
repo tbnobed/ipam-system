@@ -1,0 +1,31 @@
+ipam-app-1  | WebSocket client connected
+ipam-app-1  | Forcing reset of stuck scan state
+postgres-1  | 2025-06-14 20:21:35.052 UTC [639] ERROR:  null value in column "start_time" of relation "network_scans" violates not-null constraint
+postgres-1  | 2025-06-14 20:21:35.052 UTC [639] DETAIL:  Failing row contains (2, null, null, null, 0, running, {"subnets": [1]}).
+postgres-1  | 2025-06-14 20:21:35.052 UTC [639] STATEMENT:  insert into "network_scans" ("id", "status", "start_time", "end_time", "devices_found", "subnet_id", "results") values (default, $1, default, default, $2, $3, $4) returning "id", "status", "start_time", "end_time", "devices_found", "subnet_id", "results"
+ipam-app-1  | Error starting network scan: error: null value in column "start_time" of relation "network_scans" violates not-null constraint
+ipam-app-1  |     at /app/node_modules/pg-pool/index.js:45:11
+ipam-app-1  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+ipam-app-1  |     at async <anonymous> (/app/node_modules/src/node-postgres/session.ts:104:19)
+ipam-app-1  |     at async DatabaseStorage.createNetworkScan (/app/server/storage.ts:349:20)
+ipam-app-1  |     at async NetworkScanner.startScan (/app/server/network.ts:121:24)
+ipam-app-1  |     at async <anonymous> (/app/server/routes.ts:290:22) {
+ipam-app-1  |   length: 263,
+ipam-app-1  |   severity: 'ERROR',
+ipam-app-1  |   code: '23502',
+ipam-app-1  |   detail: 'Failing row contains (2, null, null, null, 0, running, {"subnets": [1]}).',
+ipam-app-1  |   hint: undefined,
+ipam-app-1  |   position: undefined,
+ipam-app-1  |   internalPosition: undefined,
+ipam-app-1  |   internalQuery: undefined,
+ipam-app-1  |   where: undefined,
+ipam-app-1  |   schema: 'public',
+ipam-app-1  |   table: 'network_scans',
+ipam-app-1  |   column: 'start_time',
+ipam-app-1  |   dataType: undefined,
+ipam-app-1  |   constraint: undefined,
+ipam-app-1  |   file: 'execMain.c',
+ipam-app-1  |   line: '1972',
+ipam-app-1  |   routine: 'ExecConstraints'
+ipam-app-1  | }
+ipam-app-1  | 8:21:35 PM [express] POST /api/network/scan 500 in 6ms :: {"error":"Failed to start network scan"}
