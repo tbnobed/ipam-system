@@ -547,41 +547,47 @@ class NetworkScanner {
 
   private async findSubnetForIP(ipAddress: string): Promise<number | null> {
     try {
-      // Get all subnets and sort by specificity (higher CIDR prefix first)
+      // Get all subnets
       const subnets = await storage.getAllSubnets();
       
-      // Sort subnets by CIDR prefix length (most specific first) then by network address
-      const sortedSubnets = subnets.sort((a, b) => {
-        const aCidr = parseInt(a.network.split('/')[1]);
-        const bCidr = parseInt(b.network.split('/')[1]);
-        if (aCidr !== bCidr) return bCidr - aCidr; // Higher CIDR first (more specific)
-        return a.network.localeCompare(b.network); // Then by network address
-      });
+      console.log(`Finding subnet for IP ${ipAddress} among ${subnets.length} subnets`);
+      console.log(`Available subnets: ${subnets.map(s => `${s.id}:${s.network}`).join(', ')}`);
       
-      console.log(`Finding subnet for IP ${ipAddress} among ${sortedSubnets.length} subnets`);
-      
-      // Find the most specific subnet that contains this IP
-      for (const subnet of sortedSubnets) {
+      // For /24 networks, find exact match first
+      for (const subnet of subnets) {
         const [networkAddr, cidrBits] = subnet.network.split('/');
         const cidr = parseInt(cidrBits);
         
-        console.log(`Checking subnet ${subnet.network} (ID: ${subnet.id})`);
-        
-        // For /24 networks, use exact string prefix matching
         if (cidr === 24) {
-          const ipPrefix = ipAddress.split('.').slice(0, 3).join('.');
-          const networkPrefix = networkAddr.split('.').slice(0, 3).join('.');
+          // Extract first 3 octets for exact matching
+          const ipOctets = ipAddress.split('.');
+          const networkOctets = networkAddr.split('.');
+          
+          // Compare first 3 octets exactly
+          const ipPrefix = `${ipOctets[0]}.${ipOctets[1]}.${ipOctets[2]}`;
+          const networkPrefix = `${networkOctets[0]}.${networkOctets[1]}.${networkOctets[2]}`;
+          
+          console.log(`Comparing IP prefix "${ipPrefix}" with network prefix "${networkPrefix}" for subnet ${subnet.network}`);
           
           if (ipPrefix === networkPrefix) {
-            // Additional check: ensure it's a valid host IP (not network or broadcast)
-            const hostOctet = parseInt(ipAddress.split('.')[3]);
-            if (hostOctet > 0 && hostOctet < 255) {
-              console.log(`✓ IP ${ipAddress} exactly matches subnet ${subnet.network} (ID: ${subnet.id})`);
+            // Validate host octet (1-254 for /24)
+            const hostOctet = parseInt(ipOctets[3]);
+            if (hostOctet >= 1 && hostOctet <= 254) {
+              console.log(`✓ IP ${ipAddress} EXACTLY matches subnet ${subnet.network} (ID: ${subnet.id})`);
               return subnet.id;
+            } else {
+              console.log(`✗ IP ${ipAddress} matches network but invalid host octet: ${hostOctet}`);
             }
           }
-        } else {
-          // For non-/24 networks, use proper CIDR calculation
+        }
+      }
+      
+      // Fallback: For non-/24 networks or if no exact match found, use CIDR calculation
+      for (const subnet of subnets) {
+        const [networkAddr, cidrBits] = subnet.network.split('/');
+        const cidr = parseInt(cidrBits);
+        
+        if (cidr !== 24) { // Skip /24 as they were handled above
           const ipParts = ipAddress.split('.').map(Number);
           const networkParts = networkAddr.split('.').map(Number);
           
@@ -600,7 +606,7 @@ class NetworkScanner {
             const hostPart = ipInt & ~mask;
             
             if (hostPart > 0 && hostPart < maxHost) {
-              console.log(`✓ IP ${ipAddress} matches subnet ${subnet.network} (ID: ${subnet.id})`);
+              console.log(`✓ IP ${ipAddress} matches subnet ${subnet.network} (ID: ${subnet.id}) via CIDR`);
               return subnet.id;
             }
           }
@@ -647,19 +653,21 @@ class NetworkScanner {
         }
         
         await storage.updateDevice(existingDevice.id, updateData);
-      } else if (discovery.isAlive) {
-        // Create new device with correct subnet
+      } else {
+        // Create new device with correct subnet (save all discovered devices)
         await storage.createDevice({
           ipAddress: discovery.ipAddress,
           hostname: discovery.hostname,
           macAddress: discovery.macAddress,
           vendor: discovery.vendor,
           subnetId: correctSubnetId,
-          status: 'online',
-          lastSeen: new Date(),
+          status: discovery.isAlive ? 'online' : 'offline',
+          lastSeen: discovery.isAlive ? new Date() : null,
           openPorts: discovery.openPorts?.map(String) || null,
           assignmentType: 'dhcp', // Assume DHCP for discovered devices
         });
+        
+        console.log(`Created new device ${discovery.ipAddress} in subnet ${correctSubnetId} with status ${discovery.isAlive ? 'online' : 'offline'}`);
       }
     } catch (error) {
       console.error(`Error updating device ${discovery.ipAddress}:`, error);
