@@ -340,13 +340,7 @@ export default function VLANs() {
                     <div className="flex items-center space-x-4">
                       <CardTitle>VLAN {vlan.vlanId}</CardTitle>
                       <Badge variant="secondary">{vlan.name}</Badge>
-                      {vlan.cableColor && (
-                        <div 
-                          className="w-4 h-4 rounded-full border"
-                          style={{ backgroundColor: vlan.cableColor }}
-                          title={`Cable Color: ${vlan.cableColor}`}
-                        />
-                      )}
+
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button 
@@ -407,7 +401,7 @@ export default function VLANs() {
                                     {subnet.network}
                                   </span>
                                   <Badge variant="outline">
-                                    {subnet.assignmentType.toUpperCase()}
+                                    DHCP
                                   </Badge>
                                   <Badge 
                                     variant={
@@ -635,7 +629,7 @@ function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
         <div className="p-4 bg-purple-50 rounded-lg">
           <p className="text-sm font-medium text-gray-700">Gateway</p>
           <p className="text-lg font-bold text-purple-600 font-mono">{subnet.gateway}</p>
-          <p className="text-xs text-gray-500">{subnet.assignmentType.toUpperCase()}</p>
+          <p className="text-xs text-gray-500">DHCP</p>
         </div>
       </div>
 
@@ -736,7 +730,7 @@ function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
           </div>
           <div>
             <span className="font-medium text-gray-700">Assignment Type:</span>
-            <div className="capitalize">{subnet.assignmentType}</div>
+            <div className="capitalize">DHCP</div>
           </div>
         </div>
         {subnet.description && (
