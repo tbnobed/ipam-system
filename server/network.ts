@@ -49,11 +49,6 @@ class NetworkScanner {
 
   addWebSocketClient(ws: any) {
     this.wsClients.add(ws);
-    
-    // Send current scan status if one is active
-    if (this.activeScan && this.currentScanId) {
-      this.broadcastProgress();
-    }
   }
 
   removeWebSocketClient(ws: any) {
@@ -61,32 +56,35 @@ class NetworkScanner {
   }
 
   private broadcastProgress() {
-    const message = {
+    const message = JSON.stringify({
       type: 'scan_progress',
       scanId: this.currentScanId,
       isActive: this.activeScan,
       progress: this.scanProgress,
-      timestamp: new Date()
-    };
+      timestamp: new Date().toISOString()
+    });
 
-    this.wsClients.forEach(client => {
-      if (client.readyState === 1) { // WebSocket.OPEN
-        client.send(JSON.stringify(message));
+    this.wsClients.forEach(ws => {
+      try {
+        ws.send(message);
+      } catch (error) {
+        this.wsClients.delete(ws);
       }
     });
   }
 
   private broadcastScanUpdate(update: any) {
-    const message = {
+    const message = JSON.stringify({
       type: 'scan_update',
-      scanId: this.currentScanId,
       ...update,
-      timestamp: new Date()
-    };
+      timestamp: new Date().toISOString()
+    });
 
-    this.wsClients.forEach(client => {
-      if (client.readyState === 1) {
-        client.send(JSON.stringify(message));
+    this.wsClients.forEach(ws => {
+      try {
+        ws.send(message);
+      } catch (error) {
+        this.wsClients.delete(ws);
       }
     });
   }
@@ -94,7 +92,7 @@ class NetworkScanner {
   getScanStatus() {
     return {
       isActive: this.activeScan,
-      scanId: this.currentScanId,
+      currentScanId: this.currentScanId,
       progress: this.scanProgress
     };
   }
@@ -106,90 +104,60 @@ class NetworkScanner {
 
     this.activeScan = true;
     
-    try {
-      // Create scan record
-      const scan = await storage.createNetworkScan({
-        subnetId: subnetIds[0], // For now, scan one subnet at a time
-        startTime: new Date(),
-        status: 'running',
-        devicesFound: 0,
-        results: null,
-      });
+    const scanRecord = await storage.createNetworkScan({
+      subnetId: null,
+      startTime: new Date(),
+      status: 'running',
+      devicesFound: 0,
+      results: { subnets: subnetIds }
+    });
 
-      this.currentScanId = scan.id;
-      this.scanProgress = { current: 0, total: 0 };
-      
-      // Start scanning in background
-      this.performScan(scan.id, subnetIds).finally(() => {
-        this.activeScan = false;
-        this.currentScanId = null;
-        this.scanProgress = { current: 0, total: 0 };
-        this.broadcastProgress();
-      });
+    this.currentScanId = scanRecord.id;
+    console.log(`Starting network scan ${scanRecord.id} for subnets: [`, subnetIds.join(', '), ']');
 
-      return scan.id;
-    } catch (error) {
-      this.activeScan = false;
-      throw error;
-    }
+    // Start the scan in the background
+    this.performScan(scanRecord.id, subnetIds);
+
+    return scanRecord.id;
   }
 
   private async performScan(scanId: number, subnetIds: number[]) {
     try {
-      console.log(`Starting network scan ${scanId} for subnets:`, subnetIds);
+      const subnets = await storage.getAllSubnets();
+      const selectedSubnets = subnets.filter(subnet => subnetIds.includes(subnet.id));
       
-      // Log scan start activity
-      await storage.createActivityLog({
-        action: 'scan_started',
-        entityType: 'network_scan',
-        entityId: scanId,
-        details: { subnetIds, scanId },
-      });
-      
-      const results: DeviceDiscovery[] = [];
-      
-      for (const subnetId of subnetIds) {
-        const subnet = await storage.getSubnet(subnetId);
-        if (!subnet) continue;
+      let results: DeviceDiscovery[] = [];
 
-        this.broadcastScanUpdate({ 
-          status: 'scanning_subnet', 
-          subnet: subnet.network 
-        });
-
+      for (const subnet of selectedSubnets) {
         const subnetResults = await this.scanSubnet(subnet.network);
         results.push(...subnetResults);
 
-        // Update device statuses in database
-        for (const result of subnetResults) {
-          await this.updateDeviceFromScan(result, subnetId);
+        // Update each discovered device in the database
+        for (const device of subnetResults) {
+          if (device.isAlive) {
+            await this.updateDeviceFromScan(device, subnet.id);
+          }
         }
-
-        // Broadcast found devices
-        this.broadcastScanUpdate({
-          status: 'subnet_complete',
-          subnet: subnet.network,
-          devicesFound: subnetResults.length,
-          newDevices: subnetResults.filter(d => d.isAlive)
-        });
       }
 
-      // Update scan record
+      this.activeScan = false;
+      this.currentScanId = null;
+
       await storage.updateNetworkScan(scanId, {
         endTime: new Date(),
         status: 'completed',
-        devicesFound: results.length,
-        results: results,
+        devicesFound: results.filter(d => d.isAlive).length,
+        results: results
       });
 
-      // Broadcast completion summary
+      // Generate and broadcast scan summary
       const summary = this.generateScanSummary(results, subnetIds);
       this.broadcastScanUpdate({
-        status: 'scan_completed',
+        scanId,
+        isActive: false,
         summary,
-        totalDevicesFound: results.length,
-        onlineDevices: results.filter(d => d.isAlive).length,
-        subnetsScanned: subnetIds.length
+        devicesFound: results.filter(d => d.isAlive).length,
+        status: 'completed'
       });
 
       // Log scan completion activity
@@ -249,20 +217,9 @@ class NetworkScanner {
       
       // Update progress
       this.scanProgress.current = Math.min(i + batchSize, ipRange.length);
-      this.scanProgress.currentIP = batch[batch.length - 1];
       this.broadcastProgress();
 
-      // Broadcast any newly found devices
-      if (aliveResults.length > 0) {
-        this.broadcastScanUpdate({
-          status: 'devices_found',
-          subnet: network,
-          devices: aliveResults,
-          progress: this.scanProgress
-        });
-      }
-      
-      // Small delay between batches
+      // Small delay to prevent network flooding
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
@@ -271,6 +228,7 @@ class NetworkScanner {
 
   private generateScanSummary(results: DeviceDiscovery[], subnetIds: number[]) {
     const onlineDevices = results.filter(d => d.isAlive);
+    
     const devicesByVendor = onlineDevices.reduce((acc, device) => {
       const vendor = device.vendor || 'Unknown';
       acc[vendor] = (acc[vendor] || 0) + 1;
@@ -315,36 +273,17 @@ class NetworkScanner {
     };
 
     try {
-      // Ping the IP
+      // Enhanced ping for shared gateway networks
       const pingResult = await this.pingDevice(ipAddress);
       result.isAlive = pingResult.success;
 
       if (result.isAlive) {
-        // Try to get hostname using multiple methods
+        // Try to get hostname
         try {
-          // First try reverse DNS lookup
-          const hostnames = await dns.promises.reverse(ipAddress);
-          result.hostname = hostnames[0]?.replace(/\.$/, ''); // Remove trailing dot
+          const hostname = await dns.promises.reverse(ipAddress);
+          result.hostname = hostname[0];
         } catch (error) {
-          // If reverse DNS fails, try nslookup
-          try {
-            const { stdout } = await execAsync(`nslookup ${ipAddress}`);
-            const nameMatch = stdout.match(/name = ([^\s]+)/);
-            if (nameMatch) {
-              result.hostname = nameMatch[1].replace(/\.$/, '');
-            }
-          } catch (nslookupError) {
-            // Try nbtscan for Windows machines
-            try {
-              const { stdout } = await execAsync(`timeout 5 nbtscan ${ipAddress}`);
-              const nameMatch = stdout.match(/(\S+)\s+<00>/);
-              if (nameMatch) {
-                result.hostname = nameMatch[1];
-              }
-            } catch (nbtError) {
-              // All hostname resolution methods failed
-            }
-          }
+          // Hostname lookup failed, that's okay
         }
 
         // Try to get MAC address (works for local network)
@@ -369,7 +308,9 @@ class NetworkScanner {
 
   async pingDevice(ipAddress: string): Promise<PingResult> {
     try {
-      const { stdout } = await execAsync(`ping -c 1 -W 2 ${ipAddress}`);
+      // Enhanced ping settings for shared gateway networks
+      // Use multiple attempts with different timing for better reliability
+      const { stdout } = await execAsync(`ping -c 3 -W 3 -i 0.3 ${ipAddress}`);
       
       // Parse response time from ping output
       const match = stdout.match(/time=([0-9.]+)/);
@@ -380,49 +321,75 @@ class NetworkScanner {
         responseTime,
       };
     } catch (error) {
-      return {
-        success: false,
-        error: String(error),
-      };
+      // Fallback with single packet and longer timeout
+      try {
+        const { stdout } = await execAsync(`ping -c 1 -W 5 ${ipAddress}`);
+        const match = stdout.match(/time=([0-9.]+)/);
+        const responseTime = match ? parseFloat(match[1]) : undefined;
+        
+        return {
+          success: true,
+          responseTime,
+        };
+      } catch (fallbackError) {
+        return {
+          success: false,
+          error: String(error),
+        };
+      }
     }
   }
 
   private async getMacAddress(ipAddress: string): Promise<string | undefined> {
     try {
-      // First ping the IP to populate ARP table
-      await execAsync(`ping -c 1 -W 1 ${ipAddress}`);
+      // Enhanced ARP population for shared gateway networks
+      await execAsync(`ping -c 2 -W 1 ${ipAddress}`);
       
-      // Try ARP table lookup with multiple formats
-      try {
-        const { stdout } = await execAsync(`arp -n ${ipAddress}`);
-        // Match different MAC address formats
-        let match = stdout.match(/([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})/i);
-        if (!match) {
-          // Try hyphen format
-          match = stdout.match(/([0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2})/i);
-          if (match) {
-            return match[1].replace(/-/g, ':').toLowerCase();
+      // Try multiple methods for MAC address detection
+      const methods = [
+        // Method 1: Standard ARP table
+        async () => {
+          const { stdout } = await execAsync(`arp -n ${ipAddress}`);
+          let match = stdout.match(/([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})/i);
+          if (!match) {
+            match = stdout.match(/([0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2}-[0-9a-f]{2})/i);
+            if (match) {
+              return match[1].replace(/-/g, ':').toLowerCase();
+            }
           }
-        }
-        return match ? match[1].toLowerCase() : undefined;
-      } catch (arpError) {
-        // Try alternative methods
-        try {
-          // Try ip neighbor (Linux)
+          return match ? match[1].toLowerCase() : undefined;
+        },
+        
+        // Method 2: IP neighbor (modern Linux)
+        async () => {
           const { stdout } = await execAsync(`ip neighbor show ${ipAddress}`);
           const match = stdout.match(/lladdr ([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})/i);
           return match ? match[1].toLowerCase() : undefined;
-        } catch (ipError) {
-          // Try arping for more reliable MAC detection
+        },
+        
+        // Method 3: arping (most reliable for shared gateways)
+        async () => {
           try {
-            const { stdout } = await execAsync(`timeout 3 arping -c 1 ${ipAddress}`);
+            const { stdout } = await execAsync(`timeout 3 arping -c 2 ${ipAddress}`);
             const match = stdout.match(/([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})/i);
             return match ? match[1].toLowerCase() : undefined;
           } catch (arpingError) {
             return undefined;
           }
         }
+      ];
+
+      // Try each method sequentially until one succeeds
+      for (const method of methods) {
+        try {
+          const mac = await method();
+          if (mac) return mac;
+        } catch (error) {
+          continue; // Try next method
+        }
       }
+      
+      return undefined;
     } catch (error) {
       return undefined;
     }
@@ -430,66 +397,38 @@ class NetworkScanner {
 
   private async getVendorFromMac(macAddress: string): Promise<string | undefined> {
     try {
-      // Extract OUI (first 3 octets)
-      const oui = macAddress.split(':').slice(0, 3).join(':');
+      const oui = macAddress.replace(/:/g, '').substring(0, 6).toUpperCase();
       
-      // Common vendor OUI database for broadcast equipment
-      const vendors: { [key: string]: string } = {
-        // Cisco Systems
-        '00:11:bb': 'Cisco Systems', '00:1e:7a': 'Cisco Systems', '00:26:0a': 'Cisco Systems',
-        '88:f0:31': 'Cisco Systems', '00:d0:d3': 'Cisco Systems', '00:0c:85': 'Cisco Systems',
-        
-        // Sony Professional
-        '00:09:d3': 'Sony Corp', '00:1c:a8': 'Sony Corp', '08:96:d7': 'Sony Corp',
-        
-        // Panasonic Broadcast
-        '00:0d:f0': 'Panasonic', '00:80:45': 'Panasonic', '9c:04:eb': 'Panasonic',
-        
-        // Canon Professional
-        '00:12:18': 'Canon Inc', '00:1e:8f': 'Canon Inc', 'dc:ef:80': 'Canon Inc',
-        
-        // Blackmagic Design
-        '00:12:ba': 'Blackmagic Design', '00:17:c4': 'Blackmagic Design',
-        
-        // Grass Valley / Belden
-        '00:02:a1': 'Grass Valley', '00:0e:d6': 'Grass Valley',
-        
-        // Harris Broadcast
-        '00:06:4f': 'Harris Corp', '00:0f:ff': 'Harris Corp',
-        
-        // Evertz Microsystems
-        '00:1b:67': 'Evertz Microsystems', '00:21:27': 'Evertz Microsystems',
-        
-        // Ross Video
-        '00:0c:8b': 'Ross Video', '00:16:9d': 'Ross Video',
-        
-        // Hewlett Packard Enterprise
-        '00:11:85': 'HPE', '28:80:23': 'HPE', '70:10:6f': 'HPE',
-        
-        // Dell Technologies
-        '00:14:22': 'Dell Inc', '84:7b:eb': 'Dell Inc', 'f4:8e:38': 'Dell Inc',
-        
-        // Ubiquiti Networks
-        '04:18:d6': 'Ubiquiti', '24:a4:3c': 'Ubiquiti', 'f0:9f:c2': 'Ubiquiti',
-        
-        // Virtualization
-        '00:50:56': 'VMware', '08:00:27': 'Oracle VirtualBox', '00:15:5d': 'Microsoft Hyper-V',
+      // Simple vendor mapping based on common OUI prefixes
+      const vendors: Record<string, string> = {
+        '001B11': 'Cisco Systems',
+        '0050C2': 'IEEE Registration Authority',
+        '00E04C': 'Realtek Semiconductor',
+        '001A2F': 'Cisco Systems',
+        '002522': 'Cisco Systems',
+        '0026F2': 'Cisco Systems',
+        '0027D7': 'Belkin International',
+        'D85D4C': 'Apple',
+        '3C07F4': 'Apple',
+        '78A3E4': 'Apple',
+        '24F094': 'Apple',
+        '6C96CF': 'Apple',
+        '8C8590': 'Apple'
       };
 
-      return vendors[oui] || 'Unknown';
+      return vendors[oui] || undefined;
     } catch (error) {
       return undefined;
     }
   }
 
   private async scanCommonPorts(ipAddress: string): Promise<number[]> {
-    const commonPorts = [22, 23, 53, 80, 443, 554, 8080, 8443];
+    const commonPorts = [22, 23, 53, 80, 135, 139, 443, 445, 993, 995];
     const openPorts: number[] = [];
 
-    // Scan ports in parallel but with timeout
     const portPromises = commonPorts.map(async (port) => {
       try {
-        const { stdout } = await execAsync(`timeout 2 nc -z ${ipAddress} ${port}`, { timeout: 3000 });
+        await execAsync(`timeout 2 nc -z ${ipAddress} ${port}`);
         return port;
       } catch (error) {
         return null;
@@ -502,211 +441,97 @@ class NetworkScanner {
 
   private getIPRange(network: string): string[] {
     const [baseIP, cidr] = network.split('/');
-    const cidrNum = parseInt(cidr);
+    const cidrNum = parseInt(cidr, 10);
     
-    // Support common CIDR ranges
-    if (cidrNum < 16 || cidrNum > 30) {
-      console.warn(`Unsupported CIDR: ${cidr}. Supported ranges: /16 to /30`);
-      return [];
+    if (cidrNum !== 24) {
+      throw new Error('Only /24 networks are currently supported');
     }
 
-    const baseParts = baseIP.split('.').map(Number);
+    const [a, b, c] = baseIP.split('.').map(Number);
     const ips: string[] = [];
-    
-    // Calculate network size
-    const hostBits = 32 - cidrNum;
-    const totalHosts = Math.pow(2, hostBits);
-    
-    // For large networks, limit scanning to avoid performance issues
-    const maxScanIPs = 1024; // Limit to 1024 IPs for practical scanning
-    const actualScanCount = Math.min(totalHosts - 2, maxScanIPs); // Exclude network and broadcast
-    
-    if (totalHosts > maxScanIPs + 2) {
-      console.log(`Large network detected (${totalHosts} hosts). Limiting scan to ${maxScanIPs} IPs.`);
-    }
 
-    // Convert base IP to integer for calculations
-    const baseIPInt = (baseParts[0] << 24) + (baseParts[1] << 16) + (baseParts[2] << 8) + baseParts[3];
-    const networkMask = (0xFFFFFFFF << hostBits) >>> 0;
-    const networkAddress = (baseIPInt & networkMask) >>> 0;
-
-    // Generate IP addresses
-    for (let i = 1; i <= actualScanCount; i++) {
-      const ipInt = networkAddress + i;
-      const ip = [
-        (ipInt >>> 24) & 0xFF,
-        (ipInt >>> 16) & 0xFF,
-        (ipInt >>> 8) & 0xFF,
-        ipInt & 0xFF
-      ].join('.');
-      ips.push(ip);
+    // Generate IPs from 1 to 254 (skip 0 and 255)
+    for (let d = 1; d <= 254; d++) {
+      ips.push(`${a}.${b}.${c}.${d}`);
     }
 
     return ips;
   }
 
   private async findSubnetForIP(ipAddress: string): Promise<number | null> {
-    try {
-      // Get all subnets
-      const subnets = await storage.getAllSubnets();
-      
-      console.log(`Finding subnet for IP ${ipAddress} among ${subnets.length} subnets`);
-      console.log(`Available subnets: ${subnets.map(s => `${s.id}:${s.network}`).join(', ')}`);
-      
-      // For /24 networks, find exact match first
-      for (const subnet of subnets) {
-        const [networkAddr, cidrBits] = subnet.network.split('/');
-        const cidr = parseInt(cidrBits);
+    const subnets = await storage.getAllSubnets();
+    
+    for (const subnet of subnets) {
+      const [network, cidr] = subnet.network.split('/');
+      if (cidr === '24') {
+        const [na, nb, nc] = network.split('.').map(Number);
+        const [ia, ib, ic] = ipAddress.split('.').map(Number);
         
-        if (cidr === 24) {
-          // Extract first 3 octets for exact matching
-          const ipOctets = ipAddress.split('.');
-          const networkOctets = networkAddr.split('.');
-          
-          // Compare first 3 octets exactly
-          const ipPrefix = `${ipOctets[0]}.${ipOctets[1]}.${ipOctets[2]}`;
-          const networkPrefix = `${networkOctets[0]}.${networkOctets[1]}.${networkOctets[2]}`;
-          
-          console.log(`Comparing IP prefix "${ipPrefix}" with network prefix "${networkPrefix}" for subnet ${subnet.network}`);
-          
-          if (ipPrefix === networkPrefix) {
-            // Validate host octet (1-254 for /24)
-            const hostOctet = parseInt(ipOctets[3]);
-            if (hostOctet >= 1 && hostOctet <= 254) {
-              console.log(`✓ IP ${ipAddress} EXACTLY matches subnet ${subnet.network} (ID: ${subnet.id})`);
-              return subnet.id;
-            } else {
-              console.log(`✗ IP ${ipAddress} matches network but invalid host octet: ${hostOctet}`);
-            }
-          }
+        if (na === ia && nb === ib && nc === ic) {
+          return subnet.id;
         }
       }
-      
-      // Fallback: For non-/24 networks or if no exact match found, use CIDR calculation
-      for (const subnet of subnets) {
-        const [networkAddr, cidrBits] = subnet.network.split('/');
-        const cidr = parseInt(cidrBits);
-        
-        if (cidr !== 24) { // Skip /24 as they were handled above
-          const ipParts = ipAddress.split('.').map(Number);
-          const networkParts = networkAddr.split('.').map(Number);
-          
-          // Convert to 32-bit integers
-          const ipInt = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3];
-          const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
-          
-          // Calculate network mask
-          const mask = (0xFFFFFFFF << (32 - cidr)) >>> 0;
-          
-          // Check if IP is in the same network
-          if ((ipInt & mask) === (networkInt & mask)) {
-            // Ensure it's not the network or broadcast address
-            const hostBits = 32 - cidr;
-            const maxHost = Math.pow(2, hostBits) - 1;
-            const hostPart = ipInt & ~mask;
-            
-            if (hostPart > 0 && hostPart < maxHost) {
-              console.log(`✓ IP ${ipAddress} matches subnet ${subnet.network} (ID: ${subnet.id}) via CIDR`);
-              return subnet.id;
-            }
-          }
-        }
-      }
-      
-      console.warn(`No matching subnet found for IP ${ipAddress}`);
-      return null;
-    } catch (error) {
-      console.error(`Error finding subnet for IP ${ipAddress}:`, error);
-      return null;
     }
+    
+    return null;
   }
 
   private async updateDeviceFromScan(discovery: DeviceDiscovery, originalSubnetId: number) {
-    try {
-      // Find the correct subnet for this IP address, but use original subnet as fallback
-      const correctSubnetId = await this.findSubnetForIP(discovery.ipAddress) || originalSubnetId;
-      
-      // Check if device already exists
-      const existingDevice = await storage.getDeviceByIP(discovery.ipAddress);
-      
-      if (existingDevice) {
-        // Update existing device with correct subnet if needed
-        const updateData: any = {
-          status: discovery.isAlive ? 'online' : 'offline',
-          lastSeen: discovery.isAlive ? new Date() : existingDevice.lastSeen,
-          hostname: discovery.hostname || existingDevice.hostname,
-          macAddress: discovery.macAddress || existingDevice.macAddress,
-          vendor: discovery.vendor || existingDevice.vendor,
-          openPorts: discovery.openPorts?.map(String) || existingDevice.openPorts,
-        };
-        
-        // Only update subnet if device is not already correctly assigned
-        // This prevents unnecessary subnet reassignments during scans
-        if (existingDevice.subnetId !== correctSubnetId) {
-          updateData.subnetId = correctSubnetId;
-          console.log(`Correcting subnet for device ${discovery.ipAddress} from ${existingDevice.subnetId} to ${correctSubnetId}`);
-        }
-        
-        await storage.updateDevice(existingDevice.id, updateData);
-      } else if (discovery.isAlive) {
-        // Create new device only if it's alive (save all live discovered devices)
-        await storage.createDevice({
-          ipAddress: discovery.ipAddress,
-          hostname: discovery.hostname,
-          macAddress: discovery.macAddress,
-          vendor: discovery.vendor,
-          subnetId: correctSubnetId,
-          status: 'online',
-          lastSeen: new Date(),
-          openPorts: discovery.openPorts?.map(String) || null,
-        });
-        
-        console.log(`Created new device ${discovery.ipAddress} in subnet ${correctSubnetId} with status online`);
-      }
-    } catch (error) {
-      console.error(`Error updating device ${discovery.ipAddress}:`, error);
+    // Find the correct subnet for this IP
+    const correctSubnetId = await this.findSubnetForIP(discovery.ipAddress);
+    const subnetId = correctSubnetId || originalSubnetId;
+
+    // Check if device already exists
+    const existingDevice = await storage.getDeviceByIP(discovery.ipAddress);
+    
+    if (existingDevice) {
+      // Update existing device
+      await storage.updateDevice(existingDevice.id, {
+        hostname: discovery.hostname || existingDevice.hostname,
+        macAddress: discovery.macAddress || existingDevice.macAddress,
+        vendor: discovery.vendor || existingDevice.vendor,
+        subnetId: subnetId,
+        status: 'online',
+        lastSeen: new Date(),
+        openPorts: discovery.openPorts || [],
+      });
+    } else {
+      // Create new device
+      await storage.createDevice({
+        ipAddress: discovery.ipAddress,
+        hostname: discovery.hostname,
+        macAddress: discovery.macAddress,
+        vendor: discovery.vendor,
+        subnetId: subnetId,
+        status: 'online',
+        lastSeen: new Date(),
+        openPorts: discovery.openPorts || [],
+        assignmentType: 'static',
+      });
     }
   }
 
-  // Method to fix existing device subnet assignments
   async fixExistingDeviceSubnets() {
-    try {
-      console.log('Starting to fix existing device subnet assignments...');
+    console.log('Starting to fix existing device subnet assignments...');
+    
+    const devices = await storage.getAllDevicesForExport();
+    let fixedCount = 0;
+
+    for (const device of devices) {
+      const correctSubnetId = await this.findSubnetForIP(device.ipAddress);
       
-      // Get all devices
-      const allDevices = await storage.getAllDevicesForExport();
-      let correctedCount = 0;
-      
-      for (const device of allDevices) {
-        if (!device.ipAddress) continue;
-        
-        // Find correct subnet for this device
-        const correctSubnetId = await this.findSubnetForIP(device.ipAddress);
-        
-        if (correctSubnetId && device.subnetId !== correctSubnetId) {
-          console.log(`Correcting subnet for device ${device.ipAddress} from ${device.subnetId} to ${correctSubnetId}`);
-          
-          await storage.updateDevice(device.id, {
-            subnetId: correctSubnetId
-          });
-          
-          correctedCount++;
-        }
+      if (correctSubnetId && device.subnetId !== correctSubnetId) {
+        console.log(`Moving device ${device.ipAddress} from subnet ${device.subnetId} to ${correctSubnetId}`);
+        await storage.updateDevice(device.id, {
+          subnetId: correctSubnetId
+        });
+        fixedCount++;
       }
-      
-      console.log(`Fixed ${correctedCount} device subnet assignments`);
-      return correctedCount;
-    } catch (error) {
-      console.error('Error fixing device subnet assignments:', error);
-      return 0;
     }
+
+    console.log(`Fixed ${fixedCount} device subnet assignments`);
+    return { fixedCount };
   }
 }
 
 export const networkScanner = new NetworkScanner();
-
-// Fix existing device subnet assignments on startup
-networkScanner.fixExistingDeviceSubnets();
-
-// Start periodic scanning when the server starts
-networkScanner.startPeriodicScanning(5); // Scan every 5 minutes
