@@ -1,0 +1,508 @@
+obtv-admin@eng-control1:~/ipam-system$ sudo docker-compose logs -f
+ipam-app-1  | Waiting for PostgreSQL to be ready...
+ipam-app-1  | Connection to postgres (172.18.0.2) 5432 port [tcp/postgresql] succeeded!
+ipam-app-1  | PostgreSQL is ready - starting application...
+ipam-app-1  | First run detected - applying database fixes...
+ipam-app-1  | Initializing database schema...
+ipam-app-1  | Database schema already exists, skipping...
+ipam-app-1  | Applying device clustering fix...
+ipam-app-1  | Device clustering fix already applied or failed, continuing...
+ipam-app-1  | Database initialization complete
+ipam-app-1  | Starting IPAM application...
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 dev
+ipam-app-1  | > NODE_ENV=development tsx server/index.ts
+ipam-app-1  |
+ipam-app-1  | Periodic network scanning started (every 5 minutes)
+ipam-app-1  | Database connection established successfully
+ipam-app-1  | 8:55:04 AM [express] serving on port 5000
+ipam-app-1  | 8:55:07 AM [express] GET /api/dashboard/metrics 200 in 75ms :: {"totalIPs":508,"allocatedIPs":"123",…
+ipam-app-1  | 8:55:37 AM [express] GET /api/dashboard/metrics 200 in 24ms :: {"totalIPs":508,"allocatedIPs":"123",…
+postgres-1  |
+postgres-1  | PostgreSQL Database directory appears to contain a database; Skipping initialization
+postgres-1  |
+postgres-1  | 2025-06-14 08:54:51.959 UTC [1] LOG:  starting PostgreSQL 15.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+postgres-1  | 2025-06-14 08:54:51.959 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+postgres-1  | 2025-06-14 08:54:51.959 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+postgres-1  | 2025-06-14 08:54:51.961 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+postgres-1  | 2025-06-14 08:54:51.965 UTC [28] LOG:  database system was shut down at 2025-06-14 08:54:13 UTC
+postgres-1  | 2025-06-14 08:54:51.973 UTC [1] LOG:  database system is ready to accept connections
+ipam-app-1  | 8:56:07 AM [express] GET /api/dashboard/metrics 200 in 20ms :: {"totalIPs":508,"allocatedIPs":"123",…
+ipam-app-1  | Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+ipam-app-1  |   npx update-browserslist-db@latest
+ipam-app-1  |   Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ipam-app-1  | 8:56:11 AM [express] GET /api/vlans 304 in 5ms :: [{"id":15,"vlanId":320,"name":"Plex Engineering 32…
+ipam-app-1  | 8:56:11 AM [express] GET /api/subnets 304 in 20ms :: [{"id":16,"network":"10.63.20.0/24","gateway":"…
+ipam-app-1  | 8:56:11 AM [express] GET /api/devices 200 in 30ms :: {"data":[{"id":700,"ipAddress":"10.63.20.1","ho…
+ipam-app-1  | 8:56:11 AM [express] GET /api/dashboard/subnet-utilization 304 in 31ms :: [{"id":16,"name":"10.63.20…
+ipam-app-1  | 8:56:11 AM [express] GET /api/dashboard/last-scan 200 in 4ms
+ipam-app-1  | 8:56:16 AM [express] GET /api/activity 200 in 8ms :: [{"id":118,"userId":null,"action":"scan_started…
+ipam-app-1  | 8:56:16 AM [express] GET /api/dashboard/metrics 200 in 16ms :: {"totalIPs":508,"allocatedIPs":"123",…
+ipam-app-1  | 8:56:16 AM [express] GET /api/dashboard/last-scan 200 in 6ms
+ipam-app-1  | 8:56:16 AM [express] GET /api/devices 200 in 7ms :: {"data":[{"id":700,"ipAddress":"10.63.20.1","hos…
+ipam-app-1  | 8:56:19 AM [express] GET /api/dashboard/last-scan 200 in 4ms
+ipam-app-1  | 8:56:35 AM [express] GET /api/subnets 304 in 40ms :: [{"id":16,"network":"10.63.20.0/24","gateway":"…
+ipam-app-1  | 8:56:35 AM [express] GET /api/vlans 304 in 46ms :: [{"id":15,"vlanId":320,"name":"Plex Engineering 3…
+ipam-app-1  | 8:56:35 AM [express] GET /api/devices 304 in 49ms :: {"data":[{"id":700,"ipAddress":"10.63.20.1","ho…
+ipam-app-1  | 8:56:35 AM [express] GET /api/dashboard/subnet-utilization 304 in 49ms :: [{"id":16,"name":"10.63.20…
+ipam-app-1  | 8:56:35 AM [express] GET /api/dashboard/last-scan 200 in 4ms
+ipam-app-1  | 8:56:37 AM [express] GET /api/dashboard/metrics 200 in 7ms :: {"totalIPs":508,"allocatedIPs":"123","…
+ipam-app-1  | 8:56:40 AM [express] DELETE /api/vlans/16 204 in 8ms
+ipam-app-1  | 8:56:40 AM [express] GET /api/vlans 200 in 3ms :: [{"id":15,"vlanId":320,"name":"Plex Engineering 32…
+ipam-app-1  | 8:56:44 AM [express] GET /api/vlans 304 in 3ms :: [{"id":15,"vlanId":320,"name":"Plex Engineering 32…
+ipam-app-1  | 8:56:44 AM [express] GET /api/subnets 200 in 4ms :: [{"id":16,"network":"10.63.20.0/24","gateway":"1…
+ipam-app-1  | 8:56:44 AM [express] GET /api/devices 200 in 8ms :: {"data":[{"id":700,"ipAddress":"10.63.20.1","hos…
+ipam-app-1  | 8:56:44 AM [express] GET /api/dashboard/subnet-utilization 200 in 10ms :: [{"id":16,"name":"10.63.20…
+ipam-app-1  | 8:56:44 AM [express] GET /api/dashboard/last-scan 200 in 3ms
+ipam-app-1  | 8:56:45 AM [express] GET /api/vlans 304 in 3ms :: [{"id":15,"vlanId":320,"name":"Plex Engineering 32…
+ipam-app-1  | 8:56:45 AM [express] GET /api/subnets 304 in 4ms :: [{"id":16,"network":"10.63.20.0/24","gateway":"1…
+ipam-app-1  | 8:56:45 AM [express] GET /api/dashboard/subnet-utilization 304 in 5ms :: [{"id":16,"name":"10.63.20.…
+ipam-app-1  | 8:56:45 AM [express] GET /api/devices 304 in 7ms :: {"data":[{"id":700,"ipAddress":"10.63.20.1","hos…
+ipam-app-1  | 8:56:45 AM [express] GET /api/dashboard/last-scan 200 in 3ms
+ipam-app-1  | 8:57:02 AM [express] POST /api/subnets 201 in 18ms :: {"id":18,"network":"10.63.21.0/24","gateway":"…
+ipam-app-1  | 8:57:02 AM [express] GET /api/subnets 200 in 2ms :: [{"id":16,"network":"10.63.20.0/24","gateway":"1…
+ipam-app-1  | 8:57:07 AM [express] GET /api/dashboard/last-scan 200 in 4ms
+ipam-app-1  | WebSocket client connected
+ipam-app-1  | 8:57:07 AM [express] GET /api/dashboard/metrics 200 in 8ms :: {"totalIPs":508,"allocatedIPs":"92","a…
+ipam-app-1  | Starting network scan 333 for subnets: [ 18 ]
+ipam-app-1  | 8:57:09 AM [express] POST /api/network/scan 200 in 7ms :: {"scanId":333,"status":"started"}
+ipam-app-1  | Scanning subnet 10.63.21.0/24 (254 IPs)
+ipam-app-1  | 8:57:10 AM [express] GET /api/network/scan 200 in 117ms
+ipam-app-1  | 8:57:12 AM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:14 AM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 8:57:16 AM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 8:57:18 AM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 8:57:19 AM [express] GET /api/dashboard/last-scan 200 in 4ms
+ipam-app-1  | WebSocket client disconnected
+ipam-app-1  | 8:57:23 AM [express] GET /api/dashboard/last-scan 200 in 5ms
+ipam-app-1  | 8:57:23 AM [express] GET /api/devices 200 in 20ms :: {"data":[{"id":700,"ipAddress":"10.63.20.1","ho…
+ipam-app-1  | 8:57:26 AM [express] GET /api/dashboard/last-scan 200 in 3ms
+ipam-app-1  | 8:57:28 AM [express] GET /api/vlans 304 in 4ms :: [{"id":15,"vlanId":320,"name":"Plex Engineering 32…
+ipam-app-1  | 8:57:28 AM [express] GET /api/subnets 304 in 29ms :: [{"id":16,"network":"10.63.20.0/24","gateway":"…
+ipam-app-1  | 8:57:28 AM [express] GET /api/dashboard/subnet-utilization 200 in 30ms :: [{"id":16,"name":"10.63.20…
+ipam-app-1  | 8:57:28 AM [express] GET /api/devices 304 in 36ms :: {"data":[{"id":700,"ipAddress":"10.63.20.1","ho…
+ipam-app-1  | 8:57:28 AM [express] GET /api/dashboard/last-scan 200 in 3ms
+ipam-app-1  | 8:57:30 AM [express] GET /api/subnets 304 in 3ms :: [{"id":16,"network":"10.63.20.0/24","gateway":"1…
+ipam-app-1  | 8:57:30 AM [express] GET /api/vlans 304 in 2ms :: [{"id":15,"vlanId":320,"name":"Plex Engineering 32…
+ipam-app-1  | 8:57:30 AM [express] GET /api/devices 304 in 8ms :: {"data":[{"id":700,"ipAddress":"10.63.20.1","hos…
+ipam-app-1  | 8:57:30 AM [express] GET /api/dashboard/subnet-utilization 304 in 9ms :: [{"id":16,"name":"10.63.20.…
+ipam-app-1  | 8:57:30 AM [express] GET /api/dashboard/last-scan 200 in 3ms
+ipam-app-1  | 8:57:34 AM [express] GET /api/activity 200 in 2ms :: [{"id":119,"userId":null,"action":"scan_started…
+ipam-app-1  | 8:57:34 AM [express] GET /api/dashboard/metrics 200 in 19ms :: {"totalIPs":508,"allocatedIPs":"92","…
+ipam-app-1  | 8:57:34 AM [express] GET /api/devices 304 in 7ms :: {"data":[{"id":700,"ipAddress":"10.63.20.1","hos…
+ipam-app-1  | 8:57:34 AM [express] GET /api/dashboard/last-scan 200 in 12ms
+ipam-app-1  | Finding subnet for IP 10.63.21.10 (int: 171906314)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.10 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.10 (int: 171906314)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.10 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.10: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.11 (int: 171906315)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.11 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.11 (int: 171906315)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.11 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.11: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.12 (int: 171906316)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.12 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.12 (int: 171906316)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.12 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.12: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.13 (int: 171906317)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.13 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.13 (int: 171906317)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.13 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.13: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.14 (int: 171906318)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.14 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.14 (int: 171906318)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.14 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.14: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.15 (int: 171906319)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.15 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.15 (int: 171906319)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.15 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.15: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.16 (int: 171906320)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.16 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.16 (int: 171906320)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.16 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.16: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.20 (int: 171906324)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.20 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.20 (int: 171906324)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.20 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.20: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.21 (int: 171906325)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.21 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.21 (int: 171906325)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.21 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.21: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.22 (int: 171906326)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.22 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.22 (int: 171906326)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.22 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.22: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.23 (int: 171906327)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.23 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.23 (int: 171906327)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.23 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.23: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.24 (int: 171906328)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.24 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.24 (int: 171906328)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.24 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.24: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.25 (int: 171906329)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.25 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.25 (int: 171906329)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.25 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.25: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.26 (int: 171906330)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.26 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.26 (int: 171906330)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.26 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.26: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.27 (int: 171906331)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.27 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.27 (int: 171906331)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.27 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.27: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.28 (int: 171906332)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.28 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.28 (int: 171906332)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.28 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.28: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.29 (int: 171906333)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.29 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.29 (int: 171906333)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.29 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.29: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.30 (int: 171906334)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.30 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.30 (int: 171906334)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.30 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.30: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.33 (int: 171906337)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.33 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.33 (int: 171906337)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.33 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.33: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.34 (int: 171906338)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.34 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.34 (int: 171906338)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.34 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.34: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.35 (int: 171906339)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.35 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.35 (int: 171906339)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.35 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.35: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.36 (int: 171906340)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.36 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.36 (int: 171906340)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.36 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.36: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.61 (int: 171906365)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.61 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.61 (int: 171906365)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.61 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.61: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.62 (int: 171906366)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.62 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.62 (int: 171906366)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.62 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.62: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.63 (int: 171906367)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.63 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.63 (int: 171906367)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.63 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.63: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.64 (int: 171906368)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.64 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.64 (int: 171906368)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.64 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.64: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.65 (int: 171906369)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.65 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.65 (int: 171906369)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.65 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.65: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.66 (int: 171906370)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.66 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.66 (int: 171906370)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.66 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.66: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.149 (int: 171906453)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.149 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.149 (int: 171906453)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.149 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.149: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.150 (int: 171906454)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.150 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.150 (int: 171906454)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.150 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.150: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.151 (int: 171906455)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.151 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.151 (int: 171906455)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.151 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Device 10.63.21.151: passed subnetId=18, calculated subnetId=18, using subnetId=18
+ipam-app-1  | Finding subnet for IP 10.63.21.10 (int: 171906314)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.10 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.11 (int: 171906315)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.11 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.12 (int: 171906316)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.12 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.13 (int: 171906317)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.13 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.14 (int: 171906318)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.14 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.15 (int: 171906319)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.15 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.16 (int: 171906320)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.16 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.20 (int: 171906324)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.20 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.21 (int: 171906325)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.21 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.22 (int: 171906326)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.22 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.23 (int: 171906327)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.23 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.24 (int: 171906328)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.24 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.25 (int: 171906329)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.25 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.26 (int: 171906330)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.26 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.27 (int: 171906331)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.27 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.28 (int: 171906332)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.28 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.29 (int: 171906333)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.29 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.30 (int: 171906334)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.30 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.33 (int: 171906337)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.33 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.34 (int: 171906338)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.34 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.35 (int: 171906339)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.35 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.36 (int: 171906340)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.36 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.61 (int: 171906365)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.61 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.62 (int: 171906366)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.62 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.63 (int: 171906367)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.63 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.64 (int: 171906368)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.64 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.65 (int: 171906369)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.65 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.66 (int: 171906370)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.66 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.149 (int: 171906453)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.149 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.150 (int: 171906454)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.150 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Finding subnet for IP 10.63.21.151 (int: 171906455)
+ipam-app-1  |   Checking subnet 16 (10.63.20.0/24): network=171906048, broadcast=171906303
+ipam-app-1  |   Checking subnet 18 (10.63.21.0/24): network=171906304, broadcast=171906559
+ipam-app-1  |   ✓ IP 10.63.21.151 belongs to subnet 18 (10.63.21.0/24)
+ipam-app-1  | Network scan 333 completed. Found 31 devices.
+ipam-app-1  | 8:57:37 AM [express] GET /api/dashboard/metrics 200 in 4ms :: {"totalIPs":508,"allocatedIPs":"123","…
+ipam-app-1  | 8:57:38 AM [express] GET /api/activity 200 in 2ms :: [{"id":120,"userId":null,"action":"scan_complet…
+ipam-app-1  | 8:57:38 AM [express] GET /api/dashboard/subnet-utilization 200 in 6ms :: [{"id":16,"name":"10.63.20.…
+ipam-app-1  | 8:57:38 AM [express] GET /api/dashboard/metrics 200 in 16ms :: {"totalIPs":508,"allocatedIPs":"123",…
+ipam-app-1  | 8:57:38 AM [express] GET /api/vlans 304 in 2ms :: [{"id":15,"vlanId":320,"name":"Plex Engineering 32…
+ipam-app-1  | 8:57:38 AM [express] GET /api/devices 200 in 4ms :: {"data":[{"id":700,"ipAddress":"10.63.20.1","hos…
+ipam-app-1  | 8:57:38 AM [express] GET /api/dashboard/last-scan 200 in 6ms
+ipam-app-1  | 8:57:43 AM [express] GET /api/subnets 304 in 2ms :: [{"id":16,"network":"10.63.20.0/24","gateway":"1…
+ipam-app-1  | 8:57:43 AM [express] GET /api/devices 200 in 4ms :: {"data":[{"id":700,"ipAddress":"10.63.20.1","hos…
+ipam-app-1  | 8:57:43 AM [express] GET /api/dashboard/last-scan 200 in 8ms
+ipam-app-1  | 8:57:45 AM [express] GET /api/dashboard/last-scan 200 in 4ms
