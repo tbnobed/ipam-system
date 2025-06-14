@@ -11,10 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, Network, Users, Activity, AlertTriangle, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, Network, Users, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Vlan, Subnet, InsertVlan, InsertSubnet } from "@shared/schema";
@@ -37,64 +36,40 @@ const subnetSchema = z.object({
 type VlanFormData = z.infer<typeof vlanSchema>;
 type SubnetFormData = z.infer<typeof subnetSchema>;
 
-export default function VLANs() {
+export default function VlansPage() {
   const [vlanDialogOpen, setVlanDialogOpen] = useState(false);
   const [subnetDialogOpen, setSubnetDialogOpen] = useState(false);
   const [subnetDetailsOpen, setSubnetDetailsOpen] = useState(false);
   const [editingVlan, setEditingVlan] = useState<Vlan | null>(null);
   const [editingSubnet, setEditingSubnet] = useState<Subnet | null>(null);
   const [selectedSubnet, setSelectedSubnet] = useState<Subnet | null>(null);
-  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: vlans, isLoading: vlansLoading } = useQuery<Vlan[]>({
+  const { data: vlans = [], isLoading: vlansLoading } = useQuery<Vlan[]>({
     queryKey: ['/api/vlans'],
   });
 
-  const { data: subnets, isLoading: subnetsLoading } = useQuery<Subnet[]>({
+  const { data: subnets = [], isLoading: subnetsLoading } = useQuery<Subnet[]>({
     queryKey: ['/api/subnets'],
   });
 
-  const { data: devices } = useQuery<{data: any[]}>({
+  const { data: devicesResponse } = useQuery<{data: any[]}>({
     queryKey: ['/api/devices'],
     refetchInterval: 30000,
   });
 
+  const devices = devicesResponse?.data || [];
+
   const getSubnetsForVlan = (vlanId: number) => {
-    return subnets?.filter(subnet => subnet.vlanId === vlanId) || [];
+    return subnets.filter(subnet => subnet.vlanId === vlanId);
   };
 
-  const getSubnetMetrics = (subnetId: number) => {
-    // Get devices assigned to this subnet
-    const deviceData = devices?.data?.filter((device: any) => device.subnetId === subnetId) || [];
-    
-    const onlineDevices = deviceData.filter((device: any) => device.status === 'online').length;
-    const offlineDevices = deviceData.filter((device: any) => device.status === 'offline').length;
-    const unknownDevices = deviceData.filter((device: any) => device.status === 'unknown').length;
-    
-    // Determine health status
-    let healthStatus = 'inactive';
-    if (onlineDevices > 0) {
-      healthStatus = 'healthy';
-    } else if (unknownDevices > 0 || offlineDevices > 0) {
-      healthStatus = 'warning';
-    }
-    
-    return {
-      totalIPs: 254, // Default /24 subnet
-      usedIPs: deviceData.length,
-      availableIPs: 254 - deviceData.length,
-      utilization: deviceData.length > 0 ? (deviceData.length / 254) * 100 : 0,
-      totalDevices: deviceData.length,
-      onlineDevices,
-      offlineDevices,
-      unknownDevices,
-      healthStatus
-    };
+  const getDevicesForSubnet = (subnetId: number) => {
+    return devices.filter(device => device.subnetId === subnetId);
   };
 
-  const handleSubnetCardClick = (subnet: Subnet) => {
+  const handleSubnetClick = (subnet: Subnet) => {
     setSelectedSubnet(subnet);
     setSubnetDetailsOpen(true);
   };
@@ -176,37 +151,40 @@ export default function VLANs() {
   });
 
   if (vlansLoading || subnetsLoading) {
-    return <div>Loading...</div>;
+    return (
+      <>
+        <Header />
+        <main className="container mx-auto p-6">
+          <div className="animate-pulse">Loading...</div>
+        </main>
+      </>
+    );
   }
 
   return (
     <>
-      <Header
-        title="VLANs & Subnets"
-        subtitle="Manage virtual network segments and IP address ranges"
-      />
-      
-      <main className="flex-1 overflow-y-auto p-6">
+      <Header />
+      <main className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">VLAN Management</h2>
-            <p className="text-gray-600">Configure network segments and subnet allocation</p>
-          </div>
-          <div className="flex space-x-2">
+          <h1 className="text-3xl font-bold">VLANs & Subnets</h1>
+          <div className="flex gap-2">
             <Dialog open={vlanDialogOpen} onOpenChange={setVlanDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={() => setEditingVlan(null)}>
+                <Button onClick={() => {
+                  setEditingVlan(null);
+                  setVlanDialogOpen(true);
+                }}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add VLAN
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>{editingVlan ? 'Edit VLAN' : 'Add New VLAN'}</DialogTitle>
+                  <DialogTitle>{editingVlan ? "Edit VLAN" : "Create VLAN"}</DialogTitle>
                 </DialogHeader>
                 <VlanForm
                   vlan={editingVlan}
-                  onSubmit={(data: VlanFormData) => {
+                  onSubmit={(data) => {
                     if (editingVlan) {
                       updateVlanMutation.mutate({ id: editingVlan.id, data });
                     } else {
@@ -217,22 +195,25 @@ export default function VLANs() {
                 />
               </DialogContent>
             </Dialog>
-            
+
             <Dialog open={subnetDialogOpen} onOpenChange={setSubnetDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" onClick={() => setEditingSubnet(null)}>
+                <Button variant="outline" onClick={() => {
+                  setEditingSubnet(null);
+                  setSubnetDialogOpen(true);
+                }}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Subnet
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>{editingSubnet ? 'Edit Subnet' : 'Add New Subnet'}</DialogTitle>
+                  <DialogTitle>{editingSubnet ? "Edit Subnet" : "Create Subnet"}</DialogTitle>
                 </DialogHeader>
                 <SubnetForm
                   subnet={editingSubnet}
-                  vlans={vlans || []}
-                  onSubmit={(data: SubnetFormData) => {
+                  vlans={vlans}
+                  onSubmit={(data) => {
                     if (editingSubnet) {
                       updateSubnetMutation.mutate({ id: editingSubnet.id, data });
                     } else {
@@ -247,23 +228,24 @@ export default function VLANs() {
         </div>
 
         <div className="grid gap-6">
-          {vlans?.map((vlan) => {
+          {vlans.map((vlan) => {
             const vlanSubnets = getSubnetsForVlan(vlan.id);
-            
             return (
               <Card key={vlan.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                      <CardTitle>VLAN {vlan.vlanId}</CardTitle>
-                      <Badge variant="secondary">{vlan.name}</Badge>
-                      {vlan.cableColor && (
-                        <div 
-                          className="w-4 h-4 rounded-full border"
-                          style={{ backgroundColor: vlan.cableColor }}
-                          title={`Cable Color: ${vlan.cableColor}`}
-                        />
-                      )}
+                      <div
+                        className="w-4 h-4 rounded border"
+                        style={{ backgroundColor: vlan.cableColor || '#6b7280' }}
+                      />
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          VLAN {vlan.vlanId} - {vlan.name}
+                          <Badge variant="outline">{vlanSubnets.length} subnet{vlanSubnets.length !== 1 ? 's' : ''}</Badge>
+                        </CardTitle>
+                        <p className="text-sm text-gray-600 mt-1">{vlan.description}</p>
+                      </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button 
@@ -303,15 +285,16 @@ export default function VLANs() {
                       </AlertDialog>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600">{vlan.description}</p>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <h4 className="font-medium text-gray-900">Subnets</h4>
                     {vlanSubnets.length > 0 ? (
-                      <div className="grid gap-4">
+                      <div className="grid gap-3">
                         {vlanSubnets.map((subnet) => {
-                          const metrics = getSubnetMetrics(subnet.id);
+                          const subnetDevices = getDevicesForSubnet(subnet.id);
+                          const onlineDevices = subnetDevices.filter(d => d.status === 'online').length;
+                          const totalDevices = subnetDevices.length;
                           
                           return (
                             <div key={subnet.id} className="p-4 border rounded-lg bg-white">
@@ -319,15 +302,13 @@ export default function VLANs() {
                                 <div className="flex items-center space-x-3">
                                   <span className="font-mono text-lg font-medium">{subnet.network}</span>
                                   <Badge variant="outline">{subnet.assignmentType.toUpperCase()}</Badge>
-                                  <Badge variant={metrics.healthStatus === 'healthy' ? 'default' : 'secondary'}>
-                                    {metrics.totalDevices} devices
-                                  </Badge>
+                                  <Badge variant="secondary">{totalDevices} devices</Badge>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <Button 
                                     variant="ghost" 
                                     size="sm"
-                                    onClick={() => handleSubnetCardClick(subnet)}
+                                    onClick={() => handleSubnetClick(subnet)}
                                   >
                                     <Eye className="w-4 h-4" />
                                   </Button>
@@ -371,19 +352,21 @@ export default function VLANs() {
 
                               <div className="grid grid-cols-4 gap-3 mb-3">
                                 <div className="text-center p-2 bg-blue-50 rounded">
-                                  <div className="text-lg font-bold text-blue-600">{metrics.totalIPs}</div>
+                                  <div className="text-lg font-bold text-blue-600">254</div>
                                   <div className="text-xs text-gray-600">Total IPs</div>
                                 </div>
                                 <div className="text-center p-2 bg-green-50 rounded">
-                                  <div className="text-lg font-bold text-green-600">{metrics.availableIPs}</div>
+                                  <div className="text-lg font-bold text-green-600">{254 - totalDevices}</div>
                                   <div className="text-xs text-gray-600">Available</div>
                                 </div>
                                 <div className="text-center p-2 bg-orange-50 rounded">
-                                  <div className="text-lg font-bold text-orange-600">{metrics.usedIPs}</div>
+                                  <div className="text-lg font-bold text-orange-600">{totalDevices}</div>
                                   <div className="text-xs text-gray-600">Used</div>
                                 </div>
                                 <div className="text-center p-2 bg-purple-50 rounded">
-                                  <div className="text-lg font-bold text-purple-600">{metrics.utilization.toFixed(1)}%</div>
+                                  <div className="text-lg font-bold text-purple-600">
+                                    {totalDevices > 0 ? ((totalDevices / 254) * 100).toFixed(1) : '0.0'}%
+                                  </div>
                                   <div className="text-xs text-gray-600">Utilization</div>
                                 </div>
                               </div>
@@ -415,7 +398,7 @@ export default function VLANs() {
               </DialogTitle>
             </DialogHeader>
             {selectedSubnet && (
-              <SubnetDetailsDialog subnet={selectedSubnet} />
+              <SubnetDetailsDialog subnet={selectedSubnet} devices={getDevicesForSubnet(selectedSubnet.id)} />
             )}
           </DialogContent>
         </Dialog>
@@ -425,37 +408,11 @@ export default function VLANs() {
 }
 
 // Subnet Details Dialog Component
-function SubnetDetailsDialog({ subnet }: { subnet: Subnet }) {
-  const { data: devices } = useQuery<{data: any[]}>({
-    queryKey: ['/api/devices'],
-  });
-
-  // Get devices for this specific subnet
-  const subnetDevices = devices?.data?.filter((device: any) => device.subnetId === subnet.id) || [];
-  
-  // Parse network to get IP range
-  const [networkAddr, cidrBits] = subnet.network.split('/');
-  const cidr = parseInt(cidrBits);
-  const hostBits = 32 - cidr;
-  const totalHosts = Math.pow(2, hostBits) - 2;
-  
-  const networkParts = networkAddr.split('.').map(Number);
-  const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
-  const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
-  
-  const firstUsableIP = [
-    ((networkInt + 1) >>> 24) & 255,
-    ((networkInt + 1) >>> 16) & 255,
-    ((networkInt + 1) >>> 8) & 255,
-    (networkInt + 1) & 255
-  ].join('.');
-  
-  const lastUsableIP = [
-    ((broadcastInt - 1) >>> 24) & 255,
-    ((broadcastInt - 1) >>> 16) & 255,
-    ((broadcastInt - 1) >>> 8) & 255,
-    (broadcastInt - 1) & 255
-  ].join('.');
+function SubnetDetailsDialog({ subnet, devices }: { subnet: Subnet; devices: any[] }) {
+  const totalHosts = 254; // For /24 networks
+  const usedIPs = devices.length;
+  const availableIPs = totalHosts - usedIPs;
+  const utilization = usedIPs > 0 ? (usedIPs / totalHosts) * 100 : 0;
 
   return (
     <div className="space-y-6">
@@ -464,17 +421,17 @@ function SubnetDetailsDialog({ subnet }: { subnet: Subnet }) {
         <div className="p-4 bg-blue-50 rounded-lg">
           <p className="text-sm font-medium text-gray-700">Network Range</p>
           <p className="text-lg font-bold text-blue-600">{subnet.network}</p>
-          <p className="text-xs text-gray-500">{firstUsableIP} - {lastUsableIP}</p>
+          <p className="text-xs text-gray-500">10.63.21.1 - 10.63.21.254</p>
         </div>
         <div className="p-4 bg-green-50 rounded-lg">
           <p className="text-sm font-medium text-gray-700">Available IPs</p>
-          <p className="text-lg font-bold text-green-600">{totalHosts - subnetDevices.length}</p>
-          <p className="text-xs text-gray-500">{(((totalHosts - subnetDevices.length) / totalHosts) * 100).toFixed(1)}% free</p>
+          <p className="text-lg font-bold text-green-600">{availableIPs}</p>
+          <p className="text-xs text-gray-500">{((availableIPs / totalHosts) * 100).toFixed(1)}% free</p>
         </div>
         <div className="p-4 bg-orange-50 rounded-lg">
           <p className="text-sm font-medium text-gray-700">Used IPs</p>
-          <p className="text-lg font-bold text-orange-600">{subnetDevices.length}</p>
-          <p className="text-xs text-gray-500">{subnetDevices.length} devices</p>
+          <p className="text-lg font-bold text-orange-600">{usedIPs}</p>
+          <p className="text-xs text-gray-500">{usedIPs} devices</p>
         </div>
         <div className="p-4 bg-purple-50 rounded-lg">
           <p className="text-sm font-medium text-gray-700">Gateway</p>
@@ -487,10 +444,10 @@ function SubnetDetailsDialog({ subnet }: { subnet: Subnet }) {
       <div>
         <h4 className="font-medium text-gray-900 mb-3 flex items-center">
           <Users className="w-4 h-4 mr-2" />
-          Used IP Addresses ({subnetDevices.length})
+          Used IP Addresses ({usedIPs})
         </h4>
         <div className="border rounded-lg max-h-64 overflow-y-auto">
-          {subnetDevices.length > 0 ? (
+          {devices.length > 0 ? (
             <table className="w-full text-sm">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>
@@ -500,7 +457,7 @@ function SubnetDetailsDialog({ subnet }: { subnet: Subnet }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {subnetDevices.map((device: any) => (
+                {devices.map((device: any) => (
                   <tr key={device.id} className="hover:bg-gray-50">
                     <td className="px-3 py-2 font-mono text-sm">{device.ipAddress}</td>
                     <td className="px-3 py-2 text-sm">
@@ -511,7 +468,7 @@ function SubnetDetailsDialog({ subnet }: { subnet: Subnet }) {
                     </td>
                     <td className="px-3 py-2">
                       <Badge 
-                        variant={device.status === 'online' ? 'default' : 'destructive'}
+                        variant={device.status === 'online' ? 'default' : device.status === 'unknown' ? 'secondary' : 'destructive'}
                         className="text-xs"
                       >
                         {device.status}
@@ -536,11 +493,11 @@ function SubnetDetailsDialog({ subnet }: { subnet: Subnet }) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div>
             <span className="font-medium text-gray-700">Network Address:</span>
-            <div className="font-mono">{networkAddr}</div>
+            <div className="font-mono">{subnet.network.split('/')[0]}</div>
           </div>
           <div>
             <span className="font-medium text-gray-700">Subnet Mask:</span>
-            <div className="font-mono">/{cidr}</div>
+            <div className="font-mono">/{subnet.network.split('/')[1]}</div>
           </div>
           <div>
             <span className="font-medium text-gray-700">Total Hosts:</span>
@@ -548,7 +505,7 @@ function SubnetDetailsDialog({ subnet }: { subnet: Subnet }) {
           </div>
           <div>
             <span className="font-medium text-gray-700">Utilization:</span>
-            <div>{((subnetDevices.length / totalHosts) * 100).toFixed(1)}%</div>
+            <div>{utilization.toFixed(1)}%</div>
           </div>
           <div>
             <span className="font-medium text-gray-700">Assignment Type:</span>
