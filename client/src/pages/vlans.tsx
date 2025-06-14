@@ -542,119 +542,91 @@ function SubnetForm({
 }: { 
   subnet: Subnet | null; 
   vlans: Vlan[]; 
-  onSubmit: (data: SubnetFormData) => void; 
+  onSubmit: (data: any) => void; 
   isLoading: boolean; 
 }) {
-  const form = useForm({
-    resolver: zodResolver(subnetSchema),
-    defaultValues: {
-      network: subnet?.network || "",
-      description: subnet?.description || "",
-      gateway: subnet?.gateway || "",
-      vlanId: subnet?.vlanId || (vlans[0]?.id || 0),
-      assignmentType: subnet?.assignmentType || "static",
-    },
-  });
+  const [network, setNetwork] = useState(subnet?.network || "");
+  const [description, setDescription] = useState(subnet?.description || "");
+  const [gateway, setGateway] = useState(subnet?.gateway || "");
+  const [vlanId, setVlanId] = useState(subnet?.vlanId || (vlans[0]?.id || 0));
+  const [assignmentType, setAssignmentType] = useState(subnet?.assignmentType || "static");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      network,
+      description,
+      gateway,
+      vlanId,
+      assignmentType,
+    });
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => onSubmit(data as SubnetFormData))} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="network"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Network (CIDR)</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="e.g., 192.168.1.0/24" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="text-sm font-medium">Network (CIDR)</label>
+        <Input 
+          value={network} 
+          onChange={(e) => setNetwork(e.target.value)} 
+          placeholder="e.g., 192.168.1.0/24" 
+          required
         />
-        
-        <FormField
-          control={form.control}
-          name="gateway"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Gateway IP</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="e.g., 192.168.1.1" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+      </div>
+      
+      <div>
+        <label className="text-sm font-medium">Gateway IP</label>
+        <Input 
+          value={gateway} 
+          onChange={(e) => setGateway(e.target.value)} 
+          placeholder="e.g., 192.168.1.1" 
         />
-        
-        <FormField
-          control={form.control}
-          name="vlanId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>VLAN</FormLabel>
-              <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a VLAN" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {vlans.map((vlan) => (
-                    <SelectItem key={vlan.id} value={vlan.id.toString()}>
-                      VLAN {vlan.vlanId} - {vlan.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+      </div>
+      
+      <div>
+        <label className="text-sm font-medium">VLAN</label>
+        <Select onValueChange={(value) => setVlanId(Number(value))} value={vlanId.toString()}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a VLAN" />
+          </SelectTrigger>
+          <SelectContent>
+            {vlans.map((vlan) => (
+              <SelectItem key={vlan.id} value={vlan.id.toString()}>
+                VLAN {vlan.vlanId} - {vlan.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div>
+        <label className="text-sm font-medium">Assignment Type</label>
+        <Select onValueChange={setAssignmentType} value={assignmentType}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="static">Static</SelectItem>
+            <SelectItem value="dhcp">DHCP</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div>
+        <label className="text-sm font-medium">Description</label>
+        <Textarea 
+          value={description} 
+          onChange={(e) => setDescription(e.target.value)} 
+          placeholder="Optional description" 
         />
-        
-        <FormField
-          control={form.control}
-          name="assignmentType"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Assignment Type</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="static">Static</SelectItem>
-                  <SelectItem value="dhcp">DHCP</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea {...field} placeholder="Optional description" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <div className="flex justify-end space-x-2">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Saving..." : (subnet ? "Update" : "Create")}
-          </Button>
-        </div>
-      </form>
-    </Form>
+      </div>
+      
+      <div className="flex justify-end space-x-2">
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? "Saving..." : (subnet ? "Update" : "Create")}
+        </Button>
+      </div>
+    </form>
   );
 }
 
