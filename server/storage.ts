@@ -143,9 +143,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteSubnet(id: number): Promise<void> {
-    // First, delete all devices in this subnet
+    // First, delete all network scans referencing this subnet
+    await db.delete(networkScans).where(eq(networkScans.subnetId, id));
+    // Then, delete all devices in this subnet
     await db.delete(devices).where(eq(devices.subnetId, id));
-    // Then delete the subnet
+    // Finally delete the subnet
     await db.delete(subnets).where(eq(subnets.id, id));
   }
 
