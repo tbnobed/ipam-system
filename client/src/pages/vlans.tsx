@@ -61,7 +61,7 @@ export default function VLANs() {
     refetchInterval: 30000,
   });
 
-  const { data: devices } = useQuery<{data: any[]}>({
+  const { data: devices, isLoading: devicesLoading } = useQuery<{data: any[]}>({
     queryKey: ['/api/devices'],
     refetchInterval: 30000,
   });
@@ -140,31 +140,33 @@ export default function VLANs() {
     const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
     const broadcastInt = networkInt + Math.pow(2, hostBits) - 1;
     
-    // Get devices that fall within this subnet's IP range - use subnet ID assignment as fallback
-    const deviceData = devices?.data?.filter((device: any) => {
-      // First try subnet ID matching (more reliable for manually assigned devices)
-      if (device.subnetId === subnet.id) {
-        return true;
-      }
-      
-      // Fallback to IP range matching for discovered devices
-      if (!device.ipAddress) return false;
-      
-      try {
-        const deviceIPParts = device.ipAddress.split('.').map(Number);
-        if (deviceIPParts.length !== 4 || deviceIPParts.some((part: number) => isNaN(part) || part < 0 || part > 255)) {
-          return false;
-        }
-        
-        const deviceIPInt = (deviceIPParts[0] << 24) + (deviceIPParts[1] << 16) + (deviceIPParts[2] << 8) + deviceIPParts[3];
-        
-        // Check if device IP falls within subnet range (excluding network and broadcast)
-        return deviceIPInt > networkInt && deviceIPInt < broadcastInt;
-      } catch (error) {
-        console.error('Error processing device IP:', device.ipAddress, error);
-        return false;
-      }
-    }) || [];
+    // Wait for devices data to load
+    if (devicesLoading || !devices?.data) {
+      return {
+        subnet,
+        metrics: {
+          totalIPs: totalHosts,
+          usedIPs: 0,
+          availableIPs: totalHosts,
+          utilization: 0,
+          totalDevices: 0,
+          onlineDevices: 0,
+          offlineDevices: 0,
+          healthStatus: 'loading'
+        },
+        totalHosts,
+        networkAddress: networkAddr,
+        broadcastAddress: `${Math.floor(broadcastInt / 16777216)}.${Math.floor((broadcastInt % 16777216) / 65536)}.${Math.floor((broadcastInt % 65536) / 256)}.${broadcastInt % 256}`,
+        firstUsableIP: `${Math.floor((networkInt + 1) / 16777216)}.${Math.floor(((networkInt + 1) % 16777216) / 65536)}.${Math.floor(((networkInt + 1) % 65536) / 256)}.${(networkInt + 1) % 256}`,
+        lastUsableIP: `${Math.floor((broadcastInt - 1) / 16777216)}.${Math.floor(((broadcastInt - 1) % 16777216) / 65536)}.${Math.floor(((broadcastInt - 1) % 65536) / 256)}.${(broadcastInt - 1) % 256}`,
+        availableRanges: [],
+        usedRanges: [],
+        deviceData: []
+      };
+    }
+
+    // Filter devices by subnet ID (primary method for assigned devices)
+    const deviceData = devices.data.filter((device: any) => device.subnetId === subnet.id) || [];
     
     const usedIPs = new Set(deviceData.map((device: any) => device.ipAddress));
     const availableRanges: string[] = [];
