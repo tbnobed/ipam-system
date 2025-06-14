@@ -75,7 +75,7 @@ ON CONFLICT (vlan_id) DO NOTHING;
 
 INSERT INTO subnets (id, network, gateway, vlan_id, assignment_type, description) VALUES
 (19, '10.63.20.0/24', '10.63.20.1', 1, 'static', 'Engineering control subnet'),
-(20, '10.63.21.0/24', '10.63.21.1', 2, 'static', 'Production equipment subnet');
+(20, '10.63.21.0/24', '10.63.20.1', 1, 'static', 'Production equipment subnet');
 
 -- Function to find correct subnet for an IP address
 CREATE OR REPLACE FUNCTION find_subnet_for_ip(ip_addr TEXT)
