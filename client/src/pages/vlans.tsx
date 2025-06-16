@@ -62,7 +62,7 @@ export default function VLANs() {
   });
 
   const { data: devices } = useQuery<{data: any[]}>({
-    queryKey: ['/api/devices'],
+    queryKey: ['/api/devices?limit=1000'],
     refetchInterval: 30000,
   });
 

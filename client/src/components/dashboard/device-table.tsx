@@ -34,7 +34,7 @@ export default function DeviceTable() {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<DeviceFilters>({
     page: 1,
-    limit: 50,
+    limit: 1000,
   });
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
