@@ -496,6 +496,8 @@ export class DatabaseStorage implements IStorage {
       })
       .from(subnets);
 
+    console.log('Dashboard metrics - found subnets:', subnetCapacity);
+
     let totalCapacity = 0;
     
     subnetCapacity.forEach(subnet => {
@@ -504,9 +506,12 @@ export class DatabaseStorage implements IStorage {
       const hostBits = 32 - cidr;
       
       // Calculate capacity mathematically (subtract network and broadcast addresses)
-      const subnetCapacity = Math.pow(2, hostBits) - 2;
-      totalCapacity += subnetCapacity;
+      const subnetCapacityValue = Math.pow(2, hostBits) - 2;
+      console.log(`Subnet ${subnet.network}: ${subnetCapacityValue} IPs`);
+      totalCapacity += subnetCapacityValue;
     });
+    
+    console.log('Dashboard metrics - total capacity:', totalCapacity, 'allocated devices:', deviceCount.count);
 
     // Get vendor breakdown
     const vendorCounts = await db

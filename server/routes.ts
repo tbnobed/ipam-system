@@ -349,6 +349,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Start network scan endpoint
+  app.post("/api/network/scan", async (req, res) => {
+    try {
+      const { subnetIds = [] } = req.body;
+      
+      // If no specific subnets provided, scan all subnets
+      let scanSubnetIds = subnetIds;
+      if (scanSubnetIds.length === 0) {
+        const allSubnets = await storage.getAllSubnets();
+        scanSubnetIds = allSubnets.map(s => s.id);
+      }
+      
+      const scanId = await networkScanner.startScan(scanSubnetIds);
+      res.json({ scanId, message: "Network scan started" });
+    } catch (error) {
+      console.error("Error starting network scan:", error);
+      res.status(500).json({ error: "Failed to start network scan" });
+    }
+  });
+
   // Network scan status endpoint
   app.get("/api/network/scan/status", async (req, res) => {
     try {
