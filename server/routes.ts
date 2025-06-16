@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Devices
   app.get("/api/devices", async (req, res) => {
     try {
-      const { search, vlan, status, page = "1", limit = "50" } = req.query;
+      const { search, vlan, status, page = "1", limit = "1000" } = req.query;
       const filters = {
         search: search as string,
         vlan: vlan as string,
