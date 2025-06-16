@@ -9,7 +9,6 @@ import Devices from "@/pages/devices";
 import Discovery from "@/pages/discovery";
 import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
-import Admin from "@/pages/admin";
 import Sidebar from "@/components/layout/sidebar";
 import NotFound from "@/pages/not-found";
 import ScanStatusIndicator from "@/components/global/scan-status-indicator";
@@ -26,7 +25,6 @@ function Router() {
           <Route path="/discovery" component={Discovery} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/settings" component={Settings} />
-          <Route path="/admin" component={Admin} />
           <Route component={NotFound} />
         </Switch>
       </div>
