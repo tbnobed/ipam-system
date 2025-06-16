@@ -48,6 +48,7 @@ class NetworkScanner {
       if (!this.activeScan) {
         try {
           const subnets = await storage.getAllSubnets();
+          console.log(`Periodic scan found ${subnets.length} subnets:`, subnets.map(s => s.network));
           const subnetIds = subnets.map(s => s.id);
           await this.startScan(subnetIds);
         } catch (error) {
