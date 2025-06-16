@@ -647,7 +647,7 @@ function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
             <Users className="w-4 h-4 mr-2" />
             Used IP Addresses ({details.usedRanges.length})
           </h4>
-          <div className="border rounded-lg max-h-96 overflow-y-auto">
+          <div className="border rounded-lg h-80 overflow-y-auto">
             {details.usedRanges.length > 0 ? (
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 sticky top-0">
@@ -691,7 +691,7 @@ function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
             <Activity className="w-4 h-4 mr-2" />
             Available IP Addresses ({details.availableRanges.length})
           </h4>
-          <div className="border rounded-lg max-h-96 overflow-y-auto">
+          <div className="border rounded-lg h-80 overflow-y-auto">
             {details.availableRanges.length > 0 ? (
               <div className="p-3 grid grid-cols-4 gap-1">
                 {details.availableRanges.map((ip: string) => (
@@ -708,35 +708,54 @@ function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
       </div>
 
       {/* Network Information */}
-      <div className="border-t pt-4">
-        <h4 className="font-medium text-gray-900 mb-3 flex items-center">
-          <Network className="w-4 h-4 mr-2" />
+      <div className="border-t pt-6">
+        <h4 className="font-medium text-gray-900 mb-6 flex items-center text-lg">
+          <Network className="w-5 h-5 mr-2" />
           Network Information
         </h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          <div>
-            <span className="font-medium text-gray-700">Network Address:</span>
-            <div className="font-mono">{details.networkAddress}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-4">
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <span className="font-medium text-gray-700 text-sm">Network Address:</span>
+              <div className="font-mono text-lg mt-1">{details.networkAddress}</div>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <span className="font-medium text-gray-700 text-sm">Broadcast Address:</span>
+              <div className="font-mono text-lg mt-1">{details.broadcastAddress}</div>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <span className="font-medium text-gray-700 text-sm">Gateway Address:</span>
+              <div className="font-mono text-lg mt-1">{subnet.gateway}</div>
+            </div>
           </div>
-          <div>
-            <span className="font-medium text-gray-700">Broadcast Address:</span>
-            <div className="font-mono">{details.broadcastAddress}</div>
+          <div className="space-y-4">
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <span className="font-medium text-gray-700 text-sm">Subnet Mask:</span>
+              <div className="font-mono text-lg mt-1">/{subnet.network.split('/')[1]} (255.255.255.0)</div>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <span className="font-medium text-gray-700 text-sm">Total Host Capacity:</span>
+              <div className="text-lg mt-1">{details.totalHosts.toLocaleString()} addresses</div>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <span className="font-medium text-gray-700 text-sm">Current Utilization:</span>
+              <div className="text-lg mt-1">{details.metrics.utilization.toFixed(1)}% ({details.metrics.usedIPs}/{details.totalHosts})</div>
+            </div>
           </div>
-          <div>
-            <span className="font-medium text-gray-700">Subnet Mask:</span>
-            <div className="font-mono">/{subnet.network.split('/')[1]}</div>
+        </div>
+        
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 bg-blue-50 rounded-lg text-center">
+            <div className="text-sm font-medium text-gray-700">Assignment Type</div>
+            <div className="text-lg font-bold text-blue-600 mt-1">DHCP</div>
           </div>
-          <div>
-            <span className="font-medium text-gray-700">Total Hosts:</span>
-            <div>{details.totalHosts.toLocaleString()}</div>
+          <div className="p-4 bg-green-50 rounded-lg text-center">
+            <div className="text-sm font-medium text-gray-700">IP Range</div>
+            <div className="text-lg font-bold text-green-600 mt-1">{details.firstUsableIP} - {details.lastUsableIP}</div>
           </div>
-          <div>
-            <span className="font-medium text-gray-700">Utilization:</span>
-            <div>{details.metrics.utilization.toFixed(1)}%</div>
-          </div>
-          <div>
-            <span className="font-medium text-gray-700">Assignment Type:</span>
-            <div className="capitalize">DHCP</div>
+          <div className="p-4 bg-purple-50 rounded-lg text-center">
+            <div className="text-sm font-medium text-gray-700">VLAN ID</div>
+            <div className="text-lg font-bold text-purple-600 mt-1">{subnet.vlanId || 'Untagged'}</div>
           </div>
         </div>
         {subnet.description && (
