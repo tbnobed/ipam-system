@@ -239,7 +239,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         page: parseInt(page as string),
         limit: parseInt(limit as string),
       };
+      
+      console.log("Device query filters:", filters);
       const devices = await storage.getDevices(filters);
+      console.log(`Returned ${devices.data.length} devices out of ${devices.total} total`);
+      console.log("Sample device IPs:", devices.data.slice(0, 5).map(d => `${d.id}:${d.ipAddress}:subnet${d.subnetId}`));
+      
       res.json(devices);
     } catch (error) {
       console.error("Error fetching devices:", error);
