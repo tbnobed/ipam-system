@@ -463,109 +463,124 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDashboardMetrics(): Promise<DashboardMetrics> {
-    // Get device counts by status
-    const deviceCounts = await db
-      .select({
-        status: devices.status,
-        count: sql<number>`count(*)`
-      })
-      .from(devices)
-      .groupBy(devices.status);
+    try {
+      // Get device counts by status
+      const deviceCounts = await db
+        .select({
+          status: devices.status,
+          count: sql<number>`count(*)`
+        })
+        .from(devices)
+        .groupBy(devices.status);
 
-    const onlineDevices = deviceCounts.find(d => d.status === 'online')?.count || 0;
-    const offlineDevices = deviceCounts.find(d => d.status === 'offline')?.count || 0;
+      const onlineDevices = deviceCounts.find(d => d.status === 'online')?.count || 0;
+      const offlineDevices = deviceCounts.find(d => d.status === 'offline')?.count || 0;
 
-    // Get VLAN and subnet counts
-    const [vlanCount] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(vlans);
+      // Get VLAN and subnet counts
+      const [vlanCount] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(vlans);
 
-    const [subnetCount] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(subnets);
+      const [subnetCount] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(subnets);
 
-    // Get total device count
-    const [deviceCount] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(devices);
+      // Get total device count
+      const [deviceCount] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(devices);
 
-    // Get total IP capacity from subnets - calculate mathematically without generating IPs
-    const subnetCapacity = await db
-      .select({
-        network: subnets.network
-      })
-      .from(subnets);
+      // Get all subnets with their networks
+      const allSubnets = await this.getAllSubnets();
+      console.log('Dashboard metrics - found subnets via getAllSubnets():', allSubnets.length, allSubnets.map(s => s.network));
 
-    console.log('Dashboard metrics - found subnets:', subnetCapacity);
-
-    let totalCapacity = 0;
-    
-    subnetCapacity.forEach(subnet => {
-      const [network, prefixLength] = subnet.network.split('/');
-      const cidr = parseInt(prefixLength);
-      const hostBits = 32 - cidr;
+      let totalCapacity = 0;
       
-      // Calculate capacity mathematically (subtract network and broadcast addresses)
-      const subnetCapacityValue = Math.pow(2, hostBits) - 2;
-      console.log(`Subnet ${subnet.network}: ${subnetCapacityValue} IPs`);
-      totalCapacity += subnetCapacityValue;
-    });
-    
-    console.log('Dashboard metrics - total capacity:', totalCapacity, 'allocated devices:', deviceCount.count);
+      allSubnets.forEach(subnet => {
+        const [network, prefixLength] = subnet.network.split('/');
+        const cidr = parseInt(prefixLength);
+        const hostBits = 32 - cidr;
+        
+        // Calculate capacity mathematically (subtract network and broadcast addresses)
+        const subnetCapacityValue = Math.pow(2, hostBits) - 2;
+        console.log(`Subnet ${subnet.network}: ${subnetCapacityValue} IPs`);
+        totalCapacity += subnetCapacityValue;
+      });
+      
+      console.log('Dashboard metrics - total capacity:', totalCapacity, 'allocated devices:', deviceCount.count);
 
-    // Get vendor breakdown
-    const vendorCounts = await db
-      .select({
-        vendor: devices.vendor,
-        count: sql<number>`count(*)`
-      })
-      .from(devices)
-      .where(sql`${devices.vendor} IS NOT NULL AND ${devices.vendor} != ''`)
-      .groupBy(devices.vendor)
-      .orderBy(sql`count(*) DESC`)
-      .limit(5);
+      // Get vendor breakdown
+      const vendorCounts = await db
+        .select({
+          vendor: devices.vendor,
+          count: sql<number>`count(*)`
+        })
+        .from(devices)
+        .where(sql`${devices.vendor} IS NOT NULL AND ${devices.vendor} != ''`)
+        .groupBy(devices.vendor)
+        .orderBy(sql`count(*) DESC`)
+        .limit(5);
 
-    // Get recent scans count (last 24 hours)
-    const recentScans = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(networkScans)
-      .where(sql`${networkScans.startTime} > NOW() - INTERVAL '24 hours'`);
+      // Get recent scans count (last 24 hours)
+      const recentScans = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(networkScans)
+        .where(sql`${networkScans.startTime} > NOW() - INTERVAL '24 hours'`);
 
-    // Get last scan time
-    const lastScan = await db
-      .select({ startTime: networkScans.startTime })
-      .from(networkScans)
-      .orderBy(desc(networkScans.startTime))
-      .limit(1);
+      // Get last scan time
+      const lastScan = await db
+        .select({ startTime: networkScans.startTime })
+        .from(networkScans)
+        .orderBy(desc(networkScans.startTime))
+        .limit(1);
 
-    // Calculate network utilization
-    const networkUtilization = totalCapacity > 0 ? Math.round((deviceCount.count / totalCapacity) * 100) : 0;
+      // Calculate network utilization
+      const networkUtilization = totalCapacity > 0 ? Math.round((deviceCount.count / totalCapacity) * 100) : 0;
 
-    // Count critical alerts (offline devices that were recently online)
-    const criticalAlerts = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(devices)
-      .where(sql`${devices.status} = 'offline' AND ${devices.lastSeen} > NOW() - INTERVAL '1 hour'`);
+      // Count critical alerts (offline devices that were recently online)
+      const criticalAlerts = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(devices)
+        .where(sql`${devices.status} = 'offline' AND ${devices.lastSeen} > NOW() - INTERVAL '1 hour'`);
 
-    return {
-      totalIPs: totalCapacity,
-      allocatedIPs: deviceCount.count,
-      availableIPs: totalCapacity - deviceCount.count,
-      onlineDevices,
-      offlineDevices,
-      totalVLANs: vlanCount.count,
-      totalSubnets: subnetCount.count,
-      changesSinceLastScan: {
-        online: 0,
-        offline: 0,
-      },
-      lastScanTime: lastScan[0]?.startTime?.toISOString() || undefined,
-      scanningStatus: 'idle',
-      networkUtilization,
-      criticalAlerts: criticalAlerts[0]?.count || 0,
-      recentScansCount: recentScans[0]?.count || 0,
-      topVendors: vendorCounts.map(v => ({ name: v.vendor || 'Unknown', count: v.count })),
-    };
+      return {
+        totalIPs: totalCapacity,
+        allocatedIPs: deviceCount.count,
+        availableIPs: totalCapacity - deviceCount.count,
+        onlineDevices,
+        offlineDevices,
+        totalVLANs: vlanCount.count,
+        totalSubnets: subnetCount.count,
+        changesSinceLastScan: {
+          online: 0,
+          offline: 0,
+        },
+        lastScanTime: lastScan[0]?.startTime?.toISOString() || undefined,
+        scanningStatus: 'idle',
+        networkUtilization,
+        criticalAlerts: criticalAlerts[0]?.count || 0,
+        recentScansCount: recentScans[0]?.count || 0,
+        topVendors: vendorCounts.map(v => ({ name: v.vendor || 'Unknown', count: v.count })),
+      };
+    } catch (error) {
+      console.error('Error in getDashboardMetrics:', error);
+      return {
+        totalIPs: 0,
+        allocatedIPs: 0,
+        availableIPs: 0,
+        onlineDevices: 0,
+        offlineDevices: 0,
+        totalVLANs: 0,
+        totalSubnets: 0,
+        changesSinceLastScan: { online: 0, offline: 0 },
+        lastScanTime: undefined,
+        scanningStatus: 'idle',
+        networkUtilization: 0,
+        criticalAlerts: 0,
+        recentScansCount: 0,
+        topVendors: [],
+      };
+    }
   }
 }
 
