@@ -561,7 +561,7 @@ export default function VLANs() {
 
         {/* Subnet Details Dialog */}
         <Dialog open={subnetDetailsOpen} onOpenChange={setSubnetDetailsOpen}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-6xl h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 Subnet Details: {selectedSubnet?.network}
