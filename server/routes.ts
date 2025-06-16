@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Devices
   app.get("/api/devices", async (req, res) => {
     try {
-      const { search, vlan, status, page = "1", limit = "1000" } = req.query;
+      const { search, vlan, status, page = "1", limit = "50" } = req.query;
       const filters = {
         search: search as string,
         vlan: vlan as string,
@@ -286,6 +286,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting device:", error);
       res.status(500).json({ error: "Failed to delete device" });
+    }
+  });
+
+  // Get all devices for dashboard calculations (no pagination)
+  app.get("/api/devices/all", async (req, res) => {
+    try {
+      const devices = await storage.getAllDevicesForExport();
+      res.json({ data: devices });
+    } catch (error) {
+      console.error("Error fetching all devices:", error);
+      res.status(500).json({ error: "Failed to fetch devices" });
     }
   });
 
