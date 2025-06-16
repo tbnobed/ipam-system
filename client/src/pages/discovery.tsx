@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 
 export default function Discovery() {
   const { toast } = useToast();
-  const [selectedSubnet, setSelectedSubnet] = useState<string>("");
+  const [selectedSubnet, setSelectedSubnet] = useState<string>("all");
   const [activeScan, setActiveScan] = useState<number | null>(null);
   
   // WebSocket hook for real-time scan updates
@@ -69,11 +69,15 @@ export default function Discovery() {
       if (selectedSubnet && selectedSubnet !== "all") {
         // If a specific subnet is selected, scan only that subnet
         subnetIds = [parseInt(selectedSubnet)];
+        console.log('Scanning specific subnet:', selectedSubnet, 'subnetIds:', subnetIds);
       } else {
         // If no subnet is selected or "all" is selected, scan all available subnets
         subnetIds = subnets?.map(subnet => subnet.id) || [];
+        console.log('Scanning all subnets. Available subnets:', subnets?.map(s => `${s.id}:${s.network}`));
+        console.log('Final subnetIds array:', subnetIds);
       }
       
+      console.log('Sending scan request with subnetIds:', subnetIds);
       const response = await apiRequest('/api/network/scan', 'POST', { subnetIds });
       const result = await response.json();
       

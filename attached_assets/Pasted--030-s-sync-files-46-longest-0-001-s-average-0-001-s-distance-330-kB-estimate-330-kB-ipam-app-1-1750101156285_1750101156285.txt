@@ -1,0 +1,49 @@
+.030 s; sync files=46, longest=0.001 s, average=0.001 s; distance=330 kB, estimate=330 kB
+ipam-app-1  | 7:11:17 PM [express] GET /api/subnets 304 in 30ms :: [{"id":2,"network":"10.63.20.0/24","gateway":"1…
+ipam-app-1  | 7:11:17 PM [express] GET /api/vlans 304 in 35ms :: [{"id":1,"vlanId":320,"name":"test","description"…
+ipam-app-1  | 7:11:17 PM [express] GET /api/devices 304 in 36ms :: {"data":[{"id":1,"ipAddress":"10.63.21.10","hos…
+ipam-app-1  | 7:11:17 PM [express] GET /api/dashboard/subnet-utilization 200 in 41ms :: [{"id":2,"name":"10.63.20.…
+ipam-app-1  | 7:11:17 PM [express] GET /api/dashboard/last-scan 200 in 3ms
+ipam-app-1  | 7:11:20 PM [express] GET /api/dashboard/last-scan 200 in 4ms
+ipam-app-1  | WebSocket client connected
+ipam-app-1  | Forcing reset of stuck scan state
+ipam-app-1  | Starting network scan 3 for subnets: [ 2 ]
+ipam-app-1  | 7:11:24 PM [express] POST /api/network/scan 200 in 3ms :: {"scanId":3,"status":"started"}
+ipam-app-1  | Scanning subnet 10.63.20.0/24 (254 IPs)
+ipam-app-1  | 7:11:24 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 7:11:26 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 7:11:28 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 7:11:30 PM [express] GET /api/network/scan 200 in 2ms
+ipam-app-1  | Dashboard metrics - found subnets via getAllSubnets(): 2 [ '10.63.20.0/24', '10.63.21.0/24' ]
+ipam-app-1  | Subnet 10.63.20.0/24: 254 IPs
+ipam-app-1  | Subnet 10.63.21.0/24: 254 IPs
+ipam-app-1  | Dashboard metrics - total capacity: 508 allocated devices: 30
+ipam-app-1  | 7:11:31 PM [express] GET /api/dashboard/metrics 200 in 6ms :: {"totalIPs":508,"allocatedIPs":"30","a…
+ipam-app-1  | 7:11:32 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 7:11:34 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 7:11:36 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 7:11:38 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 7:11:40 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 7:11:42 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 7:11:44 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 7:11:46 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 7:11:48 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 7:11:50 PM [express] GET /api/dashboard/last-scan 200 in 3ms
+ipam-app-1  | 7:11:50 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 7:11:52 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 7:11:54 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | 7:11:56 PM [express] GET /api/network/scan 200 in 6ms
+ipam-app-1  | 7:11:58 PM [express] GET /api/network/scan 200 in 4ms
+ipam-app-1  | 7:12:00 PM [express] GET /api/network/scan 200 in 3ms
+ipam-app-1  | Dashboard metrics - found subnets via getAllSubnets(): 2 [ '10.63.20.0/24', '10.63.21.0/24' ]
+ipam-app-1  | Subnet 10.63.20.0/24: 254 IPs
+ipam-app-1  | Subnet 10.63.21.0/24: 254 IPs
+ipam-app-1  | Dashboard metrics - total capacity: 508 allocated devices: 30
+ipam-app-1  | 7:12:01 PM [express] GET /api/dashboard/metrics 200 in 19ms :: {"totalIPs":508,"allocatedIPs":"30","…
+ipam-app-1  | Network scan 2 completed. Found 30 devices.
+ipam-app-1  | 7:12:20 PM [express] GET /api/dashboard/last-scan 200 in 3ms
+ipam-app-1  | Dashboard metrics - found subnets via getAllSubnets(): 2 [ '10.63.20.0/24', '10.63.21.0/24' ]
+ipam-app-1  | Subnet 10.63.20.0/24: 254 IPs
+ipam-app-1  | Subnet 10.63.21.0/24: 254 IPs
+ipam-app-1  | Dashboard metrics - total capacity: 508 allocated devices: 30
+ipam-app-1  | 7:12:31 PM [express] GET /api/dashboard/metrics 200 in 17ms :: {"totalIPs":508,"allocatedIPs":"30","…

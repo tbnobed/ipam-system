@@ -287,7 +287,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/network/scan", async (req, res) => {
     try {
       const { subnetIds } = req.body;
-      const scanId = await networkScanner.startScan(subnetIds);
+      console.log("Received scan request with subnetIds:", subnetIds);
+      
+      // Ensure subnetIds is an array
+      const validSubnetIds = Array.isArray(subnetIds) ? subnetIds : [];
+      console.log("Processing scan with subnet IDs:", validSubnetIds);
+      
+      const scanId = await networkScanner.startScan(validSubnetIds);
       res.json({ scanId, status: "started" });
     } catch (error) {
       console.error("Error starting network scan:", error);
