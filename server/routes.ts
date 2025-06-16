@@ -156,14 +156,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { search, vlan, subnet, status, page = "1", limit = "50", sortBy, sortOrder } = req.query;
       const filters = {
-        search: search as string,
-        vlan: vlan as string,
-        subnet: subnet as string,
-        status: status as string,
+        search: search ? search as string : undefined,
+        vlan: vlan ? vlan as string : undefined,
+        subnet: subnet ? subnet as string : undefined,
+        status: status ? status as string : undefined,
         page: parseInt(page as string),
         limit: parseInt(limit as string),
-        sortBy: sortBy as string,
-        sortOrder: (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : undefined,
+        sortBy: sortBy ? sortBy as string : undefined,
+        sortOrder: (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder as 'asc' | 'desc' : undefined,
       };
       
       console.log("Device query filters:", filters);

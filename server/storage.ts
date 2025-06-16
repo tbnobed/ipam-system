@@ -282,7 +282,6 @@ export class DatabaseStorage implements IStorage {
     const limit = filters.limit || 50;
     const offset = (page - 1) * limit;
 
-    console.log("Device query filters:", filters);
     let conditions = [];
 
     if (filters.search) {
@@ -325,7 +324,8 @@ export class DatabaseStorage implements IStorage {
       const sortDirection = filters.sortOrder === 'desc' ? desc : asc;
       switch (filters.sortBy) {
         case 'ipAddress':
-          orderByClause = [sortDirection(devices.ipAddress)];
+          // Use PostgreSQL inet sorting for proper IP address numerical ordering
+          orderByClause = [sql`${devices.ipAddress}::inet ${filters.sortOrder === 'desc' ? sql`DESC` : sql`ASC`}`];
           break;
         case 'hostname':
           orderByClause = [sortDirection(devices.hostname)];
@@ -346,10 +346,12 @@ export class DatabaseStorage implements IStorage {
           orderByClause = [sortDirection(devices.subnetId)];
           break;
         default:
-          orderByClause = [devices.subnetId, devices.ipAddress];
+          // Default sorting: subnet first, then IP addresses in numerical order
+          orderByClause = [devices.subnetId, sql`${devices.ipAddress}::inet ASC`];
       }
     } else {
-      orderByClause = [devices.subnetId, devices.ipAddress];
+      // Default sorting: subnet first, then IP addresses in numerical order
+      orderByClause = [devices.subnetId, sql`${devices.ipAddress}::inet ASC`];
     }
     
     // Query all devices - no longer restrict by specific subnet IDs
