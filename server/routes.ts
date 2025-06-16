@@ -163,7 +163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         page: parseInt(page as string),
         limit: parseInt(limit as string),
         sortBy: sortBy as string,
-        sortOrder: sortOrder as string,
+        sortOrder: (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : undefined,
       };
       
       console.log("Device query filters:", filters);

@@ -296,30 +296,19 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (filters.vlan) {
-      // Get all subnets for this VLAN and filter devices by IP range
+      // Get all subnet IDs for this VLAN
       const vlanSubnets = await db
-        .select({ network: subnets.network })
+        .select({ id: subnets.id })
         .from(subnets)
         .innerJoin(vlans, eq(subnets.vlanId, vlans.id))
         .where(eq(vlans.vlanId, parseInt(filters.vlan)));
       
       if (vlanSubnets.length > 0) {
-        const ipRangeConditions = vlanSubnets.map(subnet => {
-          const [network, prefixLength] = subnet.network.split('/');
-          const cidr = parseInt(prefixLength);
-          const hostBits = 32 - cidr;
-          const networkParts = network.split('.');
-          
-          // For /24 networks, use simple prefix matching for performance
-          if (cidr === 24) {
-            return sql`${devices.ipAddress} LIKE ${networkParts.slice(0, 3).join('.') + '.%'}`;
-          } else {
-            // For other CIDR blocks, use more complex matching
-            return sql`inet '${devices.ipAddress}' << inet '${subnet.network}'`;
-          }
-        });
-        
-        conditions.push(or(...ipRangeConditions));
+        const subnetConditions = vlanSubnets.map(subnet => eq(devices.subnetId, subnet.id));
+        conditions.push(or(...subnetConditions));
+      } else {
+        // If no subnets found for this VLAN, return no devices
+        conditions.push(sql`1 = 0`);
       }
     }
 
