@@ -282,6 +282,7 @@ export class DatabaseStorage implements IStorage {
     const limit = filters.limit || 50;
     const offset = (page - 1) * limit;
 
+    console.log("Device query filters:", filters);
     let conditions = [];
 
     if (filters.search) {

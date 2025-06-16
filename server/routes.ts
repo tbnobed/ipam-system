@@ -154,13 +154,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Devices
   app.get("/api/devices", async (req, res) => {
     try {
-      const { search, vlan, status, page = "1", limit = "50" } = req.query;
+      const { search, vlan, subnet, status, page = "1", limit = "50", sortBy, sortOrder } = req.query;
       const filters = {
         search: search as string,
         vlan: vlan as string,
+        subnet: subnet as string,
         status: status as string,
         page: parseInt(page as string),
         limit: parseInt(limit as string),
+        sortBy: sortBy as string,
+        sortOrder: sortOrder as string,
       };
       
       console.log("Device query filters:", filters);
