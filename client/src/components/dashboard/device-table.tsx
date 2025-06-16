@@ -109,7 +109,12 @@ export default function DeviceTable() {
   };
 
   const handleVlanFilter = (vlan: string) => {
-    setFilters(prev => ({ ...prev, vlan: vlan === "all" ? undefined : vlan, page: 1 }));
+    setFilters(prev => ({ 
+      ...prev, 
+      vlan: vlan === "all" ? undefined : vlan, 
+      subnet: undefined, // Clear subnet filter when VLAN changes
+      page: 1 
+    }));
   };
 
   const handleStatusFilter = (status: string) => {
@@ -132,6 +137,14 @@ export default function DeviceTable() {
     
     setSortField(field);
     setSortDirection(newDirection);
+    
+    // Update filters to include sorting
+    setFilters(prev => ({ 
+      ...prev, 
+      sortBy: field, 
+      sortOrder: newDirection,
+      page: 1 
+    }));
   };
 
   const getSortIcon = (field: string) => {
@@ -440,11 +453,21 @@ export default function DeviceTable() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Subnets</SelectItem>
-                {subnets.map((subnet: any) => (
-                  <SelectItem key={subnet.id} value={subnet.id.toString()}>
-                    {subnet.network}
-                  </SelectItem>
-                ))}
+                {(() => {
+                  // Filter subnets based on selected VLAN
+                  const filteredSubnets = filters.vlan && filters.vlan !== "all" 
+                    ? subnets.filter((subnet: any) => {
+                        const vlan = vlans.find(v => v.vlanId.toString() === filters.vlan);
+                        return vlan && subnet.vlanId === vlan.id;
+                      })
+                    : subnets;
+                  
+                  return filteredSubnets.map((subnet: any) => (
+                    <SelectItem key={subnet.id} value={subnet.id.toString()}>
+                      {subnet.network}
+                    </SelectItem>
+                  ));
+                })()}
               </SelectContent>
             </Select>
             <Select onValueChange={handleStatusFilter} value={filters.status || "all"}>

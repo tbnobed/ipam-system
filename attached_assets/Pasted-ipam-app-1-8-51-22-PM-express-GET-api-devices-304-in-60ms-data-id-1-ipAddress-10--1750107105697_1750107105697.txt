@@ -1,0 +1,114 @@
+ipam-app-1  | 8:51:22 PM [express] GET /api/devices 304 in 60ms :: {"data":[{"id":1,"ipAddress":"10.63.21.10","hos…
+ipam-app-1  | 8:51:27 PM [express] GET /api/network/scan 304 in 1ms :: {"isActive":false,"currentScanId":null,"pro…
+ipam-app-1  | Device query filters: {
+ipam-app-1  |   search: undefined,
+ipam-app-1  |   vlan: '320',
+ipam-app-1  |   status: undefined,
+ipam-app-1  |   page: 1,
+ipam-app-1  |   limit: 50
+ipam-app-1  | }
+ipam-app-1  | Returned 50 devices out of 122 total
+ipam-app-1  | Sample device IPs: [
+ipam-app-1  |   '1:10.63.21.10:subnet1',
+ipam-app-1  |   '2:10.63.21.11:subnet1',
+ipam-app-1  |   '3:10.63.21.12:subnet1',
+ipam-app-1  |   '4:10.63.21.13:subnet1',
+ipam-app-1  |   '5:10.63.21.14:subnet1'
+ipam-app-1  | ]
+ipam-app-1  | 8:51:27 PM [express] GET /api/devices 200 in 7ms :: {"data":[{"id":1,"ipAddress":"10.63.21.10","host…
+ipam-app-1  | Dashboard metrics - found subnets via getAllSubnets(): 4 [
+ipam-app-1  |   '10.63.20.0/24',
+ipam-app-1  |   '10.63.21.0/24',
+ipam-app-1  |   '10.63.250.0/24',
+ipam-app-1  |   '10.63.251.0/24'
+ipam-app-1  | ]
+ipam-app-1  | Subnet 10.63.20.0/24: 254 IPs
+ipam-app-1  | Subnet 10.63.21.0/24: 254 IPs
+ipam-app-1  | Subnet 10.63.250.0/24: 254 IPs
+ipam-app-1  | Subnet 10.63.251.0/24: 254 IPs
+ipam-app-1  | Dashboard metrics - total capacity: 1016 allocated devices: 235
+ipam-app-1  | 8:51:31 PM [express] GET /api/dashboard/metrics 200 in 8ms :: {"totalIPs":1016,"allocatedIPs":"235",…
+ipam-app-1  | 8:51:32 PM [express] GET /api/network/scan 304 in 1ms :: {"isActive":false,"currentScanId":null,"pro…
+ipam-app-1  | Device query filters: {
+ipam-app-1  |   search: undefined,
+ipam-app-1  |   vlan: '3250',
+ipam-app-1  |   status: undefined,
+ipam-app-1  |   page: 1,
+ipam-app-1  |   limit: 50
+ipam-app-1  | }
+ipam-app-1  | Returned 50 devices out of 113 total
+ipam-app-1  | Sample device IPs: [
+ipam-app-1  |   '123:10.63.251.1:subnet3',
+ipam-app-1  |   '150:10.63.251.101:subnet3',
+ipam-app-1  |   '151:10.63.251.102:subnet3',
+ipam-app-1  |   '152:10.63.251.103:subnet3',
+ipam-app-1  |   '130:10.63.251.12:subnet3'
+ipam-app-1  | ]
+ipam-app-1  | 8:51:34 PM [express] GET /api/devices 200 in 5ms :: {"data":[{"id":123,"ipAddress":"10.63.251.1","ho…
+ipam-app-1  | 8:51:37 PM [express] GET /api/network/scan 304 in 1ms :: {"isActive":false,"currentScanId":null,"pro…
+ipam-app-1  | Device query filters: {
+ipam-app-1  |   search: undefined,
+ipam-app-1  |   vlan: '320',
+ipam-app-1  |   status: undefined,
+ipam-app-1  |   page: 1,
+ipam-app-1  |   limit: 50
+ipam-app-1  | }
+ipam-app-1  | Returned 50 devices out of 122 total
+ipam-app-1  | Sample device IPs: [
+ipam-app-1  |   '1:10.63.21.10:subnet1',
+ipam-app-1  |   '2:10.63.21.11:subnet1',
+ipam-app-1  |   '3:10.63.21.12:subnet1',
+ipam-app-1  |   '4:10.63.21.13:subnet1',
+ipam-app-1  |   '5:10.63.21.14:subnet1'
+ipam-app-1  | ]
+ipam-app-1  | 8:51:38 PM [express] GET /api/devices 200 in 5ms :: {"data":[{"id":1,"ipAddress":"10.63.21.10","host…
+ipam-app-1  | Device query filters: {
+ipam-app-1  |   search: undefined,
+ipam-app-1  |   vlan: '320',
+ipam-app-1  |   status: undefined,
+ipam-app-1  |   page: 1,
+ipam-app-1  |   limit: 50
+ipam-app-1  | }
+ipam-app-1  | Returned 50 devices out of 122 total
+ipam-app-1  | Sample device IPs: [
+ipam-app-1  |   '1:10.63.21.10:subnet1',
+ipam-app-1  |   '2:10.63.21.11:subnet1',
+ipam-app-1  |   '3:10.63.21.12:subnet1',
+ipam-app-1  |   '4:10.63.21.13:subnet1',
+ipam-app-1  |   '5:10.63.21.14:subnet1'
+ipam-app-1  | ]
+ipam-app-1  | 8:51:40 PM [express] GET /api/devices 200 in 5ms :: {"data":[{"id":1,"ipAddress":"10.63.21.10","host…
+ipam-app-1  | 8:51:42 PM [express] GET /api/network/scan 304 in 1ms :: {"isActive":false,"currentScanId":null,"pro…
+ipam-app-1  | Device query filters: {
+ipam-app-1  |   search: undefined,
+ipam-app-1  |   vlan: '320',
+ipam-app-1  |   status: undefined,
+ipam-app-1  |   page: 1,
+ipam-app-1  |   limit: 50
+ipam-app-1  | }
+ipam-app-1  | Returned 50 devices out of 122 total
+ipam-app-1  | Sample device IPs: [
+ipam-app-1  |   '1:10.63.21.10:subnet1',
+ipam-app-1  |   '2:10.63.21.11:subnet1',
+ipam-app-1  |   '3:10.63.21.12:subnet1',
+ipam-app-1  |   '4:10.63.21.13:subnet1',
+ipam-app-1  |   '5:10.63.21.14:subnet1'
+ipam-app-1  | ]
+ipam-app-1  | 8:51:43 PM [express] GET /api/devices 200 in 7ms :: {"data":[{"id":1,"ipAddress":"10.63.21.10","host…
+ipam-app-1  | Device query filters: {
+ipam-app-1  |   search: undefined,
+ipam-app-1  |   vlan: '320',
+ipam-app-1  |   status: undefined,
+ipam-app-1  |   page: 1,
+ipam-app-1  |   limit: 50
+ipam-app-1  | }
+ipam-app-1  | Returned 50 devices out of 122 total
+ipam-app-1  | Sample device IPs: [
+ipam-app-1  |   '1:10.63.21.10:subnet1',
+ipam-app-1  |   '2:10.63.21.11:subnet1',
+ipam-app-1  |   '3:10.63.21.12:subnet1',
+ipam-app-1  |   '4:10.63.21.13:subnet1',
+ipam-app-1  |   '5:10.63.21.14:subnet1'
+ipam-app-1  | ]
+ipam-app-1  | 8:51:45 PM [express] GET /api/devices 200 in 6ms :: {"data":[{"id":1,"ipAddress":"10.63.21.10","host…
+ipam-app-1  | 8:51:48 PM [express] GET /api/network/scan 304 in 1ms :: {"isActive":false,"currentScanId":null,"pro…

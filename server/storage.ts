@@ -329,6 +329,39 @@ export class DatabaseStorage implements IStorage {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     
+    // Determine sorting
+    let orderByClause;
+    if (filters.sortBy && filters.sortOrder) {
+      const sortDirection = filters.sortOrder === 'desc' ? desc : asc;
+      switch (filters.sortBy) {
+        case 'ipAddress':
+          orderByClause = [sortDirection(devices.ipAddress)];
+          break;
+        case 'hostname':
+          orderByClause = [sortDirection(devices.hostname)];
+          break;
+        case 'status':
+          orderByClause = [sortDirection(devices.status)];
+          break;
+        case 'deviceType':
+          orderByClause = [sortDirection(devices.deviceType)];
+          break;
+        case 'location':
+          orderByClause = [sortDirection(devices.location)];
+          break;
+        case 'lastSeen':
+          orderByClause = [sortDirection(devices.lastSeen)];
+          break;
+        case 'subnetId':
+          orderByClause = [sortDirection(devices.subnetId)];
+          break;
+        default:
+          orderByClause = [devices.subnetId, devices.ipAddress];
+      }
+    } else {
+      orderByClause = [devices.subnetId, devices.ipAddress];
+    }
+    
     // Query all devices - no longer restrict by specific subnet IDs
     // This ensures devices show up regardless of which subnet ID they're assigned to
     const data = await db.select({
@@ -350,7 +383,7 @@ export class DatabaseStorage implements IStorage {
     })
       .from(devices)
       .where(whereClause)
-      .orderBy(devices.subnetId, devices.ipAddress)
+      .orderBy(...orderByClause)
       .limit(limit)
       .offset(offset);
 
