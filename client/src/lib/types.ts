@@ -30,6 +30,7 @@ export interface SubnetUtilization {
 export interface DeviceFilters {
   search?: string;
   vlan?: string;
+  subnet?: string;
   status?: string;
   page?: number;
   limit?: number;

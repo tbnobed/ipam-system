@@ -80,6 +80,10 @@ export default function DeviceTable() {
     queryKey: ['/api/vlans'],
   });
 
+  const { data: subnets = [] } = useQuery<any[]>({
+    queryKey: ['/api/subnets'],
+  });
+
   const updateDeviceMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: EditDeviceFormData }) => 
       apiRequest(`/api/devices/${id}`, 'PUT', data),
@@ -110,6 +114,10 @@ export default function DeviceTable() {
 
   const handleStatusFilter = (status: string) => {
     setFilters(prev => ({ ...prev, status: status === "all" ? undefined : status, page: 1 }));
+  };
+
+  const handleSubnetFilter = (subnet: string) => {
+    setFilters(prev => ({ ...prev, subnet: subnet === "all" ? undefined : subnet, page: 1 }));
   };
 
   const handlePageChange = (page: number) => {
@@ -426,6 +434,19 @@ export default function DeviceTable() {
                 ))}
               </SelectContent>
             </Select>
+            <Select onValueChange={handleSubnetFilter} value={filters.subnet || "all"}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="All Subnets" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Subnets</SelectItem>
+                {subnets.map((subnet: any) => (
+                  <SelectItem key={subnet.id} value={subnet.id.toString()}>
+                    {subnet.network}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select onValueChange={handleStatusFilter} value={filters.status || "all"}>
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="All Status" />
@@ -475,7 +496,16 @@ export default function DeviceTable() {
                     {getSortIcon("hostname")}
                   </Button>
                 </TableHead>
-                <TableHead>VLAN/Subnet</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 font-semibold"
+                    onClick={() => handleSort("subnetId")}
+                  >
+                    VLAN/Subnet
+                    {getSortIcon("subnetId")}
+                  </Button>
+                </TableHead>
                 <TableHead>
                   <Button
                     variant="ghost"
@@ -536,8 +566,20 @@ export default function DeviceTable() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm text-gray-900">VLAN {device.subnetId}</div>
-                    <div className="text-sm text-gray-500">Subnet info</div>
+                    {(() => {
+                      const subnet = subnets.find(s => s.id === device.subnetId);
+                      const vlan = subnet ? vlans.find(v => v.id === subnet.vlanId) : null;
+                      return (
+                        <div>
+                          <div className="text-sm text-gray-900">
+                            {vlan ? `VLAN ${vlan.vlanId}` : 'No VLAN'}
+                          </div>
+                          <div className="text-sm text-gray-500 font-mono">
+                            {subnet ? subnet.network : 'No subnet'}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     {device.deviceType && getDeviceTypeBadge(device.deviceType)}

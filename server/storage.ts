@@ -322,6 +322,11 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    if (filters.subnet) {
+      // Filter devices by specific subnet ID
+      conditions.push(eq(devices.subnetId, parseInt(filters.subnet)));
+    }
+
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     
     // Query all devices - no longer restrict by specific subnet IDs
