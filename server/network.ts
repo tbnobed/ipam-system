@@ -565,7 +565,16 @@ class NetworkScanner {
   private async findSubnetForIP(ipAddress: string): Promise<number | null> {
     const subnets = await storage.getAllSubnets();
     
-    for (const subnet of subnets) {
+    // Sort by CIDR specificity (most specific first) to prevent conflicts
+    const sortedSubnets = subnets.sort((a, b) => {
+      const cidrA = parseInt(a.network.split('/')[1]);
+      const cidrB = parseInt(b.network.split('/')[1]);
+      // Higher CIDR = more specific, should be checked first
+      if (cidrA !== cidrB) return cidrB - cidrA;
+      return a.network.localeCompare(b.network);
+    });
+    
+    for (const subnet of sortedSubnets) {
       if (this.isIPInSubnet(ipAddress, subnet.network)) {
         return subnet.id;
       }
@@ -606,13 +615,14 @@ class NetworkScanner {
           openPorts: (discovery.openPorts || []).map(String),
         });
       } else {
-        // Create new device - let database triggers handle subnet assignment
+        // Create new device - let database function determine correct subnet
+        const correctSubnetId = await this.findSubnetForIP(discovery.ipAddress);
         await storage.createDevice({
           ipAddress: discovery.ipAddress,
           hostname: discovery.hostname,
           macAddress: discovery.macAddress,
           vendor: discovery.vendor,
-          subnetId: originalSubnetId, // Triggers will correct this
+          subnetId: correctSubnetId || originalSubnetId,
           status: 'online',
           lastSeen: new Date(),
           openPorts: (discovery.openPorts || []).map(String),
@@ -627,7 +637,28 @@ class NetworkScanner {
 
   async fixExistingDeviceSubnets() {
     console.log('Starting to fix existing device subnet assignments...');
-    return await storage.fixDeviceSubnetAssignments();
+    
+    try {
+      const devices = await storage.getAllDevicesForExport();
+      let correctedCount = 0;
+      
+      for (const device of devices) {
+        if (device.ipAddress) {
+          const correctSubnetId = await this.findSubnetForIP(device.ipAddress);
+          if (correctSubnetId && correctSubnetId !== device.subnetId) {
+            await storage.updateDevice(device.id, { subnetId: correctSubnetId });
+            correctedCount++;
+            console.log(`Fixed device ${device.id} (${device.ipAddress}): subnet ${device.subnetId} -> ${correctSubnetId}`);
+          }
+        }
+      }
+      
+      console.log(`Fixed ${correctedCount} device subnet assignments using CIDR precedence`);
+      return { correctedCount, details: `Fixed ${correctedCount} devices` };
+    } catch (error) {
+      console.error('Error fixing device subnet assignments:', error);
+      return { correctedCount: 0, details: 'Failed to fix device assignments' };
+    }
   }
 }
 

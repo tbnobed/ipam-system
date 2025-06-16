@@ -312,6 +312,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/network/scan", async (req, res) => {
+    try {
+      const status = networkScanner.getScanStatus();
+      res.json(status);
+    } catch (error) {
+      console.error("Error getting network scan status:", error);
+      res.status(500).json({ error: "Failed to get scan status" });
+    }
+  });
+
+  app.post("/api/network/fix-subnets", async (req, res) => {
+    try {
+      console.log("Manual fix requested for device subnet assignments");
+      const result = await networkScanner.fixExistingDeviceSubnets();
+      res.json(result);
+    } catch (error) {
+      console.error("Error fixing device subnet assignments:", error);
+      res.status(500).json({ error: "Failed to fix device subnet assignments" });
+    }
+  });
+
   app.post("/api/devices/:id/ping", async (req, res) => {
     try {
       const deviceId = parseInt(req.params.id);
