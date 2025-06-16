@@ -267,6 +267,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/network/scan/stop", async (req, res) => {
+    try {
+      console.log("Stop scan request received");
+      networkScanner.stopScan();
+      res.json({ success: true, message: "Scan stopped" });
+    } catch (error) {
+      console.error("Error stopping network scan:", error);
+      res.status(500).json({ error: "Failed to stop network scan" });
+    }
+  });
+
   app.post("/api/network/fix-subnets", async (req, res) => {
     try {
       console.log("Manual fix requested for device subnet assignments");

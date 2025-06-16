@@ -110,6 +110,23 @@ class NetworkScanner {
     };
   }
 
+  stopScan() {
+    console.log('Stopping network scan');
+    this.activeScan = false;
+    const previousScanId = this.currentScanId;
+    this.currentScanId = null;
+    this.scanProgress = { current: 0, total: 0 };
+    
+    // Broadcast scan stopped update
+    this.broadcastScanUpdate({
+      status: 'scan_stopped',
+      scanId: previousScanId,
+      message: 'Network scan stopped by user'
+    });
+    
+    this.broadcastProgress();
+  }
+
   async startScan(subnetIds: number[]): Promise<number> {
     if (this.activeScan) {
       // Force reset if stuck - safety measure
