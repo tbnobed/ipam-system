@@ -12,6 +12,7 @@ import Settings from "@/pages/settings";
 import Admin from "@/pages/admin";
 import Sidebar from "@/components/layout/sidebar";
 import NotFound from "@/pages/not-found";
+import ScanStatusIndicator from "@/components/global/scan-status-indicator";
 
 function Router() {
   return (
@@ -29,6 +30,7 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </div>
+      <ScanStatusIndicator />
     </div>
   );
 }
