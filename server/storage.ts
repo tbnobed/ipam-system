@@ -329,7 +329,7 @@ export class DatabaseStorage implements IStorage {
     const data = await db.select()
       .from(devices)
       .where(whereClause)
-      .orderBy(devices.ipAddress)
+      .orderBy(devices.subnetId, devices.ipAddress)
       .limit(limit)
       .offset(offset);
 
