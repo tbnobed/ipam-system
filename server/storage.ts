@@ -326,7 +326,23 @@ export class DatabaseStorage implements IStorage {
     
     // Query all devices - no longer restrict by specific subnet IDs
     // This ensures devices show up regardless of which subnet ID they're assigned to
-    const data = await db.select()
+    const data = await db.select({
+      id: devices.id,
+      ipAddress: devices.ipAddress,
+      hostname: devices.hostname,
+      macAddress: devices.macAddress,
+      vendor: devices.vendor,
+      deviceType: devices.deviceType,
+      purpose: devices.purpose,
+      location: devices.location,
+      subnetId: devices.subnetId,
+      status: devices.status,
+      lastSeen: devices.lastSeen,
+      openPorts: devices.openPorts,
+      assignmentType: devices.assignmentType,
+      createdAt: devices.createdAt,
+      updatedAt: devices.updatedAt
+    })
       .from(devices)
       .where(whereClause)
       .orderBy(devices.subnetId, devices.ipAddress)
