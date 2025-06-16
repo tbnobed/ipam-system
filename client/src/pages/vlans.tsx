@@ -647,7 +647,7 @@ function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
             <Users className="w-4 h-4 mr-2" />
             Used IP Addresses ({details.usedRanges.length})
           </h4>
-          <div className="border rounded-lg h-80 overflow-y-auto">
+          <div className="border rounded-lg h-[500px] overflow-y-auto">
             {details.usedRanges.length > 0 ? (
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 sticky top-0">
@@ -691,7 +691,7 @@ function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
             <Activity className="w-4 h-4 mr-2" />
             Available IP Addresses ({details.availableRanges.length})
           </h4>
-          <div className="border rounded-lg h-80 overflow-y-auto">
+          <div className="border rounded-lg h-[500px] overflow-y-auto">
             {details.availableRanges.length > 0 ? (
               <div className="p-3 grid grid-cols-4 gap-1">
                 {details.availableRanges.map((ip: string) => (
