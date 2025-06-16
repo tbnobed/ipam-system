@@ -608,31 +608,31 @@ interface SubnetDetailsDialogProps {
 
 function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-blue-50 rounded-lg">
+        <div className="p-6 bg-blue-50 rounded-lg">
           <p className="text-sm font-medium text-gray-700">Network Range</p>
           <p className="text-lg font-bold text-blue-600">{subnet.network}</p>
           <p className="text-xs text-gray-500">
             {details.firstUsableIP} - {details.lastUsableIP}
           </p>
         </div>
-        <div className="p-4 bg-green-50 rounded-lg">
+        <div className="p-6 bg-green-50 rounded-lg">
           <p className="text-sm font-medium text-gray-700">Available IPs</p>
           <p className="text-lg font-bold text-green-600">{details.metrics.availableIPs}</p>
           <p className="text-xs text-gray-500">
             {((details.metrics.availableIPs / details.totalHosts) * 100).toFixed(1)}% free
           </p>
         </div>
-        <div className="p-4 bg-orange-50 rounded-lg">
+        <div className="p-6 bg-orange-50 rounded-lg">
           <p className="text-sm font-medium text-gray-700">Used IPs</p>
           <p className="text-lg font-bold text-orange-600">{details.metrics.usedIPs}</p>
           <p className="text-xs text-gray-500">
             {details.usedRanges.length} devices
           </p>
         </div>
-        <div className="p-4 bg-purple-50 rounded-lg">
+        <div className="p-6 bg-purple-50 rounded-lg">
           <p className="text-sm font-medium text-gray-700">Gateway</p>
           <p className="text-lg font-bold text-purple-600 font-mono">{subnet.gateway}</p>
           <p className="text-xs text-gray-500">DHCP</p>
@@ -640,14 +640,14 @@ function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
       </div>
 
       {/* IP Allocation Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Used IPs */}
         <div>
           <h4 className="font-medium text-gray-900 mb-3 flex items-center">
             <Users className="w-4 h-4 mr-2" />
             Used IP Addresses ({details.usedRanges.length})
           </h4>
-          <div className="border rounded-lg max-h-64 overflow-y-auto">
+          <div className="border rounded-lg max-h-96 overflow-y-auto">
             {details.usedRanges.length > 0 ? (
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 sticky top-0">
@@ -691,11 +691,11 @@ function SubnetDetailsDialog({ subnet, details }: SubnetDetailsDialogProps) {
             <Activity className="w-4 h-4 mr-2" />
             Available IP Addresses ({details.availableRanges.length})
           </h4>
-          <div className="border rounded-lg max-h-64 overflow-y-auto">
+          <div className="border rounded-lg max-h-96 overflow-y-auto">
             {details.availableRanges.length > 0 ? (
-              <div className="p-3 space-y-1">
+              <div className="p-3 grid grid-cols-4 gap-1">
                 {details.availableRanges.map((ip: string) => (
-                  <div key={ip} className="font-mono text-sm p-2 bg-green-50 rounded border hover:bg-green-100">
+                  <div key={ip} className="font-mono text-xs p-1 bg-green-50 rounded border hover:bg-green-100 text-center">
                     {ip}
                   </div>
                 ))}
