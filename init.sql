@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS migrations (
 
 -- No automatic data population - database starts clean
 
--- Function to find correct subnet for an IP address
+-- Function to find correct subnet for an IP address with proper CIDR precedence
 CREATE OR REPLACE FUNCTION find_subnet_for_ip(ip_addr TEXT)
 RETURNS INTEGER AS $$
 DECLARE
@@ -100,8 +100,12 @@ BEGIN
     -- Convert IP to integer
     ip_int := (ip_parts[1]::BIGINT << 24) + (ip_parts[2]::BIGINT << 16) + (ip_parts[3]::BIGINT << 8) + ip_parts[4]::BIGINT;
     
-    -- Loop through all subnets to find CIDR match (most specific first)
-    FOR subnet_record IN SELECT id, network FROM subnets ORDER BY LENGTH(network) DESC LOOP
+    -- Loop through subnets ordered by CIDR specificity (most specific first), then by network for consistency
+    FOR subnet_record IN 
+        SELECT id, network 
+        FROM subnets 
+        ORDER BY split_part(network, '/', 2)::INTEGER DESC, network
+    LOOP
         -- Parse network and CIDR
         network_parts := string_to_array(split_part(subnet_record.network, '/', 1), '.')::INTEGER[];
         cidr := split_part(subnet_record.network, '/', 2)::INTEGER;
@@ -117,7 +121,7 @@ BEGIN
             mask := (4294967295::BIGINT << host_bits) & 4294967295::BIGINT;
         END IF;
         
-        -- Check if IP is in this subnet using proper CIDR calculation
+        -- Check if IP is in this subnet using exact CIDR calculation
         IF (ip_int & mask) = (network_int & mask) THEN
             RETURN subnet_record.id;
         END IF;

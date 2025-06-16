@@ -204,9 +204,18 @@ export class DatabaseStorage implements IStorage {
   private async findCorrectSubnetForIP(ipAddress: string, excludeSubnetId: number): Promise<number | null> {
     const subnets = await this.getAllSubnets();
     
-    for (const subnet of subnets) {
-      if (subnet.id === excludeSubnetId) continue; // Skip the subnet being deleted
-      
+    // Sort by CIDR specificity (most specific first) to prevent conflicts
+    const sortedSubnets = subnets
+      .filter(subnet => subnet.id !== excludeSubnetId)
+      .sort((a, b) => {
+        const cidrA = parseInt(a.network.split('/')[1]);
+        const cidrB = parseInt(b.network.split('/')[1]);
+        // Higher CIDR = more specific, should be checked first
+        if (cidrA !== cidrB) return cidrB - cidrA;
+        return a.network.localeCompare(b.network);
+      });
+    
+    for (const subnet of sortedSubnets) {
       const [networkAddr, cidrBits] = subnet.network.split('/');
       const cidr = parseInt(cidrBits);
       const hostBits = 32 - cidr;
@@ -419,14 +428,23 @@ export class DatabaseStorage implements IStorage {
       const allDevices = await db.select().from(devices);
       const allSubnets = await db.select().from(subnets);
       
+      // Sort subnets by CIDR specificity to prevent assignment conflicts
+      const sortedSubnets = allSubnets.sort((a, b) => {
+        const cidrA = parseInt(a.network.split('/')[1]);
+        const cidrB = parseInt(b.network.split('/')[1]);
+        // Higher CIDR = more specific, check first
+        if (cidrA !== cidrB) return cidrB - cidrA;
+        return a.network.localeCompare(b.network);
+      });
+      
       let correctedCount = 0;
       const corrections: string[] = [];
       
       for (const device of allDevices) {
         if (!device.ipAddress) continue;
         
-        // Find correct subnet using CIDR calculations
-        const correctSubnet = allSubnets.find(subnet => {
+        // Find correct subnet using proper CIDR precedence
+        const correctSubnet = sortedSubnets.find(subnet => {
           const [network, prefixLength] = subnet.network.split('/');
           const cidr = parseInt(prefixLength);
           const hostBits = 32 - cidr;
@@ -446,14 +464,14 @@ export class DatabaseStorage implements IStorage {
             .set({ subnetId: correctSubnet.id })
             .where(eq(devices.id, device.id));
           
-          corrections.push(`${device.ipAddress}: ${device.subnetId} -> ${correctSubnet.id}`);
+          corrections.push(`${device.ipAddress}: subnet ${device.subnetId} -> ${correctSubnet.id} (${correctSubnet.network})`);
           correctedCount++;
         }
       }
       
-      const details = `Fixed ${correctedCount} device subnet assignments using CIDR calculations`;
+      const details = `Fixed ${correctedCount} device subnet assignments using CIDR precedence`;
       console.log(details);
-      corrections.forEach(correction => console.log(`Fixed ${correction}`));
+      corrections.forEach(correction => console.log(`Fixed: ${correction}`));
       
       return { correctedCount, details };
     } catch (error) {
