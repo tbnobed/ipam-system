@@ -105,10 +105,10 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs, {
   entityType: z.string().min(1, "Entity type is required")
 });
 
-export const insertSettingSchema = createInsertSchema(settings, {
-  key: z.string().min(1, "Setting key is required"),
-  value: z.string().min(1, "Setting value is required")
-}).omit({ id: true, updatedAt: true });
+export const insertSettingSchema = createInsertSchema(settings).omit({ 
+  id: true, 
+  updatedAt: true 
+});
 
 // Types
 export type User = typeof users.$inferSelect;

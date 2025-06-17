@@ -59,8 +59,8 @@ export default function Settings() {
 
   // Update form when settings are loaded
   useEffect(() => {
-    if (settingsData.length > 0) {
-      form.reset({
+    if ((settingsData as any[]).length > 0) {
+      const values = {
         scan_interval: settingsMap.scan_interval || '5',
         ping_timeout: settingsMap.ping_timeout || '2',
         auto_discovery: settingsMap.auto_discovery === 'true',
@@ -69,7 +69,8 @@ export default function Settings() {
         subnet_alerts: settingsMap.subnet_alerts === 'true',
         alert_threshold: settingsMap.alert_threshold || '90',
         data_retention: settingsMap.data_retention || '90',
-      });
+      };
+      form.reset(values);
     }
   }, [settingsData, settingsMap, form]);
 
