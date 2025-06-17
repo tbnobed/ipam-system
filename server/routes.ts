@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
-import { insertDeviceSchema, insertVlanSchema, insertSubnetSchema } from "@shared/schema";
+import { insertDeviceSchema, insertVlanSchema, insertSubnetSchema, insertSettingSchema } from "@shared/schema";
 import { networkScanner } from "./network";
 import { migrationManager } from "./migrations";
 import { z } from "zod";
@@ -329,6 +329,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error exporting devices:", error);
       res.status(500).json({ error: "Failed to export devices" });
+    }
+  });
+
+  // Settings
+  app.get("/api/settings", async (req, res) => {
+    try {
+      const settings = await storage.getAllSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      res.status(500).json({ error: "Failed to fetch settings" });
+    }
+  });
+
+  app.get("/api/settings/:key", async (req, res) => {
+    try {
+      const { key } = req.params;
+      const setting = await storage.getSetting(key);
+      if (!setting) {
+        return res.status(404).json({ error: "Setting not found" });
+      }
+      res.json(setting);
+    } catch (error) {
+      console.error("Error fetching setting:", error);
+      res.status(500).json({ error: "Failed to fetch setting" });
+    }
+  });
+
+  app.post("/api/settings", async (req, res) => {
+    try {
+      const validatedData = insertSettingSchema.parse(req.body);
+      const setting = await storage.setSetting(
+        validatedData.key, 
+        validatedData.value, 
+        validatedData.description || undefined
+      );
+      res.status(201).json(setting);
+    } catch (error) {
+      console.error("Error creating setting:", error);
+      res.status(400).json({ error: "Failed to create setting" });
+    }
+  });
+
+  app.put("/api/settings/:key", async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { value, description } = req.body;
+      const setting = await storage.setSetting(key, value, description);
+      res.json(setting);
+    } catch (error) {
+      console.error("Error updating setting:", error);
+      res.status(400).json({ error: "Failed to update setting" });
+    }
+  });
+
+  app.delete("/api/settings/:key", async (req, res) => {
+    try {
+      const { key } = req.params;
+      await storage.deleteSetting(key);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting setting:", error);
+      res.status(500).json({ error: "Failed to delete setting" });
     }
   });
 
