@@ -69,6 +69,14 @@ export const migrations = pgTable("migrations", {
   appliedAt: timestamp("applied_at").notNull().defaultNow(),
 });
 
+export const settings = pgTable("settings", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  key: text("key").unique().notNull(),
+  value: text("value").notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users, {
   username: z.string().min(1, "Username is required"),
@@ -97,6 +105,11 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs, {
   entityType: z.string().min(1, "Entity type is required")
 });
 
+export const insertSettingSchema = createInsertSchema(settings, {
+  key: z.string().min(1, "Setting key is required"),
+  value: z.string().min(1, "Setting value is required")
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -117,3 +130,6 @@ export type ActivityLog = typeof activityLogs.$inferSelect;
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 
 export type Migration = typeof migrations.$inferSelect;
+
+export type Setting = typeof settings.$inferSelect;
+export type InsertSetting = z.infer<typeof insertSettingSchema>;

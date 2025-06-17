@@ -1,8 +1,9 @@
 import { 
-  users, vlans, subnets, devices, networkScans, activityLogs,
+  users, vlans, subnets, devices, networkScans, activityLogs, settings,
   type User, type InsertUser, type Vlan, type InsertVlan,
   type Subnet, type InsertSubnet, type Device, type InsertDevice,
-  type NetworkScan, type InsertNetworkScan, type ActivityLog, type InsertActivityLog
+  type NetworkScan, type InsertNetworkScan, type ActivityLog, type InsertActivityLog,
+  type Setting, type InsertSetting
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, like, and, or, desc, asc, sql, ne } from "drizzle-orm";
@@ -51,6 +52,12 @@ interface IStorage {
   
   // Device subnet fixes
   fixDeviceSubnetAssignments(subnet20Id: number, subnet21Id: number): Promise<{correctedCount: number, details: string}>;
+  
+  // Settings
+  getAllSettings(): Promise<Setting[]>;
+  getSetting(key: string): Promise<Setting | undefined>;
+  setSetting(key: string, value: string, description?: string): Promise<Setting>;
+  deleteSetting(key: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -524,6 +531,42 @@ export class DatabaseStorage implements IStorage {
       console.error("Error in fixDeviceSubnetAssignments:", error);
       throw error;
     }
+  }
+
+  async getAllSettings(): Promise<Setting[]> {
+    return await db.select().from(settings);
+  }
+
+  async getSetting(key: string): Promise<Setting | undefined> {
+    const [setting] = await db.select().from(settings).where(eq(settings.key, key));
+    return setting;
+  }
+
+  async setSetting(key: string, value: string, description?: string): Promise<Setting> {
+    const existingSetting = await this.getSetting(key);
+    
+    if (existingSetting) {
+      const [updated] = await db
+        .update(settings)
+        .set({ 
+          value, 
+          description: description || existingSetting.description,
+          updatedAt: new Date()
+        })
+        .where(eq(settings.key, key))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(settings)
+        .values({ key, value, description })
+        .returning();
+      return created;
+    }
+  }
+
+  async deleteSetting(key: string): Promise<void> {
+    await db.delete(settings).where(eq(settings.key, key));
   }
 
   async getDashboardMetrics(): Promise<DashboardMetrics> {
