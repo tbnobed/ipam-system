@@ -6,6 +6,7 @@ import { insertDeviceSchema, insertVlanSchema, insertSubnetSchema } from "@share
 import { networkScanner } from "./network";
 import { migrationManager } from "./migrations";
 import { z } from "zod";
+import * as XLSX from 'xlsx';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check
@@ -320,12 +321,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Export
   app.get("/api/export/devices", async (req, res) => {
     try {
-      const devices = await storage.getAllDevicesForExport();
-      const csvData = generateDeviceCSV(devices);
+      const excelBuffer = await generateDeviceExcel();
       
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="devices.csv"');
-      res.send(csvData);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="network_devices_by_vlan.xlsx"');
+      res.send(excelBuffer);
     } catch (error) {
       console.error("Error exporting devices:", error);
       res.status(500).json({ error: "Failed to export devices" });
@@ -402,19 +402,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-function generateDeviceCSV(devices: any[]): string {
-  const headers = ['IP Address', 'Hostname', 'MAC Address', 'Device Type', 'Location', 'Status', 'Last Seen'];
-  const rows = devices.map(device => [
-    device.ipAddress,
-    device.hostname || '',
-    device.macAddress || '',
-    device.deviceType || '',
-    device.location || '',
-    device.status,
-    device.lastSeen ? new Date(device.lastSeen).toISOString() : ''
-  ]);
+async function generateDeviceExcel(): Promise<Buffer> {
+  // Get all devices with their subnet and VLAN information
+  const devices = await storage.getAllDevicesForExport();
+  const vlans = await storage.getAllVlans();
+  const subnets = await storage.getAllSubnets();
   
-  return [headers, ...rows].map(row => 
-    row.map(field => `"${field.toString().replace(/"/g, '""')}"`).join(',')
-  ).join('\n');
+  // Create a new workbook
+  const workbook = XLSX.utils.book_new();
+  
+  // Headers for device data
+  const headers = ['IP Address', 'Hostname', 'MAC Address', 'Device Type', 'Location', 'Status', 'Last Seen', 'Subnet', 'Gateway'];
+  
+  // Group devices by VLAN
+  const devicesByVlan: { [key: string]: any[] } = {};
+  
+  for (const device of devices) {
+    // Find the subnet for this device
+    const subnet = subnets.find(s => s.id === device.subnetId);
+    if (!subnet) continue;
+    
+    // Find the VLAN for this subnet
+    const vlan = vlans.find(v => v.id === subnet.vlanId);
+    if (!vlan) continue;
+    
+    const vlanKey = `VLAN_${vlan.vlanId}_${vlan.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    
+    if (!devicesByVlan[vlanKey]) {
+      devicesByVlan[vlanKey] = [];
+    }
+    
+    // Add device with subnet information
+    devicesByVlan[vlanKey].push([
+      device.ipAddress,
+      device.hostname || '',
+      device.macAddress || '',
+      device.deviceType || '',
+      device.location || '',
+      device.status,
+      device.lastSeen ? new Date(device.lastSeen).toISOString() : '',
+      subnet.network,
+      subnet.gateway || ''
+    ]);
+  }
+  
+  // Create a summary tab
+  const summaryData = [
+    ['VLAN Summary Report'],
+    ['Generated:', new Date().toISOString()],
+    [''],
+    ['VLAN ID', 'VLAN Name', 'Device Count', 'Subnets']
+  ];
+  
+  for (const [vlanKey, devices] of Object.entries(devicesByVlan)) {
+    const vlanMatch = vlanKey.match(/VLAN_(\d+)_(.+)/);
+    if (vlanMatch) {
+      const vlanId = vlanMatch[1];
+      const vlanName = vlanMatch[2].replace(/_/g, ' ');
+      const vlan = vlans.find(v => v.vlanId.toString() === vlanId);
+      const vlanSubnets = subnets.filter(s => s.vlanId === vlan?.id).map(s => s.network).join(', ');
+      
+      summaryData.push([
+        vlanId,
+        vlanName,
+        devices.length.toString(),
+        vlanSubnets
+      ]);
+    }
+  }
+  
+  // Add summary worksheet
+  const summaryWS = XLSX.utils.aoa_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(workbook, summaryWS, 'Summary');
+  
+  // Create a worksheet for each VLAN
+  for (const [vlanKey, devices] of Object.entries(devicesByVlan)) {
+    if (devices.length > 0) {
+      const worksheetData = [headers, ...devices];
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      
+      // Set column widths
+      worksheet['!cols'] = [
+        { wch: 15 }, // IP Address
+        { wch: 20 }, // Hostname
+        { wch: 18 }, // MAC Address
+        { wch: 15 }, // Device Type
+        { wch: 20 }, // Location
+        { wch: 10 }, // Status
+        { wch: 20 }, // Last Seen
+        { wch: 18 }, // Subnet
+        { wch: 15 }  // Gateway
+      ];
+      
+      // Truncate sheet name to Excel limit (31 characters)
+      const sheetName = vlanKey.length > 31 ? vlanKey.substring(0, 31) : vlanKey;
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    }
+  }
+  
+  // If no VLANs have devices, create a single "All Devices" sheet
+  if (Object.keys(devicesByVlan).length === 0) {
+    const allDevicesData = devices.map(device => {
+      const subnet = subnets.find(s => s.id === device.subnetId);
+      return [
+        device.ipAddress,
+        device.hostname || '',
+        device.macAddress || '',
+        device.deviceType || '',
+        device.location || '',
+        device.status,
+        device.lastSeen ? new Date(device.lastSeen).toISOString() : '',
+        subnet?.network || '',
+        subnet?.gateway || ''
+      ];
+    });
+    
+    const worksheetData = [headers, ...allDevicesData];
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    worksheet['!cols'] = [
+      { wch: 15 }, { wch: 20 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, 
+      { wch: 10 }, { wch: 20 }, { wch: 18 }, { wch: 15 }
+    ];
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'All Devices');
+  }
+  
+  // Generate Excel file buffer
+  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 }
