@@ -85,6 +85,9 @@ export default function Settings() {
   });
 
   const onSubmit = async (data: SettingsFormData) => {
+    console.log('Form submission started with data:', data);
+    console.log('Form errors:', form.formState.errors);
+    
     try {
       // Update each setting
       const updates = [
@@ -98,6 +101,7 @@ export default function Settings() {
         { key: 'data_retention', value: data.data_retention },
       ];
 
+      console.log('Updating settings with:', updates);
       await Promise.all(updates.map(update => updateSettingMutation.mutateAsync(update)));
 
       toast({
@@ -105,6 +109,7 @@ export default function Settings() {
         description: "System settings have been saved successfully.",
       });
     } catch (error) {
+      console.error('Settings update error:', error);
       toast({
         title: "Error",
         description: "Failed to update settings. Please try again.",
@@ -431,6 +436,7 @@ export default function Settings() {
               <Button 
                 type="submit" 
                 disabled={form.formState.isSubmitting}
+                onClick={() => console.log('Save button clicked')}
               >
                 {form.formState.isSubmitting ? "Saving..." : "Save Settings"}
               </Button>
