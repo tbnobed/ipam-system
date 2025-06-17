@@ -8,7 +8,7 @@ import VLANs from "@/pages/vlans";
 import Devices from "@/pages/devices";
 import Discovery from "@/pages/discovery";
 import Analytics from "@/pages/analytics";
-import Settings from "@/pages/settings";
+import Settings from "@/pages/settings-new";
 import Sidebar from "@/components/layout/sidebar";
 import NotFound from "@/pages/not-found";
 import ScanStatusIndicator from "@/components/global/scan-status-indicator";

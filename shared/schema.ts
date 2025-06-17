@@ -107,8 +107,7 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs, {
 
 export const insertSettingSchema = createInsertSchema(settings, {
   key: z.string().min(1, "Setting key is required"),
-  value: z.string().min(1, "Setting value is required"),
-  description: z.string().optional()
+  value: z.string().min(1, "Setting value is required")
 }).omit({ id: true, updatedAt: true });
 
 // Types

@@ -359,12 +359,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/settings", async (req, res) => {
     try {
-      const validatedData = insertSettingSchema.parse(req.body);
-      const setting = await storage.setSetting(
-        validatedData.key, 
-        validatedData.value, 
-        validatedData.description || undefined
-      );
+      const { key, value, description } = req.body;
+      const setting = await storage.setSetting(key, value, description);
       res.status(201).json(setting);
     } catch (error) {
       console.error("Error creating setting:", error);

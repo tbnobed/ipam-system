@@ -33,12 +33,12 @@ export default function Settings() {
   const [isResetting, setIsResetting] = useState(false);
 
   // Fetch all settings
-  const { data: settingsData = [], isLoading } = useQuery({
+  const { data: settingsData = [], isLoading } = useQuery<any[]>({
     queryKey: ['/api/settings'],
   });
 
   // Convert settings array to object for easier form handling
-  const settingsMap = settingsData.reduce((acc: any, setting: any) => {
+  const settingsMap = (settingsData as any[]).reduce((acc: any, setting: any) => {
     acc[setting.key] = setting.value;
     return acc;
   }, {});
