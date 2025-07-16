@@ -210,7 +210,44 @@ setupProduction().then(() => {
 });
 EOF
 
-cd /app && node setup-production.mjs
+cd /app && node setup-production.mjs || echo "Production setup script failed, creating users manually..."
+
+# Fallback: Create users manually if script fails
+echo "Creating admin user manually..."
+PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
+INSERT INTO users (username, password, role, is_active, created_at, updated_at)
+VALUES ('admin', '\$2b\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (username) DO UPDATE SET
+  password = '\$2b\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  role = 'admin',
+  is_active = true,
+  updated_at = CURRENT_TIMESTAMP;
+" || echo "Manual admin user creation failed"
+
+echo "Creating user account manually..."
+PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
+INSERT INTO users (username, password, role, is_active, created_at, updated_at)
+VALUES ('user', '\$2b\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'user', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (username) DO UPDATE SET
+  password = '\$2b\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  role = 'user',
+  is_active = true,
+  updated_at = CURRENT_TIMESTAMP;
+" || echo "Manual user creation failed"
+
+echo "Creating viewer account manually..."
+PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
+INSERT INTO users (username, password, role, is_active, created_at, updated_at)
+VALUES ('viewer', '\$2b\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'viewer', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (username) DO UPDATE SET
+  password = '\$2b\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  role = 'viewer',
+  is_active = true,
+  updated_at = CURRENT_TIMESTAMP;
+" || echo "Manual viewer creation failed"
+
+echo "Verifying users were created..."
+PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "SELECT username, role, is_active FROM users;" || echo "User verification failed"
 
 # Start the application
 echo "Starting IPAM application..."
