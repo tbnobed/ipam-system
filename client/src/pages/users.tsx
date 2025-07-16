@@ -50,6 +50,7 @@ export default function Users() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
   const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<User | null>(null);
@@ -108,6 +109,7 @@ export default function Users() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setIsEditDialogOpen(false);
       setEditingUser(null);
       form.reset();
       toast({
@@ -167,11 +169,12 @@ export default function Users() {
       password: "", // Don't prefill password
       role: user.role
     });
-    setIsCreateDialogOpen(true);
+    setIsEditDialogOpen(true);
   };
 
   const closeDialog = () => {
     setIsCreateDialogOpen(false);
+    setIsEditDialogOpen(false);
     setEditingUser(null);
     form.reset();
   };
@@ -198,10 +201,10 @@ export default function Users() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingUser ? "Edit User" : "Create User"}</DialogTitle>
+              <DialogTitle>Create User</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(editingUser ? handleUpdateUser : handleCreateUser)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(handleCreateUser)} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="username"
@@ -254,8 +257,77 @@ export default function Users() {
                   <Button type="button" variant="outline" onClick={closeDialog}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={createUserMutation.isPending || updateUserMutation.isPending}>
-                    {editingUser ? "Update" : "Create"}
+                  <Button type="submit" disabled={createUserMutation.isPending}>
+                    Create
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit User Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleUpdateUser)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="viewer">Viewer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={closeDialog}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={updateUserMutation.isPending}>
+                    Update
                   </Button>
                 </div>
               </form>
