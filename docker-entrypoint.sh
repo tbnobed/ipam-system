@@ -100,9 +100,10 @@ END
 
 # Run production setup using separate file
 echo "Setting up production environment..."
-cat > /app/setup-production.js << 'EOF'
-const bcrypt = require('bcrypt');
-const { Pool } = require('pg');
+cat > /app/setup-production.mjs << 'EOF'
+import bcrypt from 'bcrypt';
+import pkg from 'pg';
+const { Pool } = pkg;
 
 const SALT_ROUNDS = 10;
 
@@ -209,7 +210,7 @@ setupProduction().then(() => {
 });
 EOF
 
-cd /app && node setup-production.js
+cd /app && node setup-production.mjs
 
 # Start the application
 echo "Starting IPAM application..."
