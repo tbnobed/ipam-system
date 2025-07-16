@@ -70,6 +70,9 @@ export default function Users() {
 
   const { data: userPermissions = [] } = useQuery({
     queryKey: ['/api/user-permissions', selectedUserForPermissions?.id],
+    queryFn: () => selectedUserForPermissions?.id 
+      ? fetch(`/api/user-permissions/${selectedUserForPermissions.id}`).then(res => res.json())
+      : Promise.resolve([]),
     enabled: !!selectedUserForPermissions?.id,
   });
 
