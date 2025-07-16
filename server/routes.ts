@@ -577,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create new permissions
       const createdPermissions = [];
       for (const perm of permissions) {
-        if (!perm.permission) continue;
+        if (!perm.permission || perm.permission === 'none') continue;
         
         if (!perm.vlanId && !perm.subnetId) continue;
         

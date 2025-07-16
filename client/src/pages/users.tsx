@@ -252,24 +252,22 @@ export default function Users() {
     for (const vlan of vlans) {
       const key = `vlan_${vlan.id}`;
       const permission = permissionChanges[key] || getPermissionForResource(vlan.id, 'vlan');
-      if (permission !== 'none') {
-        permissions.push({
-          vlanId: vlan.id,
-          permission
-        });
-      }
+      // Always include the permission, even if it's 'none' - the backend will handle deletion
+      permissions.push({
+        vlanId: vlan.id,
+        permission
+      });
     }
     
     // Process subnet permissions
     for (const subnet of subnets) {
       const key = `subnet_${subnet.id}`;
       const permission = permissionChanges[key] || getPermissionForResource(subnet.id, 'subnet');
-      if (permission !== 'none') {
-        permissions.push({
-          subnetId: subnet.id,
-          permission
-        });
-      }
+      // Always include the permission, even if it's 'none' - the backend will handle deletion
+      permissions.push({
+        subnetId: subnet.id,
+        permission
+      });
     }
 
     updatePermissionsMutation.mutate({
