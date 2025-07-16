@@ -30,8 +30,20 @@ CREATE TABLE IF NOT EXISTS sessions (
   expire TIMESTAMP(6) NOT NULL
 );
 CREATE INDEX IF NOT EXISTS IDX_session_expire ON sessions(expire);
-ALTER TABLE sessions ADD CONSTRAINT sessions_pkey PRIMARY KEY (sid) ON CONFLICT DO NOTHING;
-"
+" || echo "Session table creation failed, but continuing..."
+
+# Add primary key constraint if it doesn't exist
+PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
+DO \$\$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'sessions_pkey'
+  ) THEN
+    ALTER TABLE sessions ADD CONSTRAINT sessions_pkey PRIMARY KEY (sid);
+  END IF;
+END
+\$\$;
+" || echo "Primary key constraint may already exist, continuing..."
 
 # Run production setup directly in entrypoint
 echo "Setting up production environment..."
