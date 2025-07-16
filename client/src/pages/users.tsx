@@ -473,82 +473,200 @@ export default function Users() {
 
       {/* Permission Management Dialog */}
       <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Manage Permissions for {selectedUserForPermissions?.username}</DialogTitle>
+            <div className="text-sm text-muted-foreground">
+              Configure granular access permissions for VLANs and their associated subnets
+            </div>
           </DialogHeader>
+          
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-3">VLAN Permissions</h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {vlans.map((vlan: any) => (
-                    <div key={vlan.id} className="flex items-center justify-between p-2 border rounded">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{vlan.name}</span>
-                        <Badge variant="outline">VLAN {vlan.vlanId}</Badge>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Select 
-                          value={permissionChanges[`vlan_${vlan.id}`] || getPermissionForResource(vlan.id, 'vlan')}
-                          onValueChange={(value) => handlePermissionChange(vlan.id, 'vlan', value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            <SelectItem value="view">View</SelectItem>
-                            <SelectItem value="edit">Edit</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  ))}
+            {/* Legend */}
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <h4 className="font-semibold mb-2">Permission Levels:</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-gray-400 rounded"></div>
+                  <span><strong>None:</strong> No access</span>
                 </div>
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Subnet Permissions</h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {subnets.map((subnet: any) => (
-                    <div key={subnet.id} className="flex items-center justify-between p-2 border rounded">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{subnet.network}</span>
-                        <Badge variant="outline">{subnet.name}</Badge>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Select 
-                          value={permissionChanges[`subnet_${subnet.id}`] || getPermissionForResource(subnet.id, 'subnet')}
-                          onValueChange={(value) => handlePermissionChange(subnet.id, 'subnet', value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            <SelectItem value="view">View</SelectItem>
-                            <SelectItem value="edit">Edit</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-500 rounded"></div>
+                  <span><strong>View:</strong> Read-only access</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                  <span><strong>Edit:</strong> Modify devices/settings</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-red-500 rounded"></div>
+                  <span><strong>Admin:</strong> Full control</span>
                 </div>
               </div>
             </div>
+
+            {/* VLAN Hierarchy */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Network Access Control</h3>
+              
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {vlans.map((vlan: any) => {
+                  const vlanSubnets = subnets.filter((subnet: any) => subnet.vlanId === vlan.id);
+                  const vlanPermission = permissionChanges[`vlan_${vlan.id}`] || getPermissionForResource(vlan.id, 'vlan');
+                  
+                  return (
+                    <div key={vlan.id} className="border rounded-lg p-4 space-y-4">
+                      {/* VLAN Header */}
+                      <div className="flex items-center justify-between bg-muted/30 p-3 rounded">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-6 h-6 bg-primary/10 rounded flex items-center justify-center">
+                            <span className="text-xs font-bold text-primary">V</span>
+                          </div>
+                          <div>
+                            <span className="font-semibold text-base">{vlan.name}</span>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge variant="outline" className="text-xs">VLAN {vlan.vlanId}</Badge>
+                              {vlan.description && (
+                                <span className="text-xs text-muted-foreground">({vlan.description})</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-4">
+                          <div className="text-right">
+                            <div className="text-xs text-muted-foreground mb-1">VLAN Access</div>
+                            <Select 
+                              value={vlanPermission}
+                              onValueChange={(value) => handlePermissionChange(vlan.id, 'vlan', value)}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-2 h-2 bg-gray-400 rounded"></div>
+                                    <span>None</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="read">
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-2 h-2 bg-green-500 rounded"></div>
+                                    <span>View</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="write">
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-2 h-2 bg-yellow-500 rounded"></div>
+                                    <span>Edit</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="admin">
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-2 h-2 bg-red-500 rounded"></div>
+                                    <span>Admin</span>
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Subnets for this VLAN */}
+                      {vlanSubnets.length > 0 && (
+                        <div className="ml-6 space-y-3">
+                          <div className="text-sm font-medium text-muted-foreground flex items-center space-x-2">
+                            <span>Subnets in this VLAN:</span>
+                            <Badge variant="secondary" className="text-xs">{vlanSubnets.length} subnet{vlanSubnets.length !== 1 ? 's' : ''}</Badge>
+                          </div>
+                          
+                          {vlanSubnets.map((subnet: any) => (
+                            <div key={subnet.id} className="flex items-center justify-between p-3 bg-muted/20 rounded border-l-4 border-l-primary/30">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-5 h-5 bg-secondary/20 rounded flex items-center justify-center">
+                                  <span className="text-xs font-bold text-secondary-foreground">S</span>
+                                </div>
+                                <div>
+                                  <span className="font-mono text-sm font-medium">{subnet.network}</span>
+                                  <div className="flex items-center space-x-2 mt-1">
+                                    {subnet.gateway && (
+                                      <Badge variant="outline" className="text-xs">GW: {subnet.gateway}</Badge>
+                                    )}
+                                    {subnet.description && (
+                                      <span className="text-xs text-muted-foreground">({subnet.description})</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center space-x-4">
+                                <div className="text-right">
+                                  <div className="text-xs text-muted-foreground mb-1">Subnet Access</div>
+                                  <Select 
+                                    value={permissionChanges[`subnet_${subnet.id}`] || getPermissionForResource(subnet.id, 'subnet')}
+                                    onValueChange={(value) => handlePermissionChange(subnet.id, 'subnet', value)}
+                                  >
+                                    <SelectTrigger className="w-28">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">
+                                        <div className="flex items-center space-x-2">
+                                          <div className="w-2 h-2 bg-gray-400 rounded"></div>
+                                          <span>None</span>
+                                        </div>
+                                      </SelectItem>
+                                      <SelectItem value="read">
+                                        <div className="flex items-center space-x-2">
+                                          <div className="w-2 h-2 bg-green-500 rounded"></div>
+                                          <span>View</span>
+                                        </div>
+                                      </SelectItem>
+                                      <SelectItem value="write">
+                                        <div className="flex items-center space-x-2">
+                                          <div className="w-2 h-2 bg-yellow-500 rounded"></div>
+                                          <span>Edit</span>
+                                        </div>
+                                      </SelectItem>
+                                      <SelectItem value="admin">
+                                        <div className="flex items-center space-x-2">
+                                          <div className="w-2 h-2 bg-red-500 rounded"></div>
+                                          <span>Admin</span>
+                                        </div>
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Show message if no subnets */}
+                      {vlanSubnets.length === 0 && (
+                        <div className="ml-6 text-sm text-muted-foreground italic p-3 bg-muted/20 rounded">
+                          No subnets configured for this VLAN
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             
-            <div className="flex justify-end space-x-2">
+            <div className="flex justify-end space-x-2 pt-4 border-t">
               <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>
                 Cancel
               </Button>
               <Button 
                 onClick={handleSavePermissions}
                 disabled={updatePermissionsMutation.isPending}
+                className="min-w-24"
               >
-                Save Permissions
+                {updatePermissionsMutation.isPending ? "Saving..." : "Save Permissions"}
               </Button>
             </div>
           </div>

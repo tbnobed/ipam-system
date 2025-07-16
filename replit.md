@@ -20,6 +20,10 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Activity logging and audit trails
 
 ## Recent Changes
+- **2025-01-16**: Redesigned permissions dialog with super granular VLAN→Subnet hierarchy
+- **2025-01-16**: Added visual permission legend with color-coded levels (None/View/Edit/Admin)
+- **2025-01-16**: Implemented hierarchical permissions showing subnets under their parent VLANs
+- **2025-01-16**: Enhanced permission dialog with detailed resource information and visual indicators
 - **2025-01-16**: Fixed user edit form dialog switching to create mode instead of closing
 - **2025-01-16**: Implemented role-based access control - viewers restricted from Discovery, Analytics, Settings
 - **2025-01-16**: Added route protection in frontend and sidebar navigation filtering
