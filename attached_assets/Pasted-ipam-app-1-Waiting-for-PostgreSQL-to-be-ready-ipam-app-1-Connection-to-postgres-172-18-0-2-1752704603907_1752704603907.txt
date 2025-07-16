@@ -1,0 +1,79 @@
+ipam-app-1  | Waiting for PostgreSQL to be ready...
+ipam-app-1  | Connection to postgres (172.18.0.2) 5432 port [tcp/postgresql] succeeded!
+ipam-app-1  | PostgreSQL is ready - starting application...
+ipam-app-1  | Setting up database schema...
+postgres-1  |
+postgres-1  | PostgreSQL Database directory appears to contain a database; Skipping initialization
+postgres-1  |
+postgres-1  | 2025-07-16 22:06:01.064 UTC [1] LOG:  starting PostgreSQL 15.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+postgres-1  | 2025-07-16 22:06:01.065 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+postgres-1  | 2025-07-16 22:06:01.065 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+postgres-1  | 2025-07-16 22:06:01.067 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+postgres-1  | 2025-07-16 22:06:01.071 UTC [29] LOG:  database system was shut down at 2025-07-16 22:01:53 UTC
+postgres-1  | 2025-07-16 22:06:01.076 UTC [1] LOG:  database system is ready to accept connections
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 db:push
+ipam-app-1  | > drizzle-kit push
+ipam-app-1  |
+ipam-app-1  | No config path provided, using default 'drizzle.config.ts'
+ipam-app-1  | Reading config file '/app/drizzle.config.ts'
+ipam-app-1  | Using 'pg' driver for database querying
+ipam-app-1  | [⣷] Pulling schema from database...
+[⣯] Pulling schema from database...
+[✓] Pulling schema from database...
+ipam-app-1  | · You're about to add migrations_version_unique unique constraint to the table, which contains 3 items. If this statement fails, you will receive an error from the database. Do you want to truncate migrations table?
+ipam-app-1  |
+ipam-app-1  | ❯ No, add the constraint without truncating the table
+ipam-app-1  | npm notice
+ipam-app-1  | npm notice New major version of npm available! 10.8.2 -> 11.4.2
+ipam-app-1  | npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+ipam-app-1  | npm notice To update run: npm install -g npm@11.4.2
+ipam-app-1  | npm notice
+ipam-app-1  |   Yes, truncate the tableDatabase schema setup completed successfully
+ipam-app-1  | Creating session table...
+postgres-1  | 2025-07-16 22:06:22.825 UTC [50] ERROR:  syntax error at or near "ON" at character 273
+postgres-1  | 2025-07-16 22:06:22.825 UTC [50] STATEMENT:
+postgres-1  |   CREATE TABLE IF NOT EXISTS sessions (
+postgres-1  |     sid VARCHAR NOT NULL COLLATE "default",
+postgres-1  |     sess JSON NOT NULL,
+postgres-1  |     expire TIMESTAMP(6) NOT NULL
+postgres-1  |   );
+postgres-1  |   CREATE INDEX IF NOT EXISTS IDX_session_expire ON sessions(expire);
+postgres-1  |   ALTER TABLE sessions ADD CONSTRAINT sessions_pkey PRIMARY KEY (sid) ON CONFLICT DO NOTHING;
+postgres-1  |
+ipam-app-1  | ERROR:  syntax error at or near "ON"
+ipam-app-1  | LINE 8: ...ns ADD CONSTRAINT sessions_pkey PRIMARY KEY (sid) ON CONFLIC...
+ipam-app-1  |                                                              ^
+ipam-app-1 exited with code 0
+ipam-app-1  | Connection to postgres (172.18.0.2) 5432 port [tcp/postgresql] succeeded!
+ipam-app-1  | PostgreSQL is ready - starting application...
+ipam-app-1  | Setting up database schema...
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 db:push
+ipam-app-1  | > drizzle-kit push
+ipam-app-1  |
+ipam-app-1  | No config path provided, using default 'drizzle.config.ts'
+ipam-app-1  | Reading config file '/app/drizzle.config.ts'
+ipam-app-1  | Using 'pg' driver for database querying
+ipam-app-1  | [⣷] Pulling schema from database...
+[⣯] Pulling schema from database...
+[✓] Pulling schema from database...
+ipam-app-1  | · You're about to add migrations_version_unique unique constraint to the table, which contains 3 items. If this statement fails, you will receive an error from the database. Do you want to truncate migrations table?
+ipam-app-1  |
+ipam-app-1  | ❯ No, add the constraint without truncating the table
+ipam-app-1  |   Yes, truncate the tableDatabase schema setup completed successfully
+ipam-app-1  | Creating session table...
+ipam-app-1  | ERROR:  syntax error at or near "ON"
+postgres-1  | 2025-07-16 22:06:34.118 UTC [60] ERROR:  syntax error at or near "ON" at character 273
+postgres-1  | 2025-07-16 22:06:34.118 UTC [60] STATEMENT:
+postgres-1  |   CREATE TABLE IF NOT EXISTS sessions (
+postgres-1  |     sid VARCHAR NOT NULL COLLATE "default",
+postgres-1  |     sess JSON NOT NULL,
+postgres-1  |     expire TIMESTAMP(6) NOT NULL
+postgres-1  |   );
+postgres-1  |   CREATE INDEX IF NOT EXISTS IDX_session_expire ON sessions(expire);
+postgres-1  |   ALTER TABLE sessions ADD CONSTRAINT sessions_pkey PRIMARY KEY (sid) ON CONFLICT DO NOTHING;
+postgres-1  |
+ipam-app-1  | LINE 8: ...ns ADD CONSTRAINT sessions_pkey PRIMARY KEY (sid) ON CONFLIC...
+ipam-app-1  |                                                              ^
+ipam-app-1 exited with code 0

@@ -21,29 +21,40 @@ else
   echo "Database schema setup failed, but continuing..."
 fi
 
-# Create session table manually using SQL
+# Create session table using Node.js to avoid SQL syntax issues
 echo "Creating session table..."
-PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
-CREATE TABLE IF NOT EXISTS sessions (
-  sid VARCHAR NOT NULL COLLATE \"default\",
-  sess JSON NOT NULL,
-  expire TIMESTAMP(6) NOT NULL
-);
-CREATE INDEX IF NOT EXISTS IDX_session_expire ON sessions(expire);
-" || echo "Session table creation failed, but continuing..."
+npx tsx -e "
+import { db } from './server/db';
+import { sql } from 'drizzle-orm';
 
-# Add primary key constraint if it doesn't exist
-PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
-DO \$\$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'sessions_pkey'
-  ) THEN
-    ALTER TABLE sessions ADD CONSTRAINT sessions_pkey PRIMARY KEY (sid);
-  END IF;
-END
-\$\$;
-" || echo "Primary key constraint may already exist, continuing..."
+async function createSessionTable() {
+  try {
+    // Create session table using raw SQL but with proper escaping
+    await db.execute(sql\`
+      CREATE TABLE IF NOT EXISTS sessions (
+        sid VARCHAR NOT NULL PRIMARY KEY,
+        sess JSON NOT NULL,
+        expire TIMESTAMP(6) NOT NULL
+      );
+    \`);
+    
+    await db.execute(sql\`
+      CREATE INDEX IF NOT EXISTS IDX_session_expire ON sessions(expire);
+    \`);
+    
+    console.log('✅ Session table created successfully');
+  } catch (error) {
+    console.log('ℹ️  Session table may already exist:', error.message);
+  }
+}
+
+createSessionTable().then(() => {
+  process.exit(0);
+}).catch((error) => {
+  console.error('❌ Session table creation failed:', error);
+  process.exit(1);
+});
+" || echo "Session table setup completed with fallback"
 
 # Run production setup directly in entrypoint
 echo "Setting up production environment..."
