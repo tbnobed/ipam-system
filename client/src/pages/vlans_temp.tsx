@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, Network, Users, Activity, AlertTriangle } from "lucide-react";
+import { Plus, Edit, Edit2, Trash2, Network, Users, Activity, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
@@ -115,6 +115,58 @@ export default function VLANs() {
       onlineDevices,
       offlineDevices,
       healthStatus
+    };
+  };
+
+  const getSubnetDetails = (subnet: Subnet) => {
+    const [network, cidr] = subnet.network.split('/');
+    const cidrNum = parseInt(cidr, 10);
+    const totalHosts = Math.pow(2, 32 - cidrNum);
+    const usableHosts = totalHosts - 2;
+    
+    const networkParts = network.split('.').map(Number);
+    const networkInt = (networkParts[0] << 24) + (networkParts[1] << 16) + (networkParts[2] << 8) + networkParts[3];
+    
+    const mask = (0xFFFFFFFF << (32 - cidrNum)) >>> 0;
+    const networkAddress = (networkInt & mask) >>> 0;
+    const broadcastAddress = (networkAddress | (~mask >>> 0)) >>> 0;
+    
+    const networkAddressStr = [
+      (networkAddress >>> 24) & 255,
+      (networkAddress >>> 16) & 255,
+      (networkAddress >>> 8) & 255,
+      networkAddress & 255
+    ].join('.');
+    
+    const broadcastAddressStr = [
+      (broadcastAddress >>> 24) & 255,
+      (broadcastAddress >>> 16) & 255,
+      (broadcastAddress >>> 8) & 255,
+      broadcastAddress & 255
+    ].join('.');
+    
+    const firstUsableIP = [
+      (networkAddress >>> 24) & 255,
+      (networkAddress >>> 16) & 255,
+      (networkAddress >>> 8) & 255,
+      (networkAddress & 255) + 1
+    ].join('.');
+    
+    const lastUsableIP = [
+      (broadcastAddress >>> 24) & 255,
+      (broadcastAddress >>> 16) & 255,
+      (broadcastAddress >>> 8) & 255,
+      (broadcastAddress & 255) - 1
+    ].join('.');
+    
+    return {
+      subnet,
+      metrics: getSubnetMetrics(subnet.id),
+      totalHosts,
+      networkAddress: networkAddressStr,
+      broadcastAddress: broadcastAddressStr,
+      firstUsableIP,
+      lastUsableIP
     };
   };
 
@@ -334,7 +386,9 @@ export default function VLANs() {
                               <AlertDialogTitle>Delete VLAN</AlertDialogTitle>
                               <AlertDialogDescription>
                                 Are you sure you want to delete VLAN {vlan.vlanId} ({vlan.name})? 
-                                This action cannot be undone and will permanently delete all subnets and devices in this VLAN.
+                                This action cannot be undone and will permanently delete:
+                                <br />• All subnets in this VLAN
+                                <br />• All devices in those subnets
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -360,19 +414,37 @@ export default function VLANs() {
                       <div className="grid gap-4">
                         {vlanSubnets.map((subnet) => {
                           const metrics = getSubnetMetrics(subnet.id);
+                          
                           return (
                             <div key={subnet.id} className="p-6 border rounded-lg bg-white shadow-sm">
                               <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center space-x-4">
-                                  <span className="font-mono text-lg font-medium">{subnet.network}</span>
-                                  <Badge variant="outline">DHCP</Badge>
-                                  <Badge variant={metrics.healthStatus === 'healthy' ? 'default' : metrics.healthStatus === 'warning' ? 'destructive' : 'secondary'}>
-                                    {metrics.healthStatus === 'healthy' ? 'Healthy' : metrics.healthStatus === 'warning' ? 'Issues' : 'Inactive'}
+                                  <span className="font-mono text-lg font-medium">
+                                    {subnet.network}
+                                  </span>
+                                  <Badge variant="outline">
+                                    DHCP
+                                  </Badge>
+                                  <Badge 
+                                    variant={
+                                      metrics.healthStatus === 'healthy' ? 'default' : 
+                                      metrics.healthStatus === 'warning' ? 'destructive' : 'secondary'
+                                    }
+                                  >
+                                    {metrics.healthStatus === 'healthy' ? 'Healthy' : 
+                                     metrics.healthStatus === 'warning' ? 'Issues' : 'Inactive'}
                                   </Badge>
                                 </div>
                                 {user?.role !== "viewer" && (
                                   <div className="flex items-center space-x-2">
-                                    <Button variant="ghost" size="sm" onClick={() => { setEditingSubnet(subnet); setSubnetDialogOpen(true); }}>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => {
+                                        setEditingSubnet(subnet);
+                                        setSubnetDialogOpen(true);
+                                      }}
+                                    >
                                       <Edit className="w-4 h-4" />
                                     </Button>
                                     <AlertDialog>
@@ -384,58 +456,84 @@ export default function VLANs() {
                                       <AlertDialogContent>
                                         <AlertDialogHeader>
                                           <AlertDialogTitle>Delete Subnet</AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            Are you sure you want to delete subnet {subnet.network}? This action cannot be undone.
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                          <AlertDialogAction onClick={() => deleteSubnetMutation.mutate(subnet.id)} className="bg-red-600 hover:bg-red-700">
-                                            Delete
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
-                                  </div>
-                                )}
-                              </div>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to delete subnet {subnet.network}? 
+                                          This action cannot be undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => deleteSubnetMutation.mutate(subnet.id)}
+                                          className="bg-red-600 hover:bg-red-700"
+                                        >
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              )}
+
                               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                                <button onClick={() => handleSubnetCardClick(subnet)} className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer">
+                                <button 
+                                  onClick={() => handleSubnetCardClick(subnet)}
+                                  className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+                                >
                                   <Network className="w-8 h-8 text-blue-600" />
                                   <div>
                                     <p className="text-sm font-medium text-gray-700">Total IPs</p>
                                     <p className="text-xl font-bold text-blue-600">{metrics.totalIPs.toLocaleString()}</p>
                                   </div>
                                 </button>
-                                <button onClick={() => handleSubnetCardClick(subnet)} className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors cursor-pointer">
+                                
+                                <button 
+                                  onClick={() => handleSubnetCardClick(subnet)}
+                                  className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors cursor-pointer"
+                                >
                                   <Activity className="w-8 h-8 text-green-600" />
                                   <div>
                                     <p className="text-sm font-medium text-gray-700">Available</p>
                                     <p className="text-xl font-bold text-green-600">{metrics.availableIPs.toLocaleString()}</p>
                                   </div>
                                 </button>
-                                <button onClick={() => handleSubnetCardClick(subnet)} className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer">
+                                
+                                <button 
+                                  onClick={() => handleSubnetCardClick(subnet)}
+                                  className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer"
+                                >
                                   <Users className="w-8 h-8 text-orange-600" />
                                   <div>
                                     <p className="text-sm font-medium text-gray-700">Used IPs</p>
                                     <p className="text-xl font-bold text-orange-600">{metrics.usedIPs.toLocaleString()}</p>
                                   </div>
                                 </button>
-                                <button onClick={() => handleSubnetCardClick(subnet)} className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors cursor-pointer">
+                                
+                                <button 
+                                  onClick={() => handleSubnetCardClick(subnet)}
+                                  className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors cursor-pointer"
+                                >
                                   <AlertTriangle className={`w-8 h-8 ${metrics.offlineDevices > 0 ? 'text-red-600' : 'text-purple-600'}`} />
                                   <div>
                                     <p className="text-sm font-medium text-gray-700">Devices</p>
-                                    <p className="text-xl font-bold text-purple-600">{metrics.onlineDevices}/{metrics.totalDevices}</p>
+                                    <p className="text-xl font-bold text-purple-600">
+                                      {metrics.onlineDevices}/{metrics.totalDevices}
+                                    </p>
                                   </div>
                                 </button>
                               </div>
+
                               <div className="mb-4">
                                 <div className="flex justify-between items-center mb-2">
                                   <span className="text-sm font-medium text-gray-700">Network Utilization</span>
                                   <span className="text-sm text-gray-600">{metrics.utilization.toFixed(1)}%</span>
                                 </div>
-                                <Progress value={metrics.utilization} className="w-full" />
+                                <Progress 
+                                  value={metrics.utilization} 
+                                  className="w-full"
+                                />
                               </div>
+
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 pt-4 border-t">
                                 <div>
                                   <span className="font-medium">Gateway: </span>
@@ -471,199 +569,23 @@ export default function VLANs() {
             );
           })}
         </div>
+
+        <Dialog open={subnetDetailsOpen} onOpenChange={setSubnetDetailsOpen}>
+          <DialogContent className="max-w-6xl min-h-[85vh] max-h-[95vh] h-[85vh] overflow-y-auto !h-[85vh]">
+            <DialogHeader>
+              <DialogTitle>
+                Subnet Details: {selectedSubnet?.network}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedSubnet && (
+              <SubnetDetailsDialog 
+                subnet={selectedSubnet} 
+                details={getSubnetDetails(selectedSubnet)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </>
-  );
-}
-
-interface VlanFormProps {
-  vlan?: Vlan | null;
-  onSubmit: (data: VlanFormData) => void;
-  isLoading: boolean;
-}
-
-function VlanForm({ vlan, onSubmit, isLoading }: VlanFormProps) {
-  const form = useForm<VlanFormData>({
-    resolver: zodResolver(vlanSchema),
-    defaultValues: {
-      vlanId: vlan?.vlanId || 1,
-      name: vlan?.name || "",
-      description: vlan?.description || "",
-      cableColor: vlan?.cableColor || ""
-    }
-  });
-
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      <FormField
-        control={form.control}
-        name="vlanId"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>VLAN ID</FormLabel>
-            <FormControl>
-              <Input type="number" placeholder="1-4094" {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} value={field.value?.toString() || ""} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="name"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Name</FormLabel>
-            <FormControl>
-              <Input placeholder="VLAN name" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="description"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Description</FormLabel>
-            <FormControl>
-              <Textarea placeholder="VLAN description" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="cableColor"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Cable Color</FormLabel>
-            <FormControl>
-              <Input placeholder="#000000" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <Button type="submit" disabled={isLoading}>
-        {isLoading ? "Saving..." : vlan ? "Update VLAN" : "Create VLAN"}
-      </Button>
-    </form>
-  );
-}
-
-interface SubnetFormProps {
-  subnet?: Subnet | null;
-  vlans: Vlan[];
-  onSubmit: (data: SubnetFormData) => void;
-  isLoading: boolean;
-}
-
-function SubnetForm({ subnet, vlans, onSubmit, isLoading }: SubnetFormProps) {
-  const form = useForm<SubnetFormData>({
-    resolver: zodResolver(subnetSchema),
-    defaultValues: {
-      network: subnet?.network || "",
-      gateway: subnet?.gateway || "",
-      vlanId: subnet?.vlanId || vlans[0]?.id || 1,
-      assignmentType: subnet?.assignmentType || "dhcp",
-      description: subnet?.description || ""
-    }
-  });
-
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="network"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Network</FormLabel>
-              <FormControl>
-                <Input placeholder="192.168.1.0/24" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="gateway"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Gateway</FormLabel>
-              <FormControl>
-                <Input placeholder="192.168.1.1" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="vlanId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>VLAN</FormLabel>
-              <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select VLAN" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {vlans.map((vlan) => (
-                    <SelectItem key={vlan.id} value={vlan.id.toString()}>
-                      VLAN {vlan.vlanId} - {vlan.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="assignmentType"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Assignment Type</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select assignment type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="dhcp">DHCP</SelectItem>
-                  <SelectItem value="static">Static</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Subnet description" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : subnet ? "Update Subnet" : "Create Subnet"}
-        </Button>
-      </form>
-    </Form>
   );
 }
