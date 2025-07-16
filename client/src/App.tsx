@@ -10,11 +10,27 @@ import Discovery from "@/pages/discovery";
 import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings-new";
 import Users from "@/pages/users";
+import LoginPage from "@/pages/login";
 import Sidebar from "@/components/layout/sidebar";
 import NotFound from "@/pages/not-found";
 import ScanStatusIndicator from "@/components/global/scan-status-indicator";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 function Router() {
+  const { user, isLoading, login } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage onLogin={login} />;
+  }
+
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
@@ -26,7 +42,7 @@ function Router() {
           <Route path="/discovery" component={Discovery} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/settings" component={Settings} />
-          <Route path="/users" component={Users} />
+          {user.role === "admin" && <Route path="/users" component={Users} />}
           <Route component={NotFound} />
         </Switch>
       </div>
@@ -39,8 +55,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <AuthProvider>
+          <Toaster />
+          <Router />
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

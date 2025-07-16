@@ -391,6 +391,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Authentication endpoints
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required" });
+      }
+      
+      const user = await storage.getUserByUsername(username);
+      if (!user || user.password !== password) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      if (!user.isActive) {
+        return res.status(401).json({ error: "Account is disabled" });
+      }
+      
+      // Store user in session
+      (req as any).session.user = {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        isActive: user.isActive
+      };
+      
+      res.json({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        isActive: user.isActive
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.post("/api/auth/logout", async (req, res) => {
+    try {
+      (req as any).session.destroy((err: any) => {
+        if (err) {
+          console.error("Logout error:", err);
+          return res.status(500).json({ error: "Logout failed" });
+        }
+        res.json({ message: "Logged out successfully" });
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({ error: "Logout failed" });
+    }
+  });
+
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      const user = (req as any).session?.user;
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Verify user still exists and is active
+      const currentUser = await storage.getUser(user.id);
+      if (!currentUser || !currentUser.isActive) {
+        (req as any).session.destroy();
+        return res.status(401).json({ error: "User not found or inactive" });
+      }
+      
+      res.json({
+        id: currentUser.id,
+        username: currentUser.username,
+        role: currentUser.role,
+        isActive: currentUser.isActive
+      });
+    } catch (error) {
+      console.error("Auth check error:", error);
+      res.status(500).json({ error: "Authentication check failed" });
+    }
+  });
+
   // User management endpoints
   app.get("/api/users", async (req, res) => {
     try {

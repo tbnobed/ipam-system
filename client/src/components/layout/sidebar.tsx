@@ -8,8 +8,11 @@ import {
   TrendingUp, 
   Settings, 
   User,
-  Users
+  Users,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
@@ -23,6 +26,7 @@ const navigation = [
 
 export default function Sidebar() {
   const [location] = useLocation();
+  const { user, logout } = useAuth();
 
   return (
     <div className="hidden md:flex md:w-64 md:flex-col">
@@ -44,6 +48,11 @@ export default function Sidebar() {
         <div className="mt-8 flex-grow flex flex-col">
           <nav className="flex-1 px-4 space-y-1">
             {navigation.map((item) => {
+              // Hide Users menu for non-admin users
+              if (item.name === "Users" && user?.role !== "admin") {
+                return null;
+              }
+              
               const isActive = location === item.href;
               const Icon = item.icon;
               
@@ -68,14 +77,24 @@ export default function Sidebar() {
 
           {/* User Profile */}
           <div className="flex-shrink-0 p-4 border-t border-gray-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                <User className="text-gray-600 w-4 h-4" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="flex-shrink-0 w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                  <User className="text-gray-600 w-4 h-4" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-700">{user?.username}</p>
+                  <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+                </div>
               </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-700">Admin User</p>
-                <p className="text-xs text-gray-500">Network Operations</p>
-              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={logout}
+                className="text-gray-500 hover:text-red-600"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
