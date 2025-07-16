@@ -56,6 +56,7 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Role-based UI restrictions and navigation filtering
 - Permission dialog with hierarchical VLAN→Subnet structure
 - Visual permission indicators and color-coded levels
+- Device table actions (Add/Edit/Delete) properly hidden based on user permissions
 
 ### User Role System (✅ Complete)
 1. **Admin**: Full control over entire application and all resources
@@ -67,6 +68,14 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Demo credentials: admin/admin for testing
 - Protected routes with 401 responses for unauthenticated access
 - User data filtering ensuring permission-based visibility
+
+### Docker Production Deployment (✅ Complete)
+- Complete Docker containerization with PostgreSQL database
+- Automated database schema migrations via docker-entrypoint.sh
+- Session table creation and user account setup during container startup
+- Production-ready environment configuration with .env.docker
+- Health checks and proper container orchestration
+- Default users created: admin/admin, user/user, viewer/viewer
 
 ## Technical Notes
 - Production environment has 122 devices across 2 subnets

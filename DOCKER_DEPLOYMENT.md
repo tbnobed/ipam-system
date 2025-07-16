@@ -1,28 +1,33 @@
 # Docker Deployment Guide
 
-This guide explains how to deploy the IPAM System using Docker on Ubuntu Server.
+This guide explains how to deploy the IPAM System using Docker with complete authentication and authorization features.
 
 ## Prerequisites
 
-- Ubuntu Server 20.04 or later
+- Ubuntu Server 20.04 or later (or any Linux distribution)
 - Docker and Docker Compose installed
-- At least 2GB RAM available
+- At least 4GB RAM available
+- 10GB+ available disk space
 
 ## Quick Deployment
 
 1. Clone or download the project files to your server
-2. Make the deployment script executable:
+2. Deploy with docker-compose:
    ```bash
-   chmod +x deploy.sh
-   ```
-3. Run the deployment script:
-   ```bash
-   ./deploy.sh
+   docker-compose up --build -d
    ```
 
-## Manual Deployment
+That's it! The system will automatically:
+- Build the application container
+- Set up PostgreSQL database
+- Create database schema
+- Create session table
+- Set up default users (admin/admin, user/user, viewer/viewer)
+- Configure default settings
 
-If you prefer to deploy manually:
+## Manual Deployment Steps
+
+If you prefer step-by-step deployment:
 
 1. Stop any existing containers:
    ```bash
@@ -31,7 +36,8 @@ If you prefer to deploy manually:
 
 2. Build and start the services:
    ```bash
-   docker-compose up --build -d
+   docker-compose build --no-cache
+   docker-compose up -d
    ```
 
 3. Check the status:
@@ -39,17 +45,74 @@ If you prefer to deploy manually:
    docker-compose ps
    ```
 
+4. Verify application health:
+   ```bash
+   curl http://localhost:5000/api/health
+   ```
+
 ## Configuration
 
 The Docker setup uses these environment variables (defined in `.env.docker`):
 - `NODE_ENV=production`
 - `DATABASE_URL=postgresql://ipam_user:ipam_password@postgres:5432/ipam_db`
+- `SESSION_SECRET=ipam-production-session-secret-key-change-this-in-production-for-security`
+
+**Important**: Change the SESSION_SECRET in production for security!
+
+## Authentication System
+
+The system includes complete authentication and authorization:
+
+### Default Users
+- **Admin**: username: `admin`, password: `admin` (full system access)
+- **User**: username: `user`, password: `user` (limited VLAN/subnet access)
+- **Viewer**: username: `viewer`, password: `viewer` (read-only access)
+
+### User Roles
+1. **Admin**: Full control over entire application and all resources
+2. **User**: Can modify VLANs and subnets they have permissions for
+3. **Viewer**: Read-only access to assigned resources only
+
+### Features
+- Session-based authentication with secure session management
+- Resource-based permissions for VLANs and subnets
+- Role-based UI controls (buttons/menus hidden based on permissions)
+- Password hashing with bcrypt
+- Activity logging for audit trails
 
 ## Database
 
 - PostgreSQL 15 with automatic schema initialization
+- Session table for secure authentication
+- User management with permission system
 - Data persistence through Docker volumes
 - Health checks ensure proper startup sequence
+
+## Network Management
+
+- Real-time network scanning with WebSocket updates
+- Multi-subnet support with VLAN organization
+- Device discovery and tracking
+- Excel export organized by VLAN
+- Permission-based data filtering
+
+## Access
+
+- **Application**: http://server-ip:5000
+- **Database**: localhost:5432 (from host system)
+- **Database Name**: ipam_db
+- **Database User**: ipam_user
+- **Database Password**: ipam_password
+
+## Security Considerations
+
+### For Production Deployment:
+1. **Change default passwords** immediately after first login
+2. **Update SESSION_SECRET** in .env.docker with a strong random string
+3. **Set up firewall rules** to restrict access to port 5000
+4. **Configure HTTPS/TLS** using a reverse proxy (nginx/Apache)
+5. **Enable database backups** and regular security updates
+6. **Monitor logs** for suspicious activities
 
 ## Troubleshooting
 
@@ -59,20 +122,61 @@ The Docker setup uses these environment variables (defined in `.env.docker`):
    docker-compose logs postgres
    ```
 
-2. Restart services:
+2. Check container status:
+   ```bash
+   docker-compose ps
+   ```
+
+3. Restart services:
    ```bash
    docker-compose restart
    ```
 
-3. Rebuild containers:
+4. Rebuild containers:
    ```bash
+   docker-compose down
    docker-compose up --build -d
    ```
 
-## Access
+5. Database issues:
+   ```bash
+   # Connect to database
+   docker-compose exec postgres psql -U ipam_user -d ipam_db
+   
+   # Check users table
+   docker-compose exec postgres psql -U ipam_user -d ipam_db -c "SELECT * FROM users;"
+   ```
 
-- Application: http://server-ip:5000
-- Database: localhost:5432 (from host system)
+## Maintenance
+
+### Database Backup
+```bash
+docker-compose exec postgres pg_dump -U ipam_user ipam_db > backup.sql
+```
+
+### Database Restore
+```bash
+docker-compose exec -T postgres psql -U ipam_user ipam_db < backup.sql
+```
+
+### Update Application
+```bash
+# Pull latest code
+git pull
+
+# Rebuild and restart
+docker-compose down
+docker-compose up --build -d
+```
+
+## Complete Reset
+If you need to completely reset the system:
+```bash
+docker-compose down --volumes
+docker-compose up --build -d
+```
+
+This will recreate everything from scratch including the database and user accounts.
 
 ## Maintenance
 

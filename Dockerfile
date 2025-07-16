@@ -3,8 +3,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies for health checks and networking
-RUN apk add --no-cache curl netcat-openbsd
+# Install dependencies for health checks, networking, and PostgreSQL client
+RUN apk add --no-cache curl netcat-openbsd postgresql-client
 
 # Copy package files
 COPY package*.json ./
@@ -30,9 +30,9 @@ USER nodejs
 # Expose port
 EXPOSE 5000
 
-# Health check
+# Health check - use health endpoint which doesn't require auth
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:5000/api/dashboard/metrics || exit 1
+  CMD curl -f http://localhost:5000/api/health || exit 1
 
 # Use custom entrypoint
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
