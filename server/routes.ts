@@ -464,16 +464,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/users/:id", async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
-      const deleted = await storage.deleteUser(userId);
-      
-      if (!deleted) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      
+      await storage.deleteUser(userId);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting user:", error);
       res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
+  // User permissions endpoints
+  app.get("/api/user-permissions/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const permissions = await storage.getUserPermissions(userId);
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching user permissions:", error);
+      res.status(500).json({ error: "Failed to fetch user permissions" });
+    }
+  });
+
+  app.post("/api/user-permissions", async (req, res) => {
+    try {
+      const { userId, vlanId, subnetId, permission } = req.body;
+      
+      if (!userId || !permission) {
+        return res.status(400).json({ error: "User ID and permission are required" });
+      }
+      
+      if (!vlanId && !subnetId) {
+        return res.status(400).json({ error: "Either VLAN ID or subnet ID is required" });
+      }
+      
+      const userPermission = await storage.createUserPermission({
+        userId,
+        vlanId: vlanId || null,
+        subnetId: subnetId || null,
+        permission
+      });
+      
+      res.status(201).json(userPermission);
+    } catch (error) {
+      console.error("Error creating user permission:", error);
+      res.status(400).json({ error: "Failed to create user permission" });
+    }
+  });
+
+  app.put("/api/user-permissions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { userId, vlanId, subnetId, permission } = req.body;
+      
+      const userPermission = await storage.updateUserPermission(id, {
+        userId,
+        vlanId: vlanId || null,
+        subnetId: subnetId || null,
+        permission
+      });
+      
+      res.json(userPermission);
+    } catch (error) {
+      console.error("Error updating user permission:", error);
+      res.status(400).json({ error: "Failed to update user permission" });
+    }
+  });
+
+  app.delete("/api/user-permissions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteUserPermission(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting user permission:", error);
+      res.status(500).json({ error: "Failed to delete user permission" });
     }
   });
 

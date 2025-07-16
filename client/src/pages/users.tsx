@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Edit, Plus, Shield, UserCheck, Eye } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Trash2, Edit, Plus, Shield, UserCheck, Eye, Settings } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -50,9 +51,24 @@ export default function Users() {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
+  const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<User | null>(null);
 
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['/api/users'],
+  });
+
+  const { data: vlans = [] } = useQuery({
+    queryKey: ['/api/vlans'],
+  });
+
+  const { data: subnets = [] } = useQuery({
+    queryKey: ['/api/subnets'],
+  });
+
+  const { data: userPermissions = [] } = useQuery({
+    queryKey: ['/api/user-permissions', selectedUserForPermissions?.id],
+    enabled: !!selectedUserForPermissions?.id,
   });
 
   const form = useForm<UserFormData>({
@@ -271,6 +287,18 @@ export default function Users() {
                     </Badge>
                   </div>
                   <div className="flex items-center space-x-2">
+                    {(user.role === "user" || user.role === "viewer") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedUserForPermissions(user);
+                          setIsPermissionDialogOpen(true);
+                        }}
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
@@ -293,6 +321,87 @@ export default function Users() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Permission Management Dialog */}
+      <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Manage Permissions for {selectedUserForPermissions?.username}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-3">VLAN Permissions</h3>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {vlans.map((vlan: any) => (
+                    <div key={vlan.id} className="flex items-center justify-between p-2 border rounded">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">{vlan.name}</span>
+                        <Badge variant="outline">VLAN {vlan.vlanId}</Badge>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Select defaultValue="none">
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="view">View</SelectItem>
+                            <SelectItem value="edit">Edit</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Subnet Permissions</h3>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {subnets.map((subnet: any) => (
+                    <div key={subnet.id} className="flex items-center justify-between p-2 border rounded">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">{subnet.network}</span>
+                        <Badge variant="outline">{subnet.name}</Badge>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Select defaultValue="none">
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="view">View</SelectItem>
+                            <SelectItem value="edit">Edit</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => {
+                toast({
+                  title: "Success",
+                  description: "Permissions updated successfully",
+                });
+                setIsPermissionDialogOpen(false);
+              }}>
+                Save Permissions
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
