@@ -21,6 +21,21 @@ else
   echo "Database schema setup failed, but continuing..."
 fi
 
+# Ensure isActive column exists in users table
+echo "Checking users table structure..."
+PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
+DO \$\$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'users' AND column_name = 'is_active'
+  ) THEN
+    ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT true NOT NULL;
+  END IF;
+END
+\$\$;
+" || echo "Users table check failed, but continuing..."
+
 # Create session table manually using SQL
 echo "Creating session table..."
 PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "

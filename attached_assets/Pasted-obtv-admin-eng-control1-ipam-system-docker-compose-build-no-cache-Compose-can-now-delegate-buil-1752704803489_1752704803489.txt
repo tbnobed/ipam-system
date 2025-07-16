@@ -1,0 +1,150 @@
+obtv-admin@eng-control1:~/ipam-system$ docker compose build --no-cache
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 44.6s (17/17) FINISHED                                                                      docker:default
+ => [ipam-app internal] load build definition from Dockerfile                                                      0.0s
+ => => transferring dockerfile: 984B                                                                               0.0s
+ => [ipam-app internal] load metadata for docker.io/library/node:20-alpine                                         0.3s
+ => [ipam-app internal] load .dockerignore                                                                         0.0s
+ => => transferring context: 243B                                                                                  0.0s
+ => [ipam-app  1/11] FROM docker.io/library/node:20-alpine@sha256:df02558528d3d3d0d621f112e232611aecfee7cbc654f6b  0.0s
+ => [ipam-app internal] load build context                                                                         0.1s
+ => => transferring context: 6.48MB                                                                                0.1s
+ => CACHED [ipam-app  2/11] WORKDIR /app                                                                           0.0s
+ => [ipam-app  3/11] RUN apk add --no-cache curl netcat-openbsd postgresql-client                                  1.0s
+ => [ipam-app  4/11] COPY package*.json ./                                                                         0.0s
+ => [ipam-app  5/11] RUN npm ci && npm cache clean --force                                                        10.3s
+ => [ipam-app  6/11] COPY . .                                                                                      0.0s
+ => [ipam-app  7/11] COPY docker-entrypoint.sh /usr/local/bin/                                                     0.0s
+ => [ipam-app  8/11] RUN chmod +x /usr/local/bin/docker-entrypoint.sh                                              0.2s
+ => [ipam-app  9/11] RUN addgroup -g 1001 -S nodejs                                                                0.2s
+ => [ipam-app 10/11] RUN adduser -S nodejs -u 1001                                                                 0.2s
+ => [ipam-app 11/11] RUN chown -R nodejs:nodejs /app                                                              28.5s
+ => [ipam-app] exporting to image                                                                                  3.6s
+ => => exporting layers                                                                                            3.6s
+ => => writing image sha256:ff9f97de27f678dab4e3c1d374b2bd3ed9e2977e1784979ec15510d494940fd7                       0.0s
+ => => naming to docker.io/library/ipam-system-ipam-app                                                            0.0s
+ => [ipam-app] resolving provenance for metadata file                                                              0.0s
+[+] Building 1/1
+ ✔ ipam-app  Built                                                                                                 0.0s
+obtv-admin@eng-control1:~/ipam-system$ docker compose up -d
+[+] Running 3/3
+ ✔ Network ipam-system_ipam-network  Created                                                                       0.0s
+ ✔ Container ipam-system-postgres-1  Healthy                                                                      10.7s
+ ✔ Container ipam-system-ipam-app-1  Started                                                                      10.8s
+obtv-admin@eng-control1:~/ipam-system$ docker compose logs -f
+ipam-app-1  | Waiting for PostgreSQL to be ready...
+ipam-app-1  | Connection to postgres (172.18.0.2) 5432 port [tcp/postgresql] succeeded!
+ipam-app-1  | PostgreSQL is ready - starting application...
+ipam-app-1  | Setting up database schema...
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 db:push
+ipam-app-1  | > drizzle-kit push
+ipam-app-1  |
+ipam-app-1  | No config path provided, using default 'drizzle.config.ts'
+ipam-app-1  | Reading config file '/app/drizzle.config.ts'
+ipam-app-1  | Using 'pg' driver for database querying
+ipam-app-1  | [⣷] Pulling schema from database...
+[⣯] Pulling schema from database...
+[⣟] Pulling schema from database...
+[✓] Pulling schema from database...
+ipam-app-1  |
+ipam-app-1  | Is settings table created or renamed from another table?
+ipam-app-1  | ❯ + settings            create table
+postgres-1  |
+postgres-1  | PostgreSQL Database directory appears to contain a database; Skipping initialization
+postgres-1  |
+postgres-1  | 2025-07-16 22:25:53.142 UTC [1] LOG:  starting PostgreSQL 15.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+postgres-1  | 2025-07-16 22:25:53.142 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+postgres-1  | 2025-07-16 22:25:53.142 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+postgres-1  | 2025-07-16 22:25:53.144 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+postgres-1  | 2025-07-16 22:25:53.148 UTC [29] LOG:  database system was shut down at 2025-07-16 22:24:13 UTC
+postgres-1  | 2025-07-16 22:25:53.156 UTC [1] LOG:  database system is ready to accept connections
+ipam-app-1  | npm notice
+ipam-app-1  | npm notice New major version of npm available! 10.8.2 -> 11.4.2
+ipam-app-1  | npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+ipam-app-1  | npm notice To update run: npm install -g npm@11.4.2
+ipam-app-1  | npm notice
+ipam-app-1  |   ~ sessions › settings rename tableDatabase schema setup completed successfully
+ipam-app-1  | Creating session table...
+ipam-app-1  | NOTICE:  relation "sessions" already exists, skipping
+ipam-app-1  | NOTICE:  relation "idx_session_expire" already exists, skipping
+ipam-app-1  | CREATE TABLE
+ipam-app-1  | CREATE INDEX
+ipam-app-1  | DO
+ipam-app-1  | Setting up production environment...
+ipam-app-1  | Setting up production database...
+postgres-1  | 2025-07-16 22:26:16.033 UTC [52] ERROR:  column "is_active" of relation "users" does not exist at character 60
+postgres-1  | 2025-07-16 22:26:16.033 UTC [52] STATEMENT:  insert into "users" ("id", "username", "password", "role", "is_active", "created_at", "updated_at") values (default, $1, $2, $3, $4, default, default) on conflict ("username") do update set "password" = $5, "role" = $6, "is_active" = $7, "updated_at" = $8 returning "id", "username", "password", "role", "is_active", "created_at", "updated_at"
+ipam-app-1  | ❌ Production database setup failed: error: column "is_active" of relation "users" does not exist
+ipam-app-1  |     at /app/node_modules/pg-pool/index.js:45:11
+ipam-app-1  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+ipam-app-1  |     at async <anonymous> (/app/node_modules/src/node-postgres/session.ts:104:19)
+ipam-app-1  |     at async setupProduction ([eval]:31:23) {
+ipam-app-1  |   length: 127,
+ipam-app-1  |   severity: 'ERROR',
+ipam-app-1  |   code: '42703',
+ipam-app-1  |   detail: undefined,
+ipam-app-1  |   hint: undefined,
+ipam-app-1  |   position: '60',
+ipam-app-1  |   internalPosition: undefined,
+ipam-app-1  |   internalQuery: undefined,
+ipam-app-1  |   where: undefined,
+ipam-app-1  |   schema: undefined,
+ipam-app-1  |   table: undefined,
+ipam-app-1  |   column: undefined,
+ipam-app-1  |   dataType: undefined,
+ipam-app-1  |   constraint: undefined,
+ipam-app-1  |   file: 'parse_target.c',
+ipam-app-1  |   line: '1075',
+ipam-app-1  |   routine: 'checkInsertTargets'
+ipam-app-1  | }
+ipam-app-1 exited with code 0
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 db:push
+ipam-app-1  | > drizzle-kit push
+ipam-app-1  |
+ipam-app-1  | No config path provided, using default 'drizzle.config.ts'
+ipam-app-1  | Reading config file '/app/drizzle.config.ts'
+ipam-app-1  | Using 'pg' driver for database querying
+ipam-app-1  | [⣷] Pulling schema from database...
+[⣯] Pulling schema from database...
+[✓] Pulling schema from database...
+ipam-app-1  |
+ipam-app-1  | Is settings table created or renamed from another table?
+ipam-app-1  | ❯ + settings            create table
+ipam-app-1  |   ~ sessions › settings rename tableDatabase schema setup completed successfully
+ipam-app-1  | Creating session table...
+ipam-app-1  | NOTICE:  relation "sessions" already exists, skipping
+ipam-app-1  | NOTICE:  relation "idx_session_expire" already exists, skipping
+ipam-app-1  | CREATE TABLE
+ipam-app-1  | CREATE INDEX
+ipam-app-1  | DO
+ipam-app-1  | Setting up production environment...
+ipam-app-1  | Setting up production database...
+postgres-1  | 2025-07-16 22:26:28.426 UTC [65] ERROR:  column "is_active" of relation "users" does not exist at character 60
+postgres-1  | 2025-07-16 22:26:28.426 UTC [65] STATEMENT:  insert into "users" ("id", "username", "password", "role", "is_active", "created_at", "updated_at") values (default, $1, $2, $3, $4, default, default) on conflict ("username") do update set "password" = $5, "role" = $6, "is_active" = $7, "updated_at" = $8 returning "id", "username", "password", "role", "is_active", "created_at", "updated_at"
+ipam-app-1  | ❌ Production database setup failed: error: column "is_active" of relation "users" does not exist
+ipam-app-1  |     at /app/node_modules/pg-pool/index.js:45:11
+ipam-app-1  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+ipam-app-1  |     at async <anonymous> (/app/node_modules/src/node-postgres/session.ts:104:19)
+ipam-app-1  |     at async setupProduction ([eval]:31:23) {
+ipam-app-1  |   length: 127,
+ipam-app-1  |   severity: 'ERROR',
+ipam-app-1  |   code: '42703',
+ipam-app-1  |   detail: undefined,
+ipam-app-1  |   hint: undefined,
+ipam-app-1  |   position: '60',
+ipam-app-1  |   internalPosition: undefined,
+ipam-app-1  |   internalQuery: undefined,
+ipam-app-1  |   where: undefined,
+ipam-app-1  |   schema: undefined,
+ipam-app-1  |   table: undefined,
+ipam-app-1  |   column: undefined,
+ipam-app-1  |   dataType: undefined,
+ipam-app-1  |   constraint: undefined,
+ipam-app-1  |   file: 'parse_target.c',
+ipam-app-1  |   line: '1075',
+ipam-app-1  |   routine: 'checkInsertTargets'
+ipam-app-1  | }
+ipam-app-1 exited with code 0

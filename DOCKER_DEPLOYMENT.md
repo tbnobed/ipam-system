@@ -178,6 +178,35 @@ docker-compose up --build -d
 
 This will recreate everything from scratch including the database and user accounts.
 
+## Database Issues
+If you encounter database schema issues:
+
+1. **Check database status:**
+   ```bash
+   docker-compose exec postgres psql -U ipam_user -d ipam_db -c "\d users"
+   ```
+
+2. **Fix missing columns manually:**
+   ```bash
+   docker-compose exec postgres psql -U ipam_user -d ipam_db -c "
+   ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true NOT NULL;
+   "
+   ```
+
+3. **Complete database reset:**
+   ```bash
+   docker-compose down --volumes
+   docker system prune -f
+   docker-compose up --build -d
+   ```
+
+## Container Restart Loop
+If the container keeps restarting:
+1. Check logs: `docker-compose logs ipam-app`
+2. Look for database connection errors
+3. Ensure PostgreSQL is fully ready before app starts
+4. Reset volumes if database is corrupted
+
 ## Maintenance
 
 - Stop system: `docker-compose down`
