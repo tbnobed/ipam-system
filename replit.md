@@ -33,6 +33,10 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - **2025-01-16**: Added visual permission legend with color-coded levels (None/View/Edit/Admin)
 - **2025-01-16**: Implemented hierarchical permissions showing subnets under their parent VLANs
 - **2025-01-16**: Enhanced permission dialog with detailed resource information and visual indicators
+- **2025-01-16**: **CRITICAL FIX**: Resolved Docker deployment syntax errors and module loading issues
+- **2025-01-16**: Fixed unterminated string literal error in production setup script
+- **2025-01-16**: Implemented standalone JavaScript setup script using pg library for database initialization
+- **2025-01-16**: Fixed module path resolution by running setup from app directory instead of /tmp
 
 ## User Preferences
 - Clean database initialization without hardcoded subnet IDs or network configurations
