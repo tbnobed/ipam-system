@@ -15,9 +15,7 @@ export NODE_ENV=production
 
 # Run database migration with automatic confirmation
 echo "Setting up database schema..."
-timeout 30 bash -c '
-  echo "y" | npm run db:push
-' || echo "Database schema setup may have failed, but continuing..."
+echo "y" | timeout 30 npm run db:push || echo "Database schema setup may have failed, but continuing..."
 echo "Database schema setup completed successfully"
 
 # Ensure all required tables exist
@@ -182,7 +180,7 @@ async function setupProduction() {
     await db.execute(sql\`
       INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details, timestamp)
       VALUES (1, 'system_init', 'system', 1, 
-        '{"message": "Production database initialized", "timestamp": "' || CURRENT_TIMESTAMP || '"}',
+        '{"message": "Production database initialized"}',
         CURRENT_TIMESTAMP)
     \`);
     
