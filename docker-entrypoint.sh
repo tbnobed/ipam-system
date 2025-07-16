@@ -98,63 +98,69 @@ END
 \$\$;
 " || echo "Primary key constraint may already exist, continuing..."
 
-# Run production setup directly in entrypoint
+# Run production setup using separate file
 echo "Setting up production environment..."
-npx tsx -e "
-import bcrypt from 'bcrypt';
-import { db } from './server/db';
-import { users, settings, activityLogs } from './shared/schema';
-import { sql } from 'drizzle-orm';
+cat > /tmp/setup-production.js << 'EOF'
+const bcrypt = require('bcrypt');
+const { Pool } = require('pg');
 
 const SALT_ROUNDS = 10;
 
 async function setupProduction() {
   console.log('Setting up production database...');
   
+  const pool = new Pool({
+    host: 'postgres',
+    port: 5432,
+    database: 'ipam_db',
+    user: 'ipam_user',
+    password: 'ipam_password'
+  });
+
   try {
-    // Create admin user using raw SQL for better compatibility
+    // Create admin user
     const hashedAdminPassword = await bcrypt.hash('admin', SALT_ROUNDS);
-    await db.execute(sql\`
+    await pool.query(`
       INSERT INTO users (username, password, role, is_active, created_at, updated_at)
-      VALUES ('admin', \${hashedAdminPassword}, 'admin', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      VALUES ('admin', $1, 'admin', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT (username) DO UPDATE SET
-        password = \${hashedAdminPassword},
+        password = $1,
         role = 'admin',
         is_active = true,
         updated_at = CURRENT_TIMESTAMP
-    \`);
+    `, [hashedAdminPassword]);
     
     console.log('✅ Admin user created/updated');
     
-    // Create demo user using raw SQL
+    // Create demo user
     const hashedUserPassword = await bcrypt.hash('user', SALT_ROUNDS);
-    await db.execute(sql\`
+    await pool.query(`
       INSERT INTO users (username, password, role, is_active, created_at, updated_at)
-      VALUES ('user', \${hashedUserPassword}, 'user', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      VALUES ('user', $1, 'user', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT (username) DO UPDATE SET
-        password = \${hashedUserPassword},
+        password = $1,
         role = 'user',
         is_active = true,
         updated_at = CURRENT_TIMESTAMP
-    \`);
+    `, [hashedUserPassword]);
     
     console.log('✅ Demo user created/updated');
     
-    // Create demo viewer using raw SQL
+    // Create demo viewer
     const hashedViewerPassword = await bcrypt.hash('viewer', SALT_ROUNDS);
-    await db.execute(sql\`
+    await pool.query(`
       INSERT INTO users (username, password, role, is_active, created_at, updated_at)
-      VALUES ('viewer', \${hashedViewerPassword}, 'viewer', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      VALUES ('viewer', $1, 'viewer', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT (username) DO UPDATE SET
-        password = \${hashedViewerPassword},
+        password = $1,
         role = 'viewer',
         is_active = true,
         updated_at = CURRENT_TIMESTAMP
-    \`);
+    `, [hashedViewerPassword]);
     
     console.log('✅ Demo viewer created/updated');
     
-    // Set default settings using raw SQL to avoid table issues
+    // Set default settings
     const defaultSettings = [
       { key: 'scan_interval', value: '300', description: 'Network scan interval in seconds' },
       { key: 'max_devices', value: '10000', description: 'Maximum number of devices to track' },
@@ -164,31 +170,33 @@ async function setupProduction() {
     ];
     
     for (const setting of defaultSettings) {
-      await db.execute(sql\`
+      await pool.query(`
         INSERT INTO settings (key, value, description, updated_at)
-        VALUES (\${setting.key}, \${setting.value}, \${setting.description}, CURRENT_TIMESTAMP)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
         ON CONFLICT (key) DO UPDATE SET
-          value = \${setting.value},
-          description = \${setting.description},
+          value = $2,
+          description = $3,
           updated_at = CURRENT_TIMESTAMP
-      \`);
+      `, [setting.key, setting.value, setting.description]);
     }
     
     console.log('✅ Default settings configured');
     
-    // Log the initialization using raw SQL
-    await db.execute(sql\`
+    // Log the initialization
+    await pool.query(`
       INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details, timestamp)
       VALUES (1, 'system_init', 'system', 1, 
         '{"message": "Production database initialized"}',
         CURRENT_TIMESTAMP)
-    \`);
+    `);
     
     console.log('✅ Production database setup completed successfully');
     
   } catch (error) {
     console.error('❌ Production database setup failed:', error);
     process.exit(1);
+  } finally {
+    await pool.end();
   }
 }
 
@@ -199,7 +207,9 @@ setupProduction().then(() => {
   console.error('Production setup failed:', error);
   process.exit(1);
 });
-"
+EOF
+
+node /tmp/setup-production.js
 
 # Start the application
 echo "Starting IPAM application..."
