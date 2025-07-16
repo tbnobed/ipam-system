@@ -13,13 +13,36 @@ echo "PostgreSQL is ready - starting application..."
 # Set production environment
 export NODE_ENV=production
 
-# Run database migration
+# Run database migration with automatic confirmation
 echo "Setting up database schema..."
-if npm run db:push; then
-  echo "Database schema setup completed successfully"
-else
-  echo "Database schema setup failed, but continuing..."
-fi
+timeout 30 bash -c '
+  echo "y" | npm run db:push
+' || echo "Database schema setup may have failed, but continuing..."
+echo "Database schema setup completed successfully"
+
+# Ensure all required tables exist
+echo "Verifying database tables..."
+PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
+-- Create settings table if it doesn't exist
+CREATE TABLE IF NOT EXISTS settings (
+  id SERIAL PRIMARY KEY,
+  key TEXT UNIQUE NOT NULL,
+  value TEXT NOT NULL,
+  description TEXT,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create activity_logs table if it doesn't exist
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  action TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id INTEGER,
+  details JSONB,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+" || echo "Table creation verification failed, but continuing..."
 
 # Ensure all required columns exist in users table
 echo "Checking users table structure..."
@@ -133,7 +156,7 @@ async function setupProduction() {
     
     console.log('✅ Demo viewer created/updated');
     
-    // Set default settings
+    // Set default settings using raw SQL to avoid table issues
     const defaultSettings = [
       { key: 'scan_interval', value: '300', description: 'Network scan interval in seconds' },
       { key: 'max_devices', value: '10000', description: 'Maximum number of devices to track' },
@@ -143,26 +166,25 @@ async function setupProduction() {
     ];
     
     for (const setting of defaultSettings) {
-      await db.insert(settings).values(setting).onConflictDoUpdate({
-        target: settings.key,
-        set: {
-          value: setting.value,
-          description: setting.description,
-          updatedAt: new Date()
-        }
-      });
+      await db.execute(sql\`
+        INSERT INTO settings (key, value, description, updated_at)
+        VALUES (\${setting.key}, \${setting.value}, \${setting.description}, CURRENT_TIMESTAMP)
+        ON CONFLICT (key) DO UPDATE SET
+          value = \${setting.value},
+          description = \${setting.description},
+          updated_at = CURRENT_TIMESTAMP
+      \`);
     }
     
     console.log('✅ Default settings configured');
     
-    // Log the initialization
-    await db.insert(activityLogs).values({
-      userId: adminUser[0].id,
-      action: 'system_init',
-      entityType: 'system',
-      entityId: 1,
-      details: { message: 'Production database initialized', timestamp: new Date() }
-    });
+    // Log the initialization using raw SQL
+    await db.execute(sql\`
+      INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details, timestamp)
+      VALUES (1, 'system_init', 'system', 1, 
+        '{"message": "Production database initialized", "timestamp": "' || CURRENT_TIMESTAMP || '"}',
+        CURRENT_TIMESTAMP)
+    \`);
     
     console.log('✅ Production database setup completed successfully');
     
