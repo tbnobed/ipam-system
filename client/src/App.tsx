@@ -41,7 +41,7 @@ function Router() {
           <Route path="/devices" component={Devices} />
           {user.role !== "viewer" && <Route path="/discovery" component={Discovery} />}
           {user.role !== "viewer" && <Route path="/analytics" component={Analytics} />}
-          {user.role !== "viewer" && <Route path="/settings" component={Settings} />}
+          {user.role === "admin" && <Route path="/settings" component={Settings} />}
           {user.role === "admin" && <Route path="/users" component={Users} />}
           <Route component={NotFound} />
         </Switch>

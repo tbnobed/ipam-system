@@ -48,16 +48,15 @@ export default function Sidebar() {
         <div className="mt-8 flex-grow flex flex-col">
           <nav className="flex-1 px-4 space-y-1">
             {navigation.map((item) => {
-              // Hide Users menu for non-admin users
-              if (item.name === "Users" && user?.role !== "admin") {
+              // Hide Users and Settings menu for non-admin users
+              if ((item.name === "Users" || item.name === "Settings") && user?.role !== "admin") {
                 return null;
               }
               
-              // Hide Discovery, Analytics, and Settings pages for viewer users
+              // Hide Discovery and Analytics pages for viewer users
               if (user?.role === "viewer" && (
                 item.name === "Discovery" || 
-                item.name === "Analytics" || 
-                item.name === "Settings"
+                item.name === "Analytics"
               )) {
                 return null;
               }
