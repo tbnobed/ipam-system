@@ -21,16 +21,33 @@ else
   echo "Database schema setup failed, but continuing..."
 fi
 
-# Ensure isActive column exists in users table
+# Ensure all required columns exist in users table
 echo "Checking users table structure..."
 PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
 DO \$\$
 BEGIN
+  -- Add is_active column if missing
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns 
     WHERE table_name = 'users' AND column_name = 'is_active'
   ) THEN
     ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT true NOT NULL;
+  END IF;
+  
+  -- Add created_at column if missing
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'users' AND column_name = 'created_at'
+  ) THEN
+    ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+  END IF;
+  
+  -- Add updated_at column if missing
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'users' AND column_name = 'updated_at'
+  ) THEN
+    ALTER TABLE users ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
   END IF;
 END
 \$\$;
@@ -66,6 +83,7 @@ npx tsx -e "
 import bcrypt from 'bcrypt';
 import { db } from './server/db';
 import { users, settings, activityLogs } from './shared/schema';
+import { sql } from 'drizzle-orm';
 
 const SALT_ROUNDS = 10;
 
@@ -73,60 +91,45 @@ async function setupProduction() {
   console.log('Setting up production database...');
   
   try {
-    // Create admin user
-    const hashedPassword = await bcrypt.hash('admin', SALT_ROUNDS);
-    const adminUser = await db.insert(users).values({
-      username: 'admin',
-      password: hashedPassword,
-      role: 'admin',
-      isActive: true
-    }).onConflictDoUpdate({
-      target: users.username,
-      set: {
-        password: hashedPassword,
-        role: 'admin',
-        isActive: true,
-        updatedAt: new Date()
-      }
-    }).returning();
+    // Create admin user using raw SQL for better compatibility
+    const hashedAdminPassword = await bcrypt.hash('admin', SALT_ROUNDS);
+    await db.execute(sql\`
+      INSERT INTO users (username, password, role, is_active, created_at, updated_at)
+      VALUES ('admin', \${hashedAdminPassword}, 'admin', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ON CONFLICT (username) DO UPDATE SET
+        password = \${hashedAdminPassword},
+        role = 'admin',
+        is_active = true,
+        updated_at = CURRENT_TIMESTAMP
+    \`);
     
     console.log('✅ Admin user created/updated');
     
-    // Create demo user
-    const demoUserPassword = await bcrypt.hash('user', SALT_ROUNDS);
-    await db.insert(users).values({
-      username: 'user',
-      password: demoUserPassword,
-      role: 'user',
-      isActive: true
-    }).onConflictDoUpdate({
-      target: users.username,
-      set: {
-        password: demoUserPassword,
-        role: 'user',
-        isActive: true,
-        updatedAt: new Date()
-      }
-    });
+    // Create demo user using raw SQL
+    const hashedUserPassword = await bcrypt.hash('user', SALT_ROUNDS);
+    await db.execute(sql\`
+      INSERT INTO users (username, password, role, is_active, created_at, updated_at)
+      VALUES ('user', \${hashedUserPassword}, 'user', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ON CONFLICT (username) DO UPDATE SET
+        password = \${hashedUserPassword},
+        role = 'user',
+        is_active = true,
+        updated_at = CURRENT_TIMESTAMP
+    \`);
     
     console.log('✅ Demo user created/updated');
     
-    // Create demo viewer
-    const viewerPassword = await bcrypt.hash('viewer', SALT_ROUNDS);
-    await db.insert(users).values({
-      username: 'viewer',
-      password: viewerPassword,
-      role: 'viewer',
-      isActive: true
-    }).onConflictDoUpdate({
-      target: users.username,
-      set: {
-        password: viewerPassword,
-        role: 'viewer',
-        isActive: true,
-        updatedAt: new Date()
-      }
-    });
+    // Create demo viewer using raw SQL
+    const hashedViewerPassword = await bcrypt.hash('viewer', SALT_ROUNDS);
+    await db.execute(sql\`
+      INSERT INTO users (username, password, role, is_active, created_at, updated_at)
+      VALUES ('viewer', \${hashedViewerPassword}, 'viewer', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ON CONFLICT (username) DO UPDATE SET
+        password = \${hashedViewerPassword},
+        role = 'viewer',
+        is_active = true,
+        updated_at = CURRENT_TIMESTAMP
+    \`);
     
     console.log('✅ Demo viewer created/updated');
     
