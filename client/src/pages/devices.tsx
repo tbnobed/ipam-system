@@ -1,8 +1,11 @@
 import Header from "@/components/layout/header";
 import DeviceTable from "@/components/dashboard/device-table";
 import AddDeviceModal from "@/components/modals/add-device-modal";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Devices() {
+  const { user } = useAuth();
+  
   return (
     <>
       <Header
@@ -15,10 +18,13 @@ export default function Devices() {
           <div>
             <h2 className="text-xl font-semibold text-gray-900">All Devices</h2>
             <p className="text-sm text-gray-600 mt-1">
-              Manually add devices that may not be discoverable through network scanning
+              {user?.role === "viewer" 
+                ? "View all network devices discovered through scanning" 
+                : "Manually add devices that may not be discoverable through network scanning"
+              }
             </p>
           </div>
-          <AddDeviceModal />
+          {user?.role !== "viewer" && <AddDeviceModal />}
         </div>
         <DeviceTable />
       </main>
