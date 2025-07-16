@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Edit, Trash2, Network, Users, Activity, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Vlan, Subnet, InsertVlan, InsertSubnet } from "@shared/schema";
 
 const vlanSchema = z.object({
@@ -47,6 +48,7 @@ export default function VLANs() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: vlans, isLoading: vlansLoading } = useQuery<Vlan[]>({
     queryKey: ['/api/vlans'],
@@ -276,56 +278,60 @@ export default function VLANs() {
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-semibold">Virtual LANs</h3>
           <div className="space-x-2">
-            <Dialog open={vlanDialogOpen} onOpenChange={setVlanDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => setEditingVlan(null)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add VLAN
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{editingVlan ? 'Edit VLAN' : 'Add New VLAN'}</DialogTitle>
-                </DialogHeader>
-                <VlanForm
-                  vlan={editingVlan}
-                  onSubmit={(data: VlanFormData) => {
-                    if (editingVlan) {
-                      updateVlanMutation.mutate({ id: editingVlan.id, data });
-                    } else {
-                      createVlanMutation.mutate(data);
-                    }
-                  }}
-                  isLoading={createVlanMutation.isPending || updateVlanMutation.isPending}
-                />
-              </DialogContent>
-            </Dialog>
+            {user?.role === 'admin' && (
+              <Dialog open={vlanDialogOpen} onOpenChange={setVlanDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => setEditingVlan(null)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add VLAN
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{editingVlan ? 'Edit VLAN' : 'Add New VLAN'}</DialogTitle>
+                  </DialogHeader>
+                  <VlanForm
+                    vlan={editingVlan}
+                    onSubmit={(data: VlanFormData) => {
+                      if (editingVlan) {
+                        updateVlanMutation.mutate({ id: editingVlan.id, data });
+                      } else {
+                        createVlanMutation.mutate(data);
+                      }
+                    }}
+                    isLoading={createVlanMutation.isPending || updateVlanMutation.isPending}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
             
-            <Dialog open={subnetDialogOpen} onOpenChange={setSubnetDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" onClick={() => setEditingSubnet(null)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Subnet
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{editingSubnet ? 'Edit Subnet' : 'Add New Subnet'}</DialogTitle>
-                </DialogHeader>
-                <SubnetForm
-                  subnet={editingSubnet}
-                  vlans={vlans || []}
-                  onSubmit={(data: SubnetFormData) => {
-                    if (editingSubnet) {
-                      updateSubnetMutation.mutate({ id: editingSubnet.id, data });
-                    } else {
-                      createSubnetMutation.mutate(data);
-                    }
-                  }}
-                  isLoading={createSubnetMutation.isPending || updateSubnetMutation.isPending}
-                />
-              </DialogContent>
-            </Dialog>
+            {user?.role === 'admin' && (
+              <Dialog open={subnetDialogOpen} onOpenChange={setSubnetDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" onClick={() => setEditingSubnet(null)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Subnet
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{editingSubnet ? 'Edit Subnet' : 'Add New Subnet'}</DialogTitle>
+                  </DialogHeader>
+                  <SubnetForm
+                    subnet={editingSubnet}
+                    vlans={vlans || []}
+                    onSubmit={(data: SubnetFormData) => {
+                      if (editingSubnet) {
+                        updateSubnetMutation.mutate({ id: editingSubnet.id, data });
+                      } else {
+                        createSubnetMutation.mutate(data);
+                      }
+                    }}
+                    isLoading={createSubnetMutation.isPending || updateSubnetMutation.isPending}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
         </div>
 

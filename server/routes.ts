@@ -7,8 +7,68 @@ import { networkScanner } from "./network";
 import { migrationManager } from "./migrations";
 import { z } from "zod";
 import * as XLSX from 'xlsx';
+import session from 'express-session';
+
+// Authentication middleware
+const requireAuth = (req: any, res: any, next: any) => {
+  const user = req.session?.user;
+  if (!user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  req.user = user;
+  next();
+};
+
+// Helper function to get user's accessible VLANs
+const getUserAccessibleVlans = async (userId: number, userRole: string) => {
+  if (userRole === 'admin') {
+    return await storage.getAllVlans();
+  }
+  
+  const userPermissions = await storage.getUserPermissions(userId);
+  const accessibleVlanIds = userPermissions
+    .filter(p => p.vlanId && p.permission !== 'none')
+    .map(p => p.vlanId);
+  
+  if (accessibleVlanIds.length === 0) {
+    return [];
+  }
+  
+  const allVlans = await storage.getAllVlans();
+  return allVlans.filter(vlan => accessibleVlanIds.includes(vlan.id));
+};
+
+// Helper function to get user's accessible subnets
+const getUserAccessibleSubnets = async (userId: number, userRole: string) => {
+  if (userRole === 'admin') {
+    return await storage.getAllSubnets();
+  }
+  
+  const userPermissions = await storage.getUserPermissions(userId);
+  const accessibleSubnetIds = userPermissions
+    .filter(p => p.subnetId && p.permission !== 'none')
+    .map(p => p.subnetId);
+  
+  if (accessibleSubnetIds.length === 0) {
+    return [];
+  }
+  
+  const allSubnets = await storage.getAllSubnets();
+  return allSubnets.filter(subnet => accessibleSubnetIds.includes(subnet.id));
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize sessions
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // Set to true in production with HTTPS
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  }));
   // Health check
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -27,10 +87,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // VLANs
-  app.get("/api/vlans", async (req, res) => {
+  // VLANs - now with access control
+  app.get("/api/vlans", requireAuth, async (req: any, res) => {
     try {
-      const vlans = await storage.getAllVlans();
+      const vlans = await getUserAccessibleVlans(req.user.id, req.user.role);
       res.json(vlans);
     } catch (error) {
       console.error("Error fetching VLANs:", error);
@@ -38,8 +98,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/vlans", async (req, res) => {
+  app.post("/api/vlans", requireAuth, async (req: any, res) => {
     try {
+      // Only admins can create VLANs
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
       const validatedData = insertVlanSchema.parse(req.body);
       const vlan = await storage.createVlan(validatedData);
       res.status(201).json(vlan);
@@ -49,9 +114,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/vlans/:id", async (req, res) => {
+  app.put("/api/vlans/:id", requireAuth, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Check if user has permission to modify this VLAN
+      if (req.user.role !== 'admin') {
+        const userPermissions = await storage.getUserPermissions(req.user.id);
+        const hasPermission = userPermissions.some(p => 
+          p.vlanId === id && (p.permission === 'write' || p.permission === 'admin')
+        );
+        
+        if (!hasPermission) {
+          return res.status(403).json({ error: "Insufficient permissions" });
+        }
+      }
+      
       const validatedData = insertVlanSchema.parse(req.body);
       const vlan = await storage.updateVlan(id, validatedData);
       res.json(vlan);
@@ -61,9 +139,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/vlans/:id", async (req, res) => {
+  app.delete("/api/vlans/:id", requireAuth, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Only admins can delete VLANs
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
       await storage.deleteVlan(id);
       res.status(204).send();
     } catch (error) {
@@ -72,10 +156,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Subnets
-  app.get("/api/subnets", async (req, res) => {
+  // Subnets - now with access control
+  app.get("/api/subnets", requireAuth, async (req: any, res) => {
     try {
-      const subnets = await storage.getAllSubnets();
+      const subnets = await getUserAccessibleSubnets(req.user.id, req.user.role);
       res.json(subnets);
     } catch (error) {
       console.error("Error fetching subnets:", error);
@@ -83,8 +167,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/subnets", async (req, res) => {
+  app.post("/api/subnets", requireAuth, async (req: any, res) => {
     try {
+      // Only admins can create subnets
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
       const validatedData = insertSubnetSchema.parse(req.body);
       const subnet = await storage.createSubnet(validatedData);
       res.status(201).json(subnet);
@@ -94,9 +183,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/subnets/:id", async (req, res) => {
+  app.put("/api/subnets/:id", requireAuth, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Check if user has permission to modify this subnet
+      if (req.user.role !== 'admin') {
+        const userPermissions = await storage.getUserPermissions(req.user.id);
+        const hasPermission = userPermissions.some(p => 
+          p.subnetId === id && (p.permission === 'write' || p.permission === 'admin')
+        );
+        
+        if (!hasPermission) {
+          return res.status(403).json({ error: "Insufficient permissions" });
+        }
+      }
+      
       const validatedData = insertSubnetSchema.parse(req.body);
       const subnet = await storage.updateSubnet(id, validatedData);
       res.json(subnet);
@@ -106,9 +208,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/subnets/:id", async (req, res) => {
+  app.delete("/api/subnets/:id", requireAuth, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Only admins can delete subnets
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
       await storage.deleteSubnet(id);
       res.status(204).send();
     } catch (error) {
@@ -470,9 +578,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User management endpoints
-  app.get("/api/users", async (req, res) => {
+  // User management endpoints - only admins can access these
+  app.get("/api/users", requireAuth, async (req: any, res) => {
     try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
       const users = await storage.getAllUsers();
       res.json(users);
     } catch (error) {
@@ -481,8 +593,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users/:id", async (req, res) => {
+  app.get("/api/users/:id", requireAuth, async (req: any, res) => {
     try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
       const userId = parseInt(req.params.id);
       const user = await storage.getUser(userId);
       if (!user) {
@@ -495,8 +611,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users", async (req, res) => {
+  app.post("/api/users", requireAuth, async (req: any, res) => {
     try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
       const { username, password, role = "viewer" } = req.body;
       
       if (!username || !password) {
@@ -517,8 +637,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/users/:id", async (req, res) => {
+  app.put("/api/users/:id", requireAuth, async (req: any, res) => {
     try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
       const userId = parseInt(req.params.id);
       const { username, password, role, isActive } = req.body;
       
@@ -540,8 +664,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/users/:id", async (req, res) => {
+  app.delete("/api/users/:id", requireAuth, async (req: any, res) => {
     try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
       const userId = parseInt(req.params.id);
       await storage.deleteUser(userId);
       res.status(204).send();
@@ -552,8 +680,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User permissions endpoints
-  app.get("/api/user-permissions/:userId", async (req, res) => {
+  app.get("/api/user-permissions/:userId", requireAuth, async (req: any, res) => {
     try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
       const userId = parseInt(req.params.userId);
       const permissions = await storage.getUserPermissions(userId);
       res.json(permissions);
@@ -563,8 +695,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/user-permissions", async (req, res) => {
+  app.post("/api/user-permissions", requireAuth, async (req: any, res) => {
     try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
       const { userId, permissions } = req.body;
       
       if (!userId || !permissions || !Array.isArray(permissions)) {
