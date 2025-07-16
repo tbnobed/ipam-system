@@ -18,6 +18,7 @@ import type { DeviceFilters, PaginatedResponse } from "@/lib/types";
 import type { Device } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
 
 const editDeviceSchema = z.object({
   hostname: z.string().optional(),
@@ -32,6 +33,7 @@ type EditDeviceFormData = z.infer<typeof editDeviceSchema>;
 export default function DeviceTable() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [filters, setFilters] = useState<DeviceFilters>({
     page: 1,
     limit: 50,
@@ -622,14 +624,18 @@ export default function DeviceTable() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditDevice(device)}
-                        className="text-primary hover:text-primary-dark"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
+                      {/* Edit button - only for admins and users with write permissions */}
+                      {(user?.role === "admin" || user?.role === "user") && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditDevice(device)}
+                          className="text-primary hover:text-primary-dark"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {/* Ping button - available for all authenticated users */}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -638,14 +644,17 @@ export default function DeviceTable() {
                       >
                         <Activity className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteDevice(device)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {/* Delete button - only for admins and users with write permissions */}
+                      {(user?.role === "admin" || user?.role === "user") && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteDevice(device)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
