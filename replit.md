@@ -20,6 +20,9 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Activity logging and audit trails
 
 ## Recent Changes
+- **2025-01-16**: Fixed user edit form dialog switching to create mode instead of closing
+- **2025-01-16**: Implemented role-based access control - viewers restricted from Discovery, Analytics, Settings
+- **2025-01-16**: Added route protection in frontend and sidebar navigation filtering
 - **2025-01-16**: Implemented comprehensive settings management system with database persistence
 - **2025-01-16**: Fixed numerical IP address sorting using PostgreSQL inet casting
 - **2025-01-16**: Added functional stop scan capability with proper state management

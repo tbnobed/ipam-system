@@ -53,6 +53,15 @@ export default function Sidebar() {
                 return null;
               }
               
+              // Hide Discovery, Analytics, and Settings pages for viewer users
+              if (user?.role === "viewer" && (
+                item.name === "Discovery" || 
+                item.name === "Analytics" || 
+                item.name === "Settings"
+              )) {
+                return null;
+              }
+              
               const isActive = location === item.href;
               const Icon = item.icon;
               

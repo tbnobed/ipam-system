@@ -39,9 +39,9 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/vlans" component={VLANs} />
           <Route path="/devices" component={Devices} />
-          <Route path="/discovery" component={Discovery} />
-          <Route path="/analytics" component={Analytics} />
-          <Route path="/settings" component={Settings} />
+          {user.role !== "viewer" && <Route path="/discovery" component={Discovery} />}
+          {user.role !== "viewer" && <Route path="/analytics" component={Analytics} />}
+          {user.role !== "viewer" && <Route path="/settings" component={Settings} />}
           {user.role === "admin" && <Route path="/users" component={Users} />}
           <Route component={NotFound} />
         </Switch>
