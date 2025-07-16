@@ -249,6 +249,9 @@ ON CONFLICT (username) DO UPDATE SET
 echo "Verifying users were created..."
 PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "SELECT username, role, is_active FROM users;" || echo "User verification failed"
 
+echo "Checking password storage (first 20 chars)..."
+PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "SELECT username, LEFT(password, 20) as password_start FROM users;" || echo "Password check failed"
+
 # Start the application
 echo "Starting IPAM application..."
 exec npm run dev

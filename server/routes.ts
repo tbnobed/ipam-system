@@ -8,6 +8,7 @@ import { migrationManager } from "./migrations";
 import { z } from "zod";
 import * as XLSX from 'xlsx';
 import session from 'express-session';
+import bcrypt from 'bcrypt';
 
 // Authentication middleware
 const requireAuth = (req: any, res: any, next: any) => {
@@ -607,7 +608,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const user = await storage.getUserByUsername(username);
-      if (!user || user.password !== password) {
+      if (!user) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      // Use bcrypt to compare the password
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
       
