@@ -27,7 +27,7 @@ const getUserAccessibleVlans = async (userId: number, userRole: string) => {
   
   const userPermissions = await storage.getUserPermissions(userId);
   const accessibleVlanIds = userPermissions
-    .filter(p => p.vlanId && p.permission !== 'none')
+    .filter(p => p.vlanId)
     .map(p => p.vlanId);
   
   if (accessibleVlanIds.length === 0) {
@@ -46,7 +46,7 @@ const getUserAccessibleSubnets = async (userId: number, userRole: string) => {
   
   const userPermissions = await storage.getUserPermissions(userId);
   const accessibleSubnetIds = userPermissions
-    .filter(p => p.subnetId && p.permission !== 'none')
+    .filter(p => p.subnetId)
     .map(p => p.subnetId);
   
   if (accessibleSubnetIds.length === 0) {
@@ -55,6 +55,18 @@ const getUserAccessibleSubnets = async (userId: number, userRole: string) => {
   
   const allSubnets = await storage.getAllSubnets();
   return allSubnets.filter(subnet => accessibleSubnetIds.includes(subnet.id));
+};
+
+// Helper function to filter devices by accessible subnets
+const filterDevicesByAccessibleSubnets = async (devices: any[], userId: number, userRole: string) => {
+  if (userRole === 'admin') {
+    return devices;
+  }
+  
+  const accessibleSubnets = await getUserAccessibleSubnets(userId, userRole);
+  const accessibleSubnetIds = accessibleSubnets.map(s => s.id);
+  
+  return devices.filter(device => accessibleSubnetIds.includes(device.subnetId));
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -76,8 +88,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Dashboard metrics
-  app.get("/api/dashboard/metrics", async (req, res) => {
+  // Dashboard metrics - requires authentication
+  app.get("/api/dashboard/metrics", requireAuth, async (req: any, res) => {
     try {
       const metrics = await storage.getDashboardMetrics();
       res.json(metrics);
@@ -236,10 +248,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Subnet utilization for dashboard
-  app.get("/api/dashboard/subnet-utilization", async (req, res) => {
+  // Subnet utilization for dashboard - requires authentication
+  app.get("/api/dashboard/subnet-utilization", requireAuth, async (req: any, res) => {
     try {
-      const subnets = await storage.getAllSubnets();
+      const subnets = await getUserAccessibleSubnets(req.user.id, req.user.role);
       const utilizationData = await Promise.all(
         subnets.map(async (subnet) => {
           const utilization = await storage.getSubnetUtilization(subnet.id);
@@ -260,8 +272,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Devices
-  app.get("/api/devices", async (req, res) => {
+  // Devices - requires authentication and filters by accessible subnets
+  app.get("/api/devices", requireAuth, async (req: any, res) => {
     try {
       const { search, vlan, subnet, status, page = "1", limit = "50", sortBy, sortOrder } = req.query;
       const filters = {
@@ -277,22 +289,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Device query filters:", filters);
       const devices = await storage.getDevices(filters);
-      console.log(`Returned ${devices.data.length} devices out of ${devices.total} total`);
-      console.log("Sample device IPs:", devices.data.slice(0, 5).map(d => `${d.id}:${d.ipAddress}:subnet${d.subnetId}`));
+      
+      // Filter devices by accessible subnets
+      const filteredDevices = await filterDevicesByAccessibleSubnets(devices.data, req.user.id, req.user.role);
+      
+      console.log(`Returned ${filteredDevices.length} devices out of ${devices.total} total (filtered by permissions)`);
+      console.log("Sample device IPs:", filteredDevices.slice(0, 5).map(d => `${d.id}:${d.ipAddress}:subnet${d.subnetId}`));
       
       // Set proper headers for large JSON responses
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Transfer-Encoding', 'chunked');
-      res.json(devices);
+      res.json({
+        data: filteredDevices,
+        total: filteredDevices.length,
+        page: filters.page,
+        limit: filters.limit
+      });
     } catch (error) {
       console.error("Error fetching devices:", error);
       res.status(500).json({ error: "Failed to fetch devices" });
     }
   });
 
-  app.post("/api/devices", async (req, res) => {
+  app.post("/api/devices", requireAuth, async (req: any, res) => {
     try {
+      // Only users with write permissions to the subnet can create devices
       const validatedData = insertDeviceSchema.parse(req.body);
+      
+      if (req.user.role !== 'admin') {
+        const userPermissions = await storage.getUserPermissions(req.user.id);
+        const hasPermission = userPermissions.some(p => 
+          p.subnetId === validatedData.subnetId && (p.permission === 'write' || p.permission === 'admin')
+        );
+        
+        if (!hasPermission) {
+          return res.status(403).json({ error: "Insufficient permissions" });
+        }
+      }
+      
       const device = await storage.createDevice(validatedData);
       res.status(201).json(device);
     } catch (error) {
@@ -301,10 +335,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/devices/:id", async (req, res) => {
+  app.put("/api/devices/:id", requireAuth, async (req: any, res) => {
     try {
       const deviceId = parseInt(req.params.id);
       const validatedData = insertDeviceSchema.partial().parse(req.body);
+      
+      // Check if user has permission to modify this device
+      if (req.user.role !== 'admin') {
+        const existingDevice = await storage.getDevice(deviceId);
+        if (!existingDevice) {
+          return res.status(404).json({ error: "Device not found" });
+        }
+        
+        const userPermissions = await storage.getUserPermissions(req.user.id);
+        const hasPermission = userPermissions.some(p => 
+          p.subnetId === existingDevice.subnetId && (p.permission === 'write' || p.permission === 'admin')
+        );
+        
+        if (!hasPermission) {
+          return res.status(403).json({ error: "Insufficient permissions" });
+        }
+      }
+      
       const device = await storage.updateDevice(deviceId, validatedData);
       res.json(device);
     } catch (error) {
@@ -313,9 +365,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/devices/:id", async (req, res) => {
+  app.delete("/api/devices/:id", requireAuth, async (req: any, res) => {
     try {
       const deviceId = parseInt(req.params.id);
+      
+      // Check if user has permission to delete this device
+      if (req.user.role !== 'admin') {
+        const existingDevice = await storage.getDevice(deviceId);
+        if (!existingDevice) {
+          return res.status(404).json({ error: "Device not found" });
+        }
+        
+        const userPermissions = await storage.getUserPermissions(req.user.id);
+        const hasPermission = userPermissions.some(p => 
+          p.subnetId === existingDevice.subnetId && (p.permission === 'write' || p.permission === 'admin')
+        );
+        
+        if (!hasPermission) {
+          return res.status(403).json({ error: "Insufficient permissions" });
+        }
+      }
+      
       await storage.deleteDevice(deviceId);
       res.status(204).send();
     } catch (error) {
@@ -324,11 +394,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all devices for dashboard calculations (no pagination)
-  app.get("/api/devices/all", async (req, res) => {
+  // Get all devices for dashboard calculations (no pagination) - requires authentication
+  app.get("/api/devices/all", requireAuth, async (req: any, res) => {
     try {
       const devices = await storage.getAllDevicesForExport();
-      res.json({ data: devices });
+      
+      // Filter devices by accessible subnets
+      const filteredDevices = await filterDevicesByAccessibleSubnets(devices, req.user.id, req.user.role);
+      
+      res.json({ data: filteredDevices });
     } catch (error) {
       console.error("Error fetching all devices:", error);
       res.status(500).json({ error: "Failed to fetch devices" });
@@ -337,14 +411,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Network scanning
-  app.post("/api/network/scan", async (req, res) => {
+  // Network scanning - requires authentication
+  app.post("/api/network/scan", requireAuth, async (req: any, res) => {
     try {
       const { subnetIds } = req.body;
       console.log("Received scan request with subnetIds:", subnetIds);
       
-      // Ensure subnetIds is an array
-      const validSubnetIds = Array.isArray(subnetIds) ? subnetIds : [];
+      // Ensure subnetIds is an array and filter by accessible subnets
+      let validSubnetIds = Array.isArray(subnetIds) ? subnetIds : [];
+      
+      if (req.user.role !== 'admin') {
+        const accessibleSubnets = await getUserAccessibleSubnets(req.user.id, req.user.role);
+        const accessibleSubnetIds = accessibleSubnets.map(s => s.id);
+        validSubnetIds = validSubnetIds.filter(id => accessibleSubnetIds.includes(id));
+      }
+      
       console.log("Processing scan with subnet IDs:", validSubnetIds);
       
       const scanId = await networkScanner.startScan(validSubnetIds);
@@ -355,7 +436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/network/scan/:id", async (req, res) => {
+  app.get("/api/network/scan/:id", requireAuth, async (req: any, res) => {
     try {
       const scanId = parseInt(req.params.id);
       const scan = await storage.getNetworkScan(scanId);
@@ -366,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/network/scan", async (req, res) => {
+  app.get("/api/network/scan", requireAuth, async (req: any, res) => {
     try {
       const status = networkScanner.getScanStatus();
       res.json(status);
@@ -376,7 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/network/scan/stop", async (req, res) => {
+  app.post("/api/network/scan/stop", requireAuth, async (req: any, res) => {
     try {
       console.log("Stop scan request received");
       networkScanner.stopScan();
@@ -387,8 +468,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/network/fix-subnets", async (req, res) => {
+  app.post("/api/network/fix-subnets", requireAuth, async (req: any, res) => {
     try {
+      // Only admins can fix subnet assignments
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
       console.log("Manual fix requested for device subnet assignments");
       const result = await networkScanner.fixExistingDeviceSubnets();
       res.json(result);
@@ -398,12 +484,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/devices/:id/ping", async (req, res) => {
+  app.post("/api/devices/:id/ping", requireAuth, async (req: any, res) => {
     try {
       const deviceId = parseInt(req.params.id);
       const device = await storage.getDevice(deviceId);
       if (!device) {
         return res.status(404).json({ error: "Device not found" });
+      }
+      
+      // Check if user has permission to ping this device
+      if (req.user.role !== 'admin') {
+        const userPermissions = await storage.getUserPermissions(req.user.id);
+        const hasPermission = userPermissions.some(p => 
+          p.subnetId === device.subnetId
+        );
+        
+        if (!hasPermission) {
+          return res.status(403).json({ error: "Insufficient permissions" });
+        }
       }
       
       const pingResult = await networkScanner.pingDevice(device.ipAddress);
@@ -414,8 +512,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Activity logs
-  app.get("/api/activity", async (req, res) => {
+  // Activity logs - requires authentication
+  app.get("/api/activity", requireAuth, async (req: any, res) => {
     try {
       const { limit = "20" } = req.query;
       const activities = await storage.getRecentActivity(parseInt(limit as string));
@@ -426,8 +524,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Export
-  app.get("/api/export/devices", async (req, res) => {
+  // Export - requires authentication
+  app.get("/api/export/devices", requireAuth, async (req: any, res) => {
     try {
       const excelBuffer = await generateDeviceExcel();
       
