@@ -1,0 +1,40 @@
+ipam-app-1  | ✅ Admin user created/updated
+ipam-app-1  | ✅ Demo user created/updated
+ipam-app-1  | ✅ Demo viewer created/updated
+ipam-app-1  | ✅ Default settings configured
+ipam-app-1  | ✅ Production database setup completed successfully
+ipam-app-1  | Production setup completed
+ipam-app-1  | Creating admin user manually...
+ipam-app-1  | INSERT 0 1
+ipam-app-1  | Creating user account manually...
+ipam-app-1  | INSERT 0 1
+ipam-app-1  | Creating viewer account manually...
+ipam-app-1  | INSERT 0 1
+ipam-app-1  | Verifying users were created...
+ipam-app-1  |  username |  role  | is_active
+ipam-app-1  | ----------+--------+-----------
+ipam-app-1  |  admin    | admin  | t
+ipam-app-1  |  user     | user   | t
+ipam-app-1  |  viewer   | viewer | t
+ipam-app-1  | (3 rows)
+ipam-app-1  |
+ipam-app-1  | Starting IPAM application...
+ipam-app-1  |
+ipam-app-1  | > rest-express@1.0.0 dev
+ipam-app-1  | > NODE_ENV=development tsx server/index.ts
+ipam-app-1  |
+ipam-app-1  | No pending migrations to apply
+ipam-app-1  | Starting to fix existing device subnet assignments...
+ipam-app-1  | Starting to fix existing device subnet assignments...
+ipam-app-1  | Fixed 0 device subnet assignments using CIDR precedence
+ipam-app-1  | Periodic network scanning started (every 5 minutes)
+ipam-app-1  | Periodic network scanning started (every 5 minutes)
+ipam-app-1  | 11:41:11 PM [express] serving on port 5000
+ipam-app-1  | Browserslist: browsers data (caniuse-lite) is 9 months old. Please run:
+ipam-app-1  |   npx update-browserslist-db@latest
+ipam-app-1  |   Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ipam-app-1  | 11:41:18 PM [express] GET /api/auth/me 401 in 3ms :: {"error":"Not authenticated"}
+ipam-app-1  | 11:41:21 PM [express] POST /api/auth/login 401 in 14ms :: {"error":"Invalid credentials"}
+ipam-app-1  | 11:41:32 PM [express] POST /api/auth/login 401 in 11ms :: {"error":"Invalid credentials"}
+ipam-app-1  | 11:41:32 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-07-16T23:41:32.8…
+ipam-app-1  | 11:42:03 PM [express] GET /api/health 200 in 1ms :: {"status":"ok","timestamp":"2025-07-16T23:42:03.2…

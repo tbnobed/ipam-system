@@ -216,9 +216,9 @@ cd /app && node setup-production.mjs || echo "Production setup script failed, cr
 echo "Creating admin user manually..."
 PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
 INSERT INTO users (username, password, role, is_active, created_at, updated_at)
-VALUES ('admin', '\$2b\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+VALUES ('admin', '\$2b\$10\$kTUytVy5JqrENNN9bhxX4upMH4fnhYXtV51rKexLNQf0LFdh4F2LS', 'admin', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT (username) DO UPDATE SET
-  password = '\$2b\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  password = '\$2b\$10\$kTUytVy5JqrENNN9bhxX4upMH4fnhYXtV51rKexLNQf0LFdh4F2LS',
   role = 'admin',
   is_active = true,
   updated_at = CURRENT_TIMESTAMP;
@@ -227,9 +227,9 @@ ON CONFLICT (username) DO UPDATE SET
 echo "Creating user account manually..."
 PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
 INSERT INTO users (username, password, role, is_active, created_at, updated_at)
-VALUES ('user', '\$2b\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'user', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+VALUES ('user', '\$2b\$10\$Kq0oP800EYTxFtmDFCJg3OdQ9cr1Nb1wxvbvUs1rfALA.KfxTGZEK', 'user', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT (username) DO UPDATE SET
-  password = '\$2b\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  password = '\$2b\$10\$Kq0oP800EYTxFtmDFCJg3OdQ9cr1Nb1wxvbvUs1rfALA.KfxTGZEK',
   role = 'user',
   is_active = true,
   updated_at = CURRENT_TIMESTAMP;
@@ -238,9 +238,9 @@ ON CONFLICT (username) DO UPDATE SET
 echo "Creating viewer account manually..."
 PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
 INSERT INTO users (username, password, role, is_active, created_at, updated_at)
-VALUES ('viewer', '\$2b\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'viewer', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+VALUES ('viewer', '\$2b\$10\$eHcbROtI85NRnLxNoc5Ly.lsjVooJJbOSqhezyB2SrMeOmzc8.56e', 'viewer', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT (username) DO UPDATE SET
-  password = '\$2b\$10\$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  password = '\$2b\$10\$eHcbROtI85NRnLxNoc5Ly.lsjVooJJbOSqhezyB2SrMeOmzc8.56e',
   role = 'viewer',
   is_active = true,
   updated_at = CURRENT_TIMESTAMP;
