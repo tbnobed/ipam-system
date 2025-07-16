@@ -54,6 +54,7 @@ export default function Users() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
   const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<User | null>(null);
+  const [permissionChanges, setPermissionChanges] = useState<Record<string, string>>({});
 
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['/api/users'],
@@ -146,6 +147,28 @@ export default function Users() {
     }
   });
 
+  const updatePermissionsMutation = useMutation({
+    mutationFn: async (permissions: { userId: number; permissions: Array<{ vlanId?: number; subnetId?: number; permission: string }> }) => {
+      return apiRequest('/api/user-permissions', 'POST', permissions);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user-permissions'] });
+      setIsPermissionDialogOpen(false);
+      setPermissionChanges({});
+      toast({
+        title: "Success",
+        description: "Permissions updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update permissions",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleCreateUser = (data: UserFormData) => {
     createUserMutation.mutate(data);
   };
@@ -177,6 +200,59 @@ export default function Users() {
     setIsEditDialogOpen(false);
     setEditingUser(null);
     form.reset();
+  };
+
+  const getPermissionForResource = (resourceId: number, resourceType: 'vlan' | 'subnet') => {
+    if (!userPermissions) return 'none';
+    
+    const permission = userPermissions.find((p: any) => 
+      resourceType === 'vlan' ? p.vlanId === resourceId : p.subnetId === resourceId
+    );
+    
+    return permission?.permission || 'none';
+  };
+
+  const handlePermissionChange = (resourceId: number, resourceType: 'vlan' | 'subnet', permission: string) => {
+    const key = `${resourceType}_${resourceId}`;
+    setPermissionChanges(prev => ({
+      ...prev,
+      [key]: permission
+    }));
+  };
+
+  const handleSavePermissions = async () => {
+    if (!selectedUserForPermissions) return;
+
+    const permissions = [];
+    
+    // Process VLAN permissions
+    for (const vlan of vlans) {
+      const key = `vlan_${vlan.id}`;
+      const permission = permissionChanges[key] || getPermissionForResource(vlan.id, 'vlan');
+      if (permission !== 'none') {
+        permissions.push({
+          vlanId: vlan.id,
+          permission
+        });
+      }
+    }
+    
+    // Process subnet permissions
+    for (const subnet of subnets) {
+      const key = `subnet_${subnet.id}`;
+      const permission = permissionChanges[key] || getPermissionForResource(subnet.id, 'subnet');
+      if (permission !== 'none') {
+        permissions.push({
+          subnetId: subnet.id,
+          permission
+        });
+      }
+    }
+
+    updatePermissionsMutation.mutate({
+      userId: selectedUserForPermissions.id,
+      permissions
+    });
   };
 
   if (isLoading) {
@@ -365,6 +441,7 @@ export default function Users() {
                         size="sm"
                         onClick={() => {
                           setSelectedUserForPermissions(user);
+                          setPermissionChanges({});
                           setIsPermissionDialogOpen(true);
                         }}
                       >
@@ -412,7 +489,10 @@ export default function Users() {
                         <Badge variant="outline">VLAN {vlan.vlanId}</Badge>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Select defaultValue="none">
+                        <Select 
+                          value={permissionChanges[`vlan_${vlan.id}`] || getPermissionForResource(vlan.id, 'vlan')}
+                          onValueChange={(value) => handlePermissionChange(vlan.id, 'vlan', value)}
+                        >
                           <SelectTrigger className="w-32">
                             <SelectValue />
                           </SelectTrigger>
@@ -439,7 +519,10 @@ export default function Users() {
                         <Badge variant="outline">{subnet.name}</Badge>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Select defaultValue="none">
+                        <Select 
+                          value={permissionChanges[`subnet_${subnet.id}`] || getPermissionForResource(subnet.id, 'subnet')}
+                          onValueChange={(value) => handlePermissionChange(subnet.id, 'subnet', value)}
+                        >
                           <SelectTrigger className="w-32">
                             <SelectValue />
                           </SelectTrigger>
@@ -461,13 +544,10 @@ export default function Users() {
               <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => {
-                toast({
-                  title: "Success",
-                  description: "Permissions updated successfully",
-                });
-                setIsPermissionDialogOpen(false);
-              }}>
+              <Button 
+                onClick={handleSavePermissions}
+                disabled={updatePermissionsMutation.isPending}
+              >
                 Save Permissions
               </Button>
             </div>

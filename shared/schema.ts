@@ -99,12 +99,12 @@ export const insertUserSchema = createInsertSchema(users, {
   username: z.string().min(1, "Username is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   role: z.enum(["admin", "user", "viewer"]).default("viewer")
-}).omit({ id: true, createdAt: true, updatedAt: true });
+}).omit({ id: true, createdAt: true, updatedAt: true, isActive: true });
 
 export const insertVlanSchema = createInsertSchema(vlans, {
   name: z.string().min(1, "Name is required"),
   vlanId: z.number().min(1, "VLAN ID is required")
-}).omit({ id: true, createdAt: true, updatedAt: true });
+}).omit({ id: true, createdAt: true, updatedAt: true, description: true, cableColor: true });
 
 export const insertSubnetSchema = createInsertSchema(subnets, {
   network: z.string().min(1, "Network is required")
@@ -125,10 +125,16 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs, {
 
 export const insertSettingSchema = createInsertSchema(settings).omit({ 
   id: true, 
-  updatedAt: true 
+  updatedAt: true,
+  description: true
 });
 
-export const insertUserPermissionSchema = createInsertSchema(userPermissions).omit({
+export const insertUserPermissionSchema = createInsertSchema(userPermissions, {
+  userId: z.number(),
+  vlanId: z.number().optional(),
+  subnetId: z.number().optional(),
+  permission: z.enum(["read", "write", "admin"])
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true

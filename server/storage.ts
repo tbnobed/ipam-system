@@ -626,6 +626,10 @@ export class DatabaseStorage implements IStorage {
     await db.delete(userPermissions).where(eq(userPermissions.id, id));
   }
 
+  async deleteUserPermissions(userId: number): Promise<void> {
+    await db.delete(userPermissions).where(eq(userPermissions.userId, userId));
+  }
+
   async checkUserPermission(userId: number, resourceType: 'vlan' | 'subnet', resourceId: number): Promise<string | null> {
     const conditions = [eq(userPermissions.userId, userId)];
     

@@ -565,27 +565,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/user-permissions", async (req, res) => {
     try {
-      const { userId, vlanId, subnetId, permission } = req.body;
+      const { userId, permissions } = req.body;
       
-      if (!userId || !permission) {
-        return res.status(400).json({ error: "User ID and permission are required" });
+      if (!userId || !permissions || !Array.isArray(permissions)) {
+        return res.status(400).json({ error: "User ID and permissions array are required" });
       }
       
-      if (!vlanId && !subnetId) {
-        return res.status(400).json({ error: "Either VLAN ID or subnet ID is required" });
+      // Delete existing permissions for this user
+      await storage.deleteUserPermissions(userId);
+      
+      // Create new permissions
+      const createdPermissions = [];
+      for (const perm of permissions) {
+        if (!perm.permission) continue;
+        
+        if (!perm.vlanId && !perm.subnetId) continue;
+        
+        const userPermission = await storage.createUserPermission({
+          userId,
+          vlanId: perm.vlanId || null,
+          subnetId: perm.subnetId || null,
+          permission: perm.permission
+        });
+        
+        createdPermissions.push(userPermission);
       }
       
-      const userPermission = await storage.createUserPermission({
-        userId,
-        vlanId: vlanId || null,
-        subnetId: subnetId || null,
-        permission
-      });
-      
-      res.status(201).json(userPermission);
+      res.status(201).json(createdPermissions);
     } catch (error) {
-      console.error("Error creating user permission:", error);
-      res.status(400).json({ error: "Failed to create user permission" });
+      console.error("Error creating user permissions:", error);
+      res.status(400).json({ error: "Failed to create user permissions" });
     }
   });
 
