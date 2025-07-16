@@ -1,0 +1,298 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Edit, Plus, Shield, UserCheck, Eye } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import Header from "@/components/layout/header";
+
+const userSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["admin", "user", "viewer"])
+});
+
+type User = {
+  id: number;
+  username: string;
+  role: "admin" | "user" | "viewer";
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const roleIcons = {
+  admin: Shield,
+  user: UserCheck,
+  viewer: Eye
+};
+
+const roleColors = {
+  admin: "bg-red-100 text-red-800",
+  user: "bg-blue-100 text-blue-800",
+  viewer: "bg-gray-100 text-gray-800"
+};
+
+type UserFormData = z.infer<typeof userSchema>;
+
+export default function Users() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  const { data: users = [], isLoading } = useQuery<User[]>({
+    queryKey: ['/api/users'],
+  });
+
+  const form = useForm<UserFormData>({
+    resolver: zodResolver(userSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      role: "viewer"
+    }
+  });
+
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: UserFormData) => {
+      return apiRequest('/api/users', 'POST', userData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setIsCreateDialogOpen(false);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "User created successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create user",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, ...userData }: { id: number } & Partial<UserFormData>) => {
+      return apiRequest(`/api/users/${id}`, 'PUT', userData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setEditingUser(null);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "User updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update user",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/users/${id}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleCreateUser = (data: UserFormData) => {
+    createUserMutation.mutate(data);
+  };
+
+  const handleUpdateUser = (data: UserFormData) => {
+    if (editingUser) {
+      updateUserMutation.mutate({ id: editingUser.id, ...data });
+    }
+  };
+
+  const handleDeleteUser = (id: number) => {
+    if (confirm("Are you sure you want to delete this user?")) {
+      deleteUserMutation.mutate(id);
+    }
+  };
+
+  const openEditDialog = (user: User) => {
+    setEditingUser(user);
+    form.reset({
+      username: user.username,
+      password: "", // Don't prefill password
+      role: user.role
+    });
+    setIsCreateDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setIsCreateDialogOpen(false);
+    setEditingUser(null);
+    form.reset();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 space-y-4 p-4 pt-6">
+        <Header title="User Management" />
+        <div>Loading users...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 space-y-4 p-4 pt-6">
+      <div className="flex items-center justify-between">
+        <Header title="User Management" />
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add User
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingUser ? "Edit User" : "Create User"}</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(editingUser ? handleUpdateUser : handleCreateUser)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="viewer">Viewer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={closeDialog}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={createUserMutation.isPending || updateUserMutation.isPending}>
+                    {editingUser ? "Update" : "Create"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Users</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {users.map((user) => {
+              const RoleIcon = roleIcons[user.role];
+              return (
+                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <RoleIcon className="h-5 w-5" />
+                      <span className="font-medium">{user.username}</span>
+                    </div>
+                    <Badge className={roleColors[user.role]}>
+                      {user.role}
+                    </Badge>
+                    <Badge variant={user.isActive ? "default" : "secondary"}>
+                      {user.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditDialog(user)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteUser(user.id)}
+                      disabled={deleteUserMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

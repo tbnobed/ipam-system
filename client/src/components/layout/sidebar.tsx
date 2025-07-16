@@ -7,7 +7,8 @@ import {
   Search, 
   TrendingUp, 
   Settings, 
-  User
+  User,
+  Users
 } from "lucide-react";
 
 const navigation = [
@@ -16,6 +17,7 @@ const navigation = [
   { name: "Devices", href: "/devices", icon: Server },
   { name: "Discovery", href: "/discovery", icon: Search },
   { name: "Analytics", href: "/analytics", icon: TrendingUp },
+  { name: "Users", href: "/users", icon: Users },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

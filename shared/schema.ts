@@ -6,6 +6,10 @@ export const users = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   username: text("username").unique().notNull(),
   password: text("password").notNull(),
+  role: text("role", { enum: ["admin", "user", "viewer"] }).default("viewer").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const vlans = pgTable("vlans", {
@@ -14,6 +18,8 @@ export const vlans = pgTable("vlans", {
   name: text("name").notNull(),
   description: text("description"),
   cableColor: text("cable_color"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const subnets = pgTable("subnets", {
@@ -77,16 +83,28 @@ export const settings = pgTable("settings", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// User permissions for VLANs and subnets
+export const userPermissions = pgTable("user_permissions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  vlanId: integer("vlan_id").references(() => vlans.id, { onDelete: "cascade" }),
+  subnetId: integer("subnet_id").references(() => subnets.id, { onDelete: "cascade" }),
+  permission: text("permission", { enum: ["read", "write", "admin"] }).default("read").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users, {
   username: z.string().min(1, "Username is required"),
-  password: z.string().min(6, "Password must be at least 6 characters")
-});
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["admin", "user", "viewer"]).default("viewer")
+}).omit({ id: true, createdAt: true, updatedAt: true, isActive: true });
 
 export const insertVlanSchema = createInsertSchema(vlans, {
   name: z.string().min(1, "Name is required"),
   vlanId: z.number().min(1, "VLAN ID is required")
-});
+}).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertSubnetSchema = createInsertSchema(subnets, {
   network: z.string().min(1, "Network is required")
@@ -108,6 +126,12 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs, {
 export const insertSettingSchema = createInsertSchema(settings).omit({ 
   id: true, 
   updatedAt: true 
+});
+
+export const insertUserPermissionSchema = createInsertSchema(userPermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
 });
 
 // Types
@@ -133,3 +157,6 @@ export type Migration = typeof migrations.$inferSelect;
 
 export type Setting = typeof settings.$inferSelect;
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
+
+export type UserPermission = typeof userPermissions.$inferSelect;
+export type InsertUserPermission = z.infer<typeof insertUserPermissionSchema>;

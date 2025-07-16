@@ -1,9 +1,9 @@
 import { 
-  users, vlans, subnets, devices, networkScans, activityLogs, settings,
+  users, vlans, subnets, devices, networkScans, activityLogs, settings, userPermissions,
   type User, type InsertUser, type Vlan, type InsertVlan,
   type Subnet, type InsertSubnet, type Device, type InsertDevice,
   type NetworkScan, type InsertNetworkScan, type ActivityLog, type InsertActivityLog,
-  type Setting, type InsertSetting
+  type Setting, type InsertSetting, type UserPermission, type InsertUserPermission
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, like, and, or, desc, asc, sql, ne } from "drizzle-orm";
@@ -58,6 +58,19 @@ interface IStorage {
   getSetting(key: string): Promise<Setting | undefined>;
   setSetting(key: string, value: string, description?: string): Promise<Setting>;
   deleteSetting(key: string): Promise<void>;
+  
+  // User Management
+  getAllUsers(): Promise<User[]>;
+  createUser(insertUser: InsertUser): Promise<User>;
+  updateUser(id: number, updates: Partial<InsertUser>): Promise<User>;
+  deleteUser(id: number): Promise<void>;
+  
+  // User Permissions
+  getUserPermissions(userId: number): Promise<UserPermission[]>;
+  createUserPermission(insertPermission: InsertUserPermission): Promise<UserPermission>;
+  updateUserPermission(id: number, updates: Partial<InsertUserPermission>): Promise<UserPermission>;
+  deleteUserPermission(id: number): Promise<void>;
+  checkUserPermission(userId: number, resourceType: 'vlan' | 'subnet', resourceId: number): Promise<string | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -567,6 +580,67 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSetting(key: string): Promise<void> {
     await db.delete(settings).where(eq(settings.key, key));
+  }
+
+  // User Management
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async updateUser(id: number, updates: Partial<InsertUser>): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  // User Permissions
+  async getUserPermissions(userId: number): Promise<UserPermission[]> {
+    return await db.select().from(userPermissions).where(eq(userPermissions.userId, userId));
+  }
+
+  async createUserPermission(insertPermission: InsertUserPermission): Promise<UserPermission> {
+    const [permission] = await db
+      .insert(userPermissions)
+      .values(insertPermission)
+      .returning();
+    return permission;
+  }
+
+  async updateUserPermission(id: number, updates: Partial<InsertUserPermission>): Promise<UserPermission> {
+    const [updated] = await db
+      .update(userPermissions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(userPermissions.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteUserPermission(id: number): Promise<void> {
+    await db.delete(userPermissions).where(eq(userPermissions.id, id));
+  }
+
+  async checkUserPermission(userId: number, resourceType: 'vlan' | 'subnet', resourceId: number): Promise<string | null> {
+    const conditions = [eq(userPermissions.userId, userId)];
+    
+    if (resourceType === 'vlan') {
+      conditions.push(eq(userPermissions.vlanId, resourceId));
+    } else {
+      conditions.push(eq(userPermissions.subnetId, resourceId));
+    }
+
+    const [permission] = await db
+      .select()
+      .from(userPermissions)
+      .where(and(...conditions));
+    
+    return permission ? permission.permission : null;
   }
 
   async getDashboardMetrics(): Promise<DashboardMetrics> {
