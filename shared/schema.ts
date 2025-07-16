@@ -95,9 +95,16 @@ export const userPermissions = pgTable("user_permissions", {
 });
 
 // Insert schemas
-export const insertUserSchema = createInsertSchema(users);
+export const insertUserSchema = createInsertSchema(users, {
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["admin", "user", "viewer"]).default("viewer")
+}).omit({ id: true, createdAt: true, updatedAt: true });
 
-export const insertVlanSchema = createInsertSchema(vlans);
+export const insertVlanSchema = createInsertSchema(vlans, {
+  name: z.string().min(1, "Name is required"),
+  vlanId: z.number().min(1, "VLAN ID is required")
+}).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertSubnetSchema = createInsertSchema(subnets, {
   network: z.string().min(1, "Network is required")
@@ -116,9 +123,16 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs, {
   entityType: z.string().min(1, "Entity type is required")
 });
 
-export const insertSettingSchema = createInsertSchema(settings);
+export const insertSettingSchema = createInsertSchema(settings).omit({ 
+  id: true, 
+  updatedAt: true 
+});
 
-export const insertUserPermissionSchema = createInsertSchema(userPermissions);
+export const insertUserPermissionSchema = createInsertSchema(userPermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
 
 // Types
 export type User = typeof users.$inferSelect;
