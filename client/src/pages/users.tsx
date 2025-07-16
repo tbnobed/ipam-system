@@ -220,6 +220,29 @@ export default function Users() {
     }));
   };
 
+  // Helper function to get available permission options based on user role
+  const getAvailablePermissions = (userRole: string) => {
+    const allPermissions = [
+      { value: "none", label: "None", color: "bg-gray-400" },
+      { value: "read", label: "View", color: "bg-green-500" },
+      { value: "write", label: "Edit", color: "bg-yellow-500" },
+      { value: "admin", label: "Admin", color: "bg-red-500" }
+    ];
+
+    // Viewers can only be assigned None or View permissions
+    if (userRole === "viewer") {
+      return allPermissions.filter(p => p.value === "none" || p.value === "read");
+    }
+    
+    // Users can be assigned None, View, or Edit permissions
+    if (userRole === "user") {
+      return allPermissions.filter(p => p.value !== "admin");
+    }
+    
+    // Admins can be assigned any permission level
+    return allPermissions;
+  };
+
   const handleSavePermissions = async () => {
     if (!selectedUserForPermissions) return;
 
@@ -544,30 +567,14 @@ export default function Users() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none">
-                                  <div className="flex items-center space-x-2">
-                                    <div className="w-2 h-2 bg-gray-400 rounded"></div>
-                                    <span>None</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="read">
-                                  <div className="flex items-center space-x-2">
-                                    <div className="w-2 h-2 bg-green-500 rounded"></div>
-                                    <span>View</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="write">
-                                  <div className="flex items-center space-x-2">
-                                    <div className="w-2 h-2 bg-yellow-500 rounded"></div>
-                                    <span>Edit</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="admin">
-                                  <div className="flex items-center space-x-2">
-                                    <div className="w-2 h-2 bg-red-500 rounded"></div>
-                                    <span>Admin</span>
-                                  </div>
-                                </SelectItem>
+                                {getAvailablePermissions(selectedUserForPermissions?.role || 'viewer').map((permission) => (
+                                  <SelectItem key={permission.value} value={permission.value}>
+                                    <div className="flex items-center space-x-2">
+                                      <div className={`w-2 h-2 ${permission.color} rounded`}></div>
+                                      <span>{permission.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -612,30 +619,14 @@ export default function Users() {
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="none">
-                                        <div className="flex items-center space-x-2">
-                                          <div className="w-2 h-2 bg-gray-400 rounded"></div>
-                                          <span>None</span>
-                                        </div>
-                                      </SelectItem>
-                                      <SelectItem value="read">
-                                        <div className="flex items-center space-x-2">
-                                          <div className="w-2 h-2 bg-green-500 rounded"></div>
-                                          <span>View</span>
-                                        </div>
-                                      </SelectItem>
-                                      <SelectItem value="write">
-                                        <div className="flex items-center space-x-2">
-                                          <div className="w-2 h-2 bg-yellow-500 rounded"></div>
-                                          <span>Edit</span>
-                                        </div>
-                                      </SelectItem>
-                                      <SelectItem value="admin">
-                                        <div className="flex items-center space-x-2">
-                                          <div className="w-2 h-2 bg-red-500 rounded"></div>
-                                          <span>Admin</span>
-                                        </div>
-                                      </SelectItem>
+                                      {getAvailablePermissions(selectedUserForPermissions?.role || 'viewer').map((permission) => (
+                                        <SelectItem key={permission.value} value={permission.value}>
+                                          <div className="flex items-center space-x-2">
+                                            <div className={`w-2 h-2 ${permission.color} rounded`}></div>
+                                            <span>{permission.label}</span>
+                                          </div>
+                                        </SelectItem>
+                                      ))}
                                     </SelectContent>
                                   </Select>
                                 </div>
