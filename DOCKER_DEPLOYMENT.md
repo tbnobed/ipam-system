@@ -19,8 +19,8 @@ This guide explains how to deploy the IPAM System using Docker with complete aut
 
 That's it! The system will automatically:
 - Build the application container
-- Set up PostgreSQL database
-- Create database schema
+- Set up PostgreSQL database (preserving existing data)
+- Update database schema safely
 - Create session table
 - Set up default users (admin/admin, user/user, viewer/viewer)
 - Configure default settings
@@ -31,7 +31,7 @@ If you prefer step-by-step deployment:
 
 1. Stop any existing containers:
    ```bash
-   docker-compose down -v
+   docker-compose down
    ```
 
 2. Build and start the services:
@@ -169,9 +169,15 @@ docker-compose down
 docker-compose up --build -d
 ```
 
-## Complete Reset
-If you need to completely reset the system:
+## Complete Reset (⚠️ DESTROYS ALL DATA)
+**WARNING: This will delete all your devices, users, and configuration data!**
+
+Only use this if you have a completely broken system:
 ```bash
+# First backup your data!
+docker-compose exec postgres pg_dump -U ipam_user ipam_db > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Then reset (only if absolutely necessary)
 docker-compose down --volumes
 docker-compose up --build -d
 ```
@@ -193,8 +199,12 @@ If you encounter database schema issues:
    "
    ```
 
-3. **Complete database reset:**
+3. **Complete database reset (⚠️ DESTROYS ALL DATA):**
    ```bash
+   # First backup your data!
+   docker-compose exec postgres pg_dump -U ipam_user ipam_db > backup.sql
+   
+   # Then reset (only if absolutely necessary)
    docker-compose down --volumes
    docker system prune -f
    docker-compose up --build -d

@@ -39,6 +39,8 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Focus on production-ready code with proper error handling
 - Emphasis on data integrity and authentic data sources
 - Prefer comprehensive solutions over partial implementations
+- **NEVER suggest commands that delete production data** (e.g., docker-compose down --volumes)
+- Always provide data-safe deployment options and backup procedures
 
 ## Current Status
 **COMPLETED**: Full-stack authentication and authorization system successfully implemented:
