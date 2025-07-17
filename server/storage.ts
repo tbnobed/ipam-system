@@ -1,9 +1,10 @@
 import { 
-  users, vlans, subnets, devices, networkScans, activityLogs, settings, userPermissions,
+  users, vlans, subnets, devices, networkScans, activityLogs, settings, userPermissions, userGroups, groupPermissions,
   type User, type InsertUser, type Vlan, type InsertVlan,
   type Subnet, type InsertSubnet, type Device, type InsertDevice,
   type NetworkScan, type InsertNetworkScan, type ActivityLog, type InsertActivityLog,
-  type Setting, type InsertSetting, type UserPermission, type InsertUserPermission
+  type Setting, type InsertSetting, type UserPermission, type InsertUserPermission,
+  type UserGroup, type InsertUserGroup, type GroupPermission, type InsertGroupPermission
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, like, and, or, desc, asc, sql, ne } from "drizzle-orm";
@@ -71,6 +72,20 @@ interface IStorage {
   updateUserPermission(id: number, updates: Partial<InsertUserPermission>): Promise<UserPermission>;
   deleteUserPermission(id: number): Promise<void>;
   checkUserPermission(userId: number, resourceType: 'vlan' | 'subnet', resourceId: number): Promise<string | null>;
+  
+  // User Groups
+  getAllUserGroups(): Promise<UserGroup[]>;
+  getUserGroup(id: number): Promise<UserGroup | undefined>;
+  createUserGroup(insertGroup: InsertUserGroup): Promise<UserGroup>;
+  updateUserGroup(id: number, updates: Partial<InsertUserGroup>): Promise<UserGroup>;
+  deleteUserGroup(id: number): Promise<void>;
+  assignUserToGroup(userId: number, groupId: number | null): Promise<User>;
+  
+  // Group Permissions
+  getGroupPermissions(groupId: number): Promise<GroupPermission[]>;
+  createGroupPermission(insertPermission: InsertGroupPermission): Promise<GroupPermission>;
+  updateGroupPermission(id: number, updates: Partial<InsertGroupPermission>): Promise<GroupPermission>;
+  deleteGroupPermission(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -766,6 +781,72 @@ export class DatabaseStorage implements IStorage {
         topVendors: [],
       };
     }
+  }
+
+  // User Groups
+  async getAllUserGroups(): Promise<UserGroup[]> {
+    return await db.select().from(userGroups);
+  }
+
+  async getUserGroup(id: number): Promise<UserGroup | undefined> {
+    const [group] = await db.select().from(userGroups).where(eq(userGroups.id, id));
+    return group || undefined;
+  }
+
+  async createUserGroup(insertGroup: InsertUserGroup): Promise<UserGroup> {
+    const [group] = await db
+      .insert(userGroups)
+      .values(insertGroup)
+      .returning();
+    return group;
+  }
+
+  async updateUserGroup(id: number, updates: Partial<InsertUserGroup>): Promise<UserGroup> {
+    const [updated] = await db
+      .update(userGroups)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(userGroups.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteUserGroup(id: number): Promise<void> {
+    await db.delete(userGroups).where(eq(userGroups.id, id));
+  }
+
+  async assignUserToGroup(userId: number, groupId: number | null): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ groupId, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  // Group Permissions
+  async getGroupPermissions(groupId: number): Promise<GroupPermission[]> {
+    return await db.select().from(groupPermissions).where(eq(groupPermissions.groupId, groupId));
+  }
+
+  async createGroupPermission(insertPermission: InsertGroupPermission): Promise<GroupPermission> {
+    const [permission] = await db
+      .insert(groupPermissions)
+      .values(insertPermission)
+      .returning();
+    return permission;
+  }
+
+  async updateGroupPermission(id: number, updates: Partial<InsertGroupPermission>): Promise<GroupPermission> {
+    const [updated] = await db
+      .update(groupPermissions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(groupPermissions.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteGroupPermission(id: number): Promise<void> {
+    await db.delete(groupPermissions).where(eq(groupPermissions.id, id));
   }
 }
 

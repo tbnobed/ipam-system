@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Edit, Plus, Shield, UserCheck, Eye, Settings } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Trash2, Edit, Plus, Shield, UserCheck, Eye, Settings, Users as UsersIcon, UserPlus } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,13 @@ import Header from "@/components/layout/header";
 const userSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["admin", "user", "viewer"]),
+  groupId: z.number().optional()
+});
+
+const groupSchema = z.object({
+  name: z.string().min(1, "Group name is required"),
+  description: z.string().optional(),
   role: z.enum(["admin", "user", "viewer"])
 });
 
@@ -27,7 +35,17 @@ type User = {
   id: number;
   username: string;
   role: "admin" | "user" | "viewer";
+  groupId?: number;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type UserGroup = {
+  id: number;
+  name: string;
+  description?: string;
+  role: "admin" | "user" | "viewer";
   createdAt: string;
   updatedAt: string;
 };
@@ -45,6 +63,7 @@ const roleColors = {
 };
 
 type UserFormData = z.infer<typeof userSchema>;
+type GroupFormData = z.infer<typeof groupSchema>;
 
 export default function Users() {
   const { toast } = useToast();
@@ -55,9 +74,19 @@ export default function Users() {
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
   const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<User | null>(null);
   const [permissionChanges, setPermissionChanges] = useState<Record<string, string>>({});
+  
+  // Group management state
+  const [isCreateGroupDialogOpen, setIsCreateGroupDialogOpen] = useState(false);
+  const [isEditGroupDialogOpen, setIsEditGroupDialogOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<UserGroup | null>(null);
+  const [activeTab, setActiveTab] = useState("users");
 
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['/api/users'],
+  });
+
+  const { data: userGroups = [], isLoading: isGroupsLoading } = useQuery<UserGroup[]>({
+    queryKey: ['/api/user-groups'],
   });
 
   const { data: vlans = [] } = useQuery({
@@ -81,6 +110,15 @@ export default function Users() {
     defaultValues: {
       username: "",
       password: "",
+      role: "viewer"
+    }
+  });
+
+  const groupForm = useForm<GroupFormData>({
+    resolver: zodResolver(groupSchema),
+    defaultValues: {
+      name: "",
+      description: "",
       role: "viewer"
     }
   });
@@ -172,6 +210,72 @@ export default function Users() {
     }
   });
 
+  // Group mutations
+  const createGroupMutation = useMutation({
+    mutationFn: async (groupData: GroupFormData) => {
+      return apiRequest('/api/user-groups', 'POST', groupData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user-groups'] });
+      setIsCreateGroupDialogOpen(false);
+      groupForm.reset();
+      toast({
+        title: "Success",
+        description: "Group created successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create group",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateGroupMutation = useMutation({
+    mutationFn: async ({ id, ...groupData }: { id: number } & Partial<GroupFormData>) => {
+      return apiRequest(`/api/user-groups/${id}`, 'PUT', groupData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user-groups'] });
+      setIsEditGroupDialogOpen(false);
+      setEditingGroup(null);
+      groupForm.reset();
+      toast({
+        title: "Success",
+        description: "Group updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update group",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/user-groups/${id}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user-groups'] });
+      toast({
+        title: "Success",
+        description: "Group deleted successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete group",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleCreateUser = (data: UserFormData) => {
     createUserMutation.mutate(data);
   };
@@ -193,7 +297,8 @@ export default function Users() {
     form.reset({
       username: user.username,
       password: "", // Don't prefill password
-      role: user.role
+      role: user.role,
+      groupId: user.groupId
     });
     setIsEditDialogOpen(true);
   };
@@ -203,6 +308,40 @@ export default function Users() {
     setIsEditDialogOpen(false);
     setEditingUser(null);
     form.reset();
+  };
+
+  // Group handlers
+  const handleCreateGroup = (data: GroupFormData) => {
+    createGroupMutation.mutate(data);
+  };
+
+  const handleUpdateGroup = (data: GroupFormData) => {
+    if (editingGroup) {
+      updateGroupMutation.mutate({ id: editingGroup.id, ...data });
+    }
+  };
+
+  const handleDeleteGroup = (id: number) => {
+    if (confirm("Are you sure you want to delete this group?")) {
+      deleteGroupMutation.mutate(id);
+    }
+  };
+
+  const openEditGroupDialog = (group: UserGroup) => {
+    setEditingGroup(group);
+    groupForm.reset({
+      name: group.name,
+      description: group.description || "",
+      role: group.role
+    });
+    setIsEditGroupDialogOpen(true);
+  };
+
+  const closeGroupDialog = () => {
+    setIsCreateGroupDialogOpen(false);
+    setIsEditGroupDialogOpen(false);
+    setEditingGroup(null);
+    groupForm.reset();
   };
 
   const getPermissionForResource = (resourceId: number, resourceType: 'vlan' | 'subnet') => {
@@ -292,8 +431,25 @@ export default function Users() {
     <div className="flex-1 space-y-4 p-4 pt-6">
       <div className="flex items-center justify-between">
         <Header title="User Management" />
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
+      </div>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <UsersIcon className="w-4 h-4" />
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="groups" className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            Groups
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="users" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">User Management</h3>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
               Add User
@@ -347,6 +503,31 @@ export default function Users() {
                           <SelectItem value="admin">Admin</SelectItem>
                           <SelectItem value="user">User</SelectItem>
                           <SelectItem value="viewer">Viewer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="groupId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Group (Optional)</FormLabel>
+                      <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString()}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a group" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">No Group</SelectItem>
+                          {userGroups.map((group) => (
+                            <SelectItem key={group.id} value={group.id.toString()}>
+                              {group.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -422,6 +603,31 @@ export default function Users() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="groupId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Group (Optional)</FormLabel>
+                      <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString()}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a group" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">No Group</SelectItem>
+                          {userGroups.map((group) => (
+                            <SelectItem key={group.id} value={group.id.toString()}>
+                              {group.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={closeDialog}>
                     Cancel
@@ -457,6 +663,11 @@ export default function Users() {
                     <Badge variant={user.isActive ? "default" : "secondary"}>
                       {user.isActive ? "Active" : "Inactive"}
                     </Badge>
+                    {user.groupId && (
+                      <Badge variant="outline" className="text-xs">
+                        Group: {userGroups.find(g => g.id === user.groupId)?.name || 'Unknown'}
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center space-x-2">
                     {(user.role === "user" || user.role === "viewer") && (
@@ -664,6 +875,217 @@ export default function Users() {
           </div>
         </DialogContent>
       </Dialog>
+        </TabsContent>
+        
+        <TabsContent value="groups" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Group Management</h3>
+            <Dialog open={isCreateGroupDialogOpen} onOpenChange={setIsCreateGroupDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Group
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create Group</DialogTitle>
+                </DialogHeader>
+                <Form {...groupForm}>
+                  <form onSubmit={groupForm.handleSubmit(handleCreateGroup)} className="space-y-4">
+                    <FormField
+                      control={groupForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Group Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter group name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={groupForm.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter group description" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={groupForm.control}
+                      name="role"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Default Role</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a role" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="admin">Admin</SelectItem>
+                              <SelectItem value="user">User</SelectItem>
+                              <SelectItem value="viewer">Viewer</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={closeGroupDialog}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={createGroupMutation.isPending}>
+                        Create
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Groups</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {isGroupsLoading ? (
+                  <div>Loading groups...</div>
+                ) : userGroups.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No groups found. Create a group to get started.
+                  </div>
+                ) : (
+                  userGroups.map((group) => {
+                    const RoleIcon = roleIcons[group.role];
+                    const membersCount = users.filter(user => user.groupId === group.id).length;
+                    
+                    return (
+                      <div key={group.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-2">
+                            <RoleIcon className="h-5 w-5" />
+                            <span className="font-medium">{group.name}</span>
+                          </div>
+                          <Badge className={roleColors[group.role]}>
+                            {group.role}
+                          </Badge>
+                          <Badge variant="outline">
+                            {membersCount} member{membersCount !== 1 ? 's' : ''}
+                          </Badge>
+                          {group.description && (
+                            <span className="text-sm text-muted-foreground">
+                              {group.description}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditGroupDialog(group)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteGroup(group.id)}
+                            disabled={deleteGroupMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Edit Group Dialog */}
+          <Dialog open={isEditGroupDialogOpen} onOpenChange={setIsEditGroupDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Group</DialogTitle>
+              </DialogHeader>
+              <Form {...groupForm}>
+                <form onSubmit={groupForm.handleSubmit(handleUpdateGroup)} className="space-y-4">
+                  <FormField
+                    control={groupForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Group Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter group name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={groupForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter group description" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={groupForm.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Role</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a role" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="viewer">Viewer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <Button type="button" variant="outline" onClick={closeGroupDialog}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={updateGroupMutation.isPending}>
+                      Update
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

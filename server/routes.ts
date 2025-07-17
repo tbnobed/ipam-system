@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
-import { insertDeviceSchema, insertVlanSchema, insertSubnetSchema, insertSettingSchema, insertUserSchema, insertUserPermissionSchema } from "@shared/schema";
+import { insertDeviceSchema, insertVlanSchema, insertSubnetSchema, insertSettingSchema, insertUserSchema, insertUserPermissionSchema, insertUserGroupSchema, insertGroupPermissionSchema } from "@shared/schema";
 import { networkScanner } from "./network";
 import { migrationManager } from "./migrations";
 import { z } from "zod";
@@ -781,6 +781,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting user:", error);
       res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
+  // User Groups Management
+  app.get("/api/user-groups", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const groups = await storage.getAllUserGroups();
+      res.json(groups);
+    } catch (error) {
+      console.error("Error fetching user groups:", error);
+      res.status(500).json({ error: "Failed to fetch user groups" });
+    }
+  });
+
+  app.post("/api/user-groups", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const validatedData = insertUserGroupSchema.parse(req.body);
+      const group = await storage.createUserGroup(validatedData);
+      res.status(201).json(group);
+    } catch (error) {
+      console.error("Error creating user group:", error);
+      res.status(400).json({ error: "Failed to create user group" });
+    }
+  });
+
+  app.put("/api/user-groups/:id", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const groupId = parseInt(req.params.id);
+      const validatedData = insertUserGroupSchema.parse(req.body);
+      const group = await storage.updateUserGroup(groupId, validatedData);
+      
+      if (!group) {
+        return res.status(404).json({ error: "User group not found" });
+      }
+      
+      res.json(group);
+    } catch (error) {
+      console.error("Error updating user group:", error);
+      res.status(400).json({ error: "Failed to update user group" });
+    }
+  });
+
+  app.delete("/api/user-groups/:id", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const groupId = parseInt(req.params.id);
+      await storage.deleteUserGroup(groupId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting user group:", error);
+      res.status(500).json({ error: "Failed to delete user group" });
+    }
+  });
+
+  // Assign users to groups
+  app.put("/api/users/:id/group", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const userId = parseInt(req.params.id);
+      const { groupId } = req.body;
+      
+      const user = await storage.assignUserToGroup(userId, groupId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      console.error("Error assigning user to group:", error);
+      res.status(400).json({ error: "Failed to assign user to group" });
+    }
+  });
+
+  // Group permissions management
+  app.get("/api/group-permissions/:groupId", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const groupId = parseInt(req.params.groupId);
+      const permissions = await storage.getGroupPermissions(groupId);
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching group permissions:", error);
+      res.status(500).json({ error: "Failed to fetch group permissions" });
+    }
+  });
+
+  app.post("/api/group-permissions", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const validatedData = insertGroupPermissionSchema.parse(req.body);
+      const permission = await storage.createGroupPermission(validatedData);
+      res.status(201).json(permission);
+    } catch (error) {
+      console.error("Error creating group permission:", error);
+      res.status(400).json({ error: "Failed to create group permission" });
+    }
+  });
+
+  app.put("/api/group-permissions/:id", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const permissionId = parseInt(req.params.id);
+      const validatedData = insertGroupPermissionSchema.parse(req.body);
+      const permission = await storage.updateGroupPermission(permissionId, validatedData);
+      
+      if (!permission) {
+        return res.status(404).json({ error: "Group permission not found" });
+      }
+      
+      res.json(permission);
+    } catch (error) {
+      console.error("Error updating group permission:", error);
+      res.status(400).json({ error: "Failed to update group permission" });
+    }
+  });
+
+  app.delete("/api/group-permissions/:id", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const permissionId = parseInt(req.params.id);
+      await storage.deleteGroupPermission(permissionId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting group permission:", error);
+      res.status(500).json({ error: "Failed to delete group permission" });
     }
   });
 

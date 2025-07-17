@@ -2,11 +2,22 @@ import { pgTable, text, integer, timestamp, boolean, jsonb } from "drizzle-orm/p
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// User groups for easier permission management
+export const userGroups = pgTable("user_groups", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: text("name").unique().notNull(),
+  description: text("description"),
+  role: text("role", { enum: ["admin", "user", "viewer"] }).default("viewer").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const users = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   username: text("username").unique().notNull(),
   password: text("password").notNull(),
   role: text("role", { enum: ["admin", "user", "viewer"] }).default("viewer").notNull(),
+  groupId: integer("group_id").references(() => userGroups.id),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -94,6 +105,17 @@ export const userPermissions = pgTable("user_permissions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Group permissions for VLANs and subnets
+export const groupPermissions = pgTable("group_permissions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  groupId: integer("group_id").references(() => userGroups.id, { onDelete: "cascade" }).notNull(),
+  vlanId: integer("vlan_id").references(() => vlans.id, { onDelete: "cascade" }),
+  subnetId: integer("subnet_id").references(() => subnets.id, { onDelete: "cascade" }),
+  permission: text("permission", { enum: ["read", "write", "admin"] }).default("read").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users, {
   username: z.string().min(1, "Username is required"),
@@ -132,6 +154,18 @@ export const insertUserPermissionSchema = createInsertSchema(userPermissions, {
   permission: z.enum(["read", "write", "admin"])
 });
 
+export const insertUserGroupSchema = createInsertSchema(userGroups, {
+  name: z.string().min(1, "Group name is required"),
+  role: z.enum(["admin", "user", "viewer"]).default("viewer")
+});
+
+export const insertGroupPermissionSchema = createInsertSchema(groupPermissions, {
+  groupId: z.number(),
+  vlanId: z.number().optional(),
+  subnetId: z.number().optional(),
+  permission: z.enum(["read", "write", "admin"])
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -158,3 +192,9 @@ export type InsertSetting = z.infer<typeof insertSettingSchema>;
 
 export type UserPermission = typeof userPermissions.$inferSelect;
 export type InsertUserPermission = z.infer<typeof insertUserPermissionSchema>;
+
+export type UserGroup = typeof userGroups.$inferSelect;
+export type InsertUserGroup = z.infer<typeof insertUserGroupSchema>;
+
+export type GroupPermission = typeof groupPermissions.$inferSelect;
+export type InsertGroupPermission = z.infer<typeof insertGroupPermissionSchema>;
