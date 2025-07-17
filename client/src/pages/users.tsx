@@ -347,7 +347,7 @@ export default function Users() {
     try {
       // Fetch existing group permissions
       const response = await apiRequest(`/api/group-permissions/${group.id}`);
-      const permissions = response as any[];
+      const permissions = await response.json() as any[];
       
       console.log('Fetched permissions:', permissions);
       
@@ -407,7 +407,7 @@ export default function Users() {
       
       // Refresh the permissions after saving
       const refreshResponse = await apiRequest(`/api/group-permissions/${selectedGroupForPermissions.id}`);
-      const refreshedPermissions = refreshResponse as any[];
+      const refreshedPermissions = await refreshResponse.json() as any[];
       
       console.log('Refreshed permissions after save:', refreshedPermissions);
       
