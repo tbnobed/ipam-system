@@ -50,6 +50,10 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - **2025-01-16**: Added comprehensive group permissions dialog with VLAN→Subnet hierarchy management
 - **2025-01-16**: Implemented group CRUD operations with create, edit, delete, and permissions management
 - **2025-01-16**: Fixed group permissions button functionality - now opens full permissions management dialog
+- **2025-01-16**: **DOCKER DEPLOYMENT UPDATED**: Updated Docker build files to include groups feature
+- **2025-01-16**: Enhanced docker-entrypoint.sh to create user groups tables and default groups
+- **2025-01-16**: Added groups table verification to Docker container initialization
+- **2025-01-16**: Integrated groups creation into both automated and manual database setup procedures
 
 ## User Preferences
 - Clean database initialization without hardcoded subnet IDs or network configurations
