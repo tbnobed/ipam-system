@@ -881,7 +881,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const groupId = parseInt(req.params.groupId);
+      console.log(`Fetching group permissions for groupId: ${groupId}`);
       const permissions = await storage.getGroupPermissions(groupId);
+      console.log(`Found ${permissions.length} permissions for group ${groupId}:`, permissions);
       res.json(permissions);
     } catch (error) {
       console.error("Error fetching group permissions:", error);
@@ -896,11 +898,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const { groupId, permissions } = req.body;
+      console.log("Received group permissions request:", { groupId, permissions });
       
       // Handle bulk save if permissions array is provided
       if (groupId && permissions && Array.isArray(permissions)) {
+        console.log(`Bulk saving ${permissions.length} permissions for group ${groupId}`);
+        
         // Delete existing permissions for this group
         await storage.deleteGroupPermissions(groupId);
+        console.log(`Deleted existing permissions for group ${groupId}`);
         
         // Create new permissions
         const createdPermissions = [];
@@ -912,20 +918,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             permission: perm.permission
           };
           
+          console.log("Creating permission:", permissionData);
           const validatedData = insertGroupPermissionSchema.parse(permissionData);
           const permission = await storage.createGroupPermission(validatedData);
           createdPermissions.push(permission);
         }
         
+        console.log(`Successfully created ${createdPermissions.length} permissions`);
         res.status(201).json(createdPermissions);
       } else {
         // Handle single permission creation
+        console.log("Single permission creation:", req.body);
         const validatedData = insertGroupPermissionSchema.parse(req.body);
         const permission = await storage.createGroupPermission(validatedData);
         res.status(201).json(permission);
       }
     } catch (error) {
       console.error("Error creating group permission:", error);
+      console.error("Request body:", req.body);
       res.status(400).json({ error: "Failed to create group permission" });
     }
   });
