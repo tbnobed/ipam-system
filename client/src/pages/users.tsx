@@ -78,7 +78,10 @@ export default function Users() {
   // Group management state
   const [isCreateGroupDialogOpen, setIsCreateGroupDialogOpen] = useState(false);
   const [isEditGroupDialogOpen, setIsEditGroupDialogOpen] = useState(false);
+  const [isGroupPermissionsDialogOpen, setIsGroupPermissionsDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<UserGroup | null>(null);
+  const [selectedGroupForPermissions, setSelectedGroupForPermissions] = useState<UserGroup | null>(null);
+  const [groupPermissionChanges, setGroupPermissionChanges] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState("users");
 
   const { data: users = [], isLoading } = useQuery<User[]>({
@@ -335,6 +338,77 @@ export default function Users() {
       role: group.role
     });
     setIsEditGroupDialogOpen(true);
+  };
+
+  const openGroupPermissionsDialog = async (group: UserGroup) => {
+    setSelectedGroupForPermissions(group);
+    setIsGroupPermissionsDialogOpen(true);
+    
+    try {
+      // Fetch existing group permissions
+      const response = await apiRequest(`/api/group-permissions/${group.id}`);
+      const permissions = response as any[];
+      
+      // Convert to our format
+      const changes: Record<string, string> = {};
+      permissions.forEach(permission => {
+        const key = permission.vlanId ? `vlan-${permission.vlanId}` : `subnet-${permission.subnetId}`;
+        changes[key] = permission.permission;
+      });
+      
+      setGroupPermissionChanges(changes);
+    } catch (error) {
+      console.error('Failed to fetch group permissions:', error);
+      setGroupPermissionChanges({});
+    }
+  };
+
+  const saveGroupPermissions = async () => {
+    if (!selectedGroupForPermissions) return;
+    
+    try {
+      // Convert changes to permissions format
+      const permissions: any[] = [];
+      Object.entries(groupPermissionChanges).forEach(([key, permission]) => {
+        if (permission !== 'none') {
+          if (key.startsWith('vlan-')) {
+            permissions.push({
+              vlanId: parseInt(key.replace('vlan-', '')),
+              permission
+            });
+          } else if (key.startsWith('subnet-')) {
+            permissions.push({
+              subnetId: parseInt(key.replace('subnet-', '')),
+              permission
+            });
+          }
+        }
+      });
+      
+      await apiRequest('/api/group-permissions', {
+        method: 'POST',
+        body: JSON.stringify({
+          groupId: selectedGroupForPermissions.id,
+          permissions
+        })
+      });
+      
+      toast({
+        title: "Success",
+        description: "Group permissions updated successfully"
+      });
+      
+      setIsGroupPermissionsDialogOpen(false);
+      setSelectedGroupForPermissions(null);
+      setGroupPermissionChanges({});
+    } catch (error) {
+      console.error('Failed to save group permissions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save group permissions",
+        variant: "destructive"
+      });
+    }
   };
 
   const closeGroupDialog = () => {
@@ -1002,6 +1076,13 @@ export default function Users() {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => openGroupPermissionsDialog(group)}
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleDeleteGroup(group.id)}
                             disabled={deleteGroupMutation.isPending}
                           >
@@ -1082,6 +1163,121 @@ export default function Users() {
                   </div>
                 </form>
               </Form>
+            </DialogContent>
+          </Dialog>
+
+          {/* Group Permissions Dialog */}
+          <Dialog open={isGroupPermissionsDialogOpen} onOpenChange={setIsGroupPermissionsDialogOpen}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  Group Permissions - {selectedGroupForPermissions?.name}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  Set permissions for this group. All users in this group will inherit these permissions.
+                </div>
+                
+                {/* Permission Legend */}
+                <div className="flex items-center space-x-4 p-3 bg-muted rounded-lg">
+                  <div className="text-sm font-medium">Permission Levels:</div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span className="text-sm">None</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="text-sm">View</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">Edit</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    <span className="text-sm">Admin</span>
+                  </div>
+                </div>
+
+                {/* VLANs and Subnets */}
+                <div className="space-y-4">
+                  {vlans.map((vlan) => (
+                    <div key={vlan.id} className="space-y-2">
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                          <span className="font-medium">VLAN {vlan.vlanId}: {vlan.name}</span>
+                        </div>
+                        <Select
+                          value={groupPermissionChanges[`vlan-${vlan.id}`] || 'none'}
+                          onValueChange={(value) => {
+                            setGroupPermissionChanges(prev => ({
+                              ...prev,
+                              [`vlan-${vlan.id}`]: value
+                            }));
+                          }}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="view">View</SelectItem>
+                            <SelectItem value="write">Edit</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {/* Subnets under this VLAN */}
+                      {subnets.filter(subnet => subnet.vlanId === vlan.id).map((subnet) => (
+                        <div key={subnet.id} className="flex items-center justify-between p-3 ml-6 bg-background border rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span className="text-sm">{subnet.network}</span>
+                            <span className="text-xs text-muted-foreground">
+                              Gateway: {subnet.gateway}
+                            </span>
+                          </div>
+                          <Select
+                            value={groupPermissionChanges[`subnet-${subnet.id}`] || 'none'}
+                            onValueChange={(value) => {
+                              setGroupPermissionChanges(prev => ({
+                                ...prev,
+                                [`subnet-${subnet.id}`]: value
+                              }));
+                            }}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              <SelectItem value="view">View</SelectItem>
+                              <SelectItem value="write">Edit</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsGroupPermissionsDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button onClick={saveGroupPermissions}>
+                    Save Permissions
+                  </Button>
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
         </TabsContent>

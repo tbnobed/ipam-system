@@ -615,9 +615,48 @@ export class DatabaseStorage implements IStorage {
     await db.delete(users).where(eq(users.id, id));
   }
 
-  // User Permissions
+  // User Permissions (includes group permissions)
   async getUserPermissions(userId: number): Promise<UserPermission[]> {
-    return await db.select().from(userPermissions).where(eq(userPermissions.userId, userId));
+    // Get direct user permissions
+    const directPermissions = await db.select().from(userPermissions).where(eq(userPermissions.userId, userId));
+    
+    // Get user's group
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user?.groupId) {
+      return directPermissions;
+    }
+    
+    // Get group permissions
+    const groupPermissions = await db.select().from(groupPermissions).where(eq(groupPermissions.groupId, user.groupId));
+    
+    // Convert group permissions to user permission format
+    const inheritedPermissions: UserPermission[] = groupPermissions.map(gp => ({
+      id: gp.id,
+      userId: userId,
+      vlanId: gp.vlanId,
+      subnetId: gp.subnetId,
+      permission: gp.permission,
+      createdAt: gp.createdAt,
+      updatedAt: gp.updatedAt
+    }));
+    
+    // Merge permissions (direct permissions override group permissions)
+    const mergedPermissions = [...inheritedPermissions];
+    
+    // Add or override with direct permissions
+    directPermissions.forEach(directPerm => {
+      const existingIndex = mergedPermissions.findIndex(p => 
+        p.vlanId === directPerm.vlanId && p.subnetId === directPerm.subnetId
+      );
+      
+      if (existingIndex !== -1) {
+        mergedPermissions[existingIndex] = directPerm;
+      } else {
+        mergedPermissions.push(directPerm);
+      }
+    });
+    
+    return mergedPermissions;
   }
 
   async createUserPermission(insertPermission: InsertUserPermission): Promise<UserPermission> {
@@ -646,18 +685,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async checkUserPermission(userId: number, resourceType: 'vlan' | 'subnet', resourceId: number): Promise<string | null> {
-    const conditions = [eq(userPermissions.userId, userId)];
+    // Get all user permissions (including group permissions)
+    const allPermissions = await this.getUserPermissions(userId);
     
-    if (resourceType === 'vlan') {
-      conditions.push(eq(userPermissions.vlanId, resourceId));
-    } else {
-      conditions.push(eq(userPermissions.subnetId, resourceId));
-    }
-
-    const [permission] = await db
-      .select()
-      .from(userPermissions)
-      .where(and(...conditions));
+    // Find the specific permission
+    const permission = allPermissions.find(p => {
+      if (resourceType === 'vlan') {
+        return p.vlanId === resourceId;
+      } else {
+        return p.subnetId === resourceId;
+      }
+    });
     
     return permission ? permission.permission : null;
   }
