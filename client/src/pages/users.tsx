@@ -443,6 +443,13 @@ export default function Users() {
   };
 
   const handleEditGroup = (group: UserGroup) => {
+    // Close any other dialogs first
+    setIsGroupMembersDialogOpen(false);
+    setIsGroupPermissionDialogOpen(false);
+    setIsCreateGroupDialogOpen(false);
+    setIsEditUserDialogOpen(false);
+    setIsPermissionDialogOpen(false);
+    
     setSelectedGroup(group);
     setGroupFormData({
       name: group.name,
@@ -453,12 +460,26 @@ export default function Users() {
   };
 
   const handleOpenGroupPermissions = (group: UserGroup) => {
+    // Close any other dialogs first
+    setIsGroupMembersDialogOpen(false);
+    setIsEditGroupDialogOpen(false);
+    setIsCreateGroupDialogOpen(false);
+    setIsEditUserDialogOpen(false);
+    setIsPermissionDialogOpen(false);
+    
     setSelectedGroupForPermissions(group);
     setGroupPermissionChanges({});
     setIsGroupPermissionDialogOpen(true);
   };
 
   const handleOpenGroupMembers = (group: UserGroup) => {
+    // Close any other dialogs first
+    setIsGroupPermissionDialogOpen(false);
+    setIsEditGroupDialogOpen(false);
+    setIsCreateGroupDialogOpen(false);
+    setIsEditUserDialogOpen(false);
+    setIsPermissionDialogOpen(false);
+    
     setSelectedGroupForMembers(group);
     setIsGroupMembersDialogOpen(true);
   };
@@ -1040,7 +1061,10 @@ export default function Users() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleEditGroup(group)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditGroup(group);
+                        }}
                         className="h-8 w-8 p-0"
                       >
                         <Edit className="h-4 w-4" />
@@ -1048,7 +1072,10 @@ export default function Users() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteGroup(group.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteGroup(group.id);
+                        }}
                         className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -1067,7 +1094,10 @@ export default function Users() {
                         variant="outline" 
                         size="sm" 
                         className="flex items-center gap-1"
-                        onClick={() => handleOpenGroupMembers(group)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenGroupMembers(group);
+                        }}
                       >
                         <Users className="h-3 w-3" />
                         Members
@@ -1076,7 +1106,10 @@ export default function Users() {
                         variant="outline" 
                         size="sm" 
                         className="flex items-center gap-1"
-                        onClick={() => handleOpenGroupPermissions(group)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenGroupPermissions(group);
+                        }}
                       >
                         <Settings className="h-3 w-3" />
                         Permissions
