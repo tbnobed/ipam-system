@@ -100,7 +100,7 @@ export const userPermissions = pgTable("user_permissions", {
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   vlanId: integer("vlan_id").references(() => vlans.id, { onDelete: "cascade" }),
   subnetId: integer("subnet_id").references(() => subnets.id, { onDelete: "cascade" }),
-  permission: text("permission", { enum: ["read", "write", "admin"] }).default("read").notNull(),
+  permission: text("permission", { enum: ["view", "write", "admin"] }).default("view").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -111,7 +111,7 @@ export const groupPermissions = pgTable("group_permissions", {
   groupId: integer("group_id").references(() => userGroups.id, { onDelete: "cascade" }).notNull(),
   vlanId: integer("vlan_id").references(() => vlans.id, { onDelete: "cascade" }),
   subnetId: integer("subnet_id").references(() => subnets.id, { onDelete: "cascade" }),
-  permission: text("permission", { enum: ["read", "write", "admin"] }).default("read").notNull(),
+  permission: text("permission", { enum: ["view", "write", "admin"] }).default("view").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -151,7 +151,7 @@ export const insertUserPermissionSchema = createInsertSchema(userPermissions, {
   userId: z.number(),
   vlanId: z.number().optional(),
   subnetId: z.number().optional(),
-  permission: z.enum(["read", "write", "admin"])
+  permission: z.enum(["view", "write", "admin"])
 });
 
 export const insertUserGroupSchema = createInsertSchema(userGroups, {
@@ -163,7 +163,7 @@ export const insertGroupPermissionSchema = createInsertSchema(groupPermissions, 
   groupId: z.number(),
   vlanId: z.number().nullable().optional(),
   subnetId: z.number().nullable().optional(),
-  permission: z.enum(["read", "write", "admin"])
+  permission: z.enum(["view", "write", "admin"])
 });
 
 // Types
