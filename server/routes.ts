@@ -1071,6 +1071,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Group members endpoints - match frontend expectations
+  app.get("/api/group-members/:groupId", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const groupId = parseInt(req.params.groupId);
+      const memberships = await storage.getGroupMemberships(groupId);
+      res.json(memberships);
+    } catch (error) {
+      console.error("Error fetching group members:", error);
+      res.status(500).json({ error: "Failed to fetch group members" });
+    }
+  });
+
+  app.post("/api/group-members", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const { groupId, userId } = req.body;
+      if (!groupId || !userId) {
+        return res.status(400).json({ error: "Group ID and User ID are required" });
+      }
+      
+      const membership = await storage.createGroupMembership({ groupId, userId });
+      res.status(201).json(membership);
+    } catch (error) {
+      console.error("Error adding group member:", error);
+      res.status(400).json({ error: "Failed to add group member" });
+    }
+  });
+
+  app.delete("/api/group-members/:groupId/:userId", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const groupId = parseInt(req.params.groupId);
+      const userId = parseInt(req.params.userId);
+      
+      await storage.deleteUserFromGroup(userId, groupId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error removing group member:", error);
+      res.status(500).json({ error: "Failed to remove group member" });
+    }
+  });
+
   // Start network scan endpoint
   app.post("/api/network/scan", async (req, res) => {
     try {

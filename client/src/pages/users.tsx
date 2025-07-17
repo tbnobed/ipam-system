@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Edit, Plus, Shield, UserCheck, Eye, Settings, Users as UsersIcon, User } from "lucide-react";
+import { Trash2, Edit, Plus, Minus, Shield, UserCheck, Eye, Settings, Users as UsersIcon, User, UserPlus } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -78,8 +78,10 @@ export default function Users() {
   const [isCreateGroupDialogOpen, setIsCreateGroupDialogOpen] = useState(false);
   const [isEditGroupDialogOpen, setIsEditGroupDialogOpen] = useState(false);
   const [isGroupPermissionDialogOpen, setIsGroupPermissionDialogOpen] = useState(false);
+  const [isGroupMembersDialogOpen, setIsGroupMembersDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<UserGroup | null>(null);
   const [selectedGroupForPermissions, setSelectedGroupForPermissions] = useState<UserGroup | null>(null);
+  const [selectedGroupForMembers, setSelectedGroupForMembers] = useState<UserGroup | null>(null);
   const [groupPermissionChanges, setGroupPermissionChanges] = useState<Record<string, string>>({});
   const [groupFormData, setGroupFormData] = useState<GroupFormData>({
     name: "",
@@ -117,6 +119,14 @@ export default function Users() {
       ? fetch(`/api/group-permissions/${selectedGroupForPermissions.id}`).then(res => res.json())
       : Promise.resolve([]),
     enabled: !!selectedGroupForPermissions?.id,
+  });
+
+  const { data: groupMembers = [] } = useQuery({
+    queryKey: ['/api/group-members', selectedGroupForMembers?.id],
+    queryFn: () => selectedGroupForMembers?.id 
+      ? fetch(`/api/group-members/${selectedGroupForMembers.id}`).then(res => res.json())
+      : Promise.resolve([]),
+    enabled: !!selectedGroupForMembers?.id,
   });
 
   const form = useForm<UserFormData>({
@@ -303,6 +313,46 @@ export default function Users() {
     }
   });
 
+  const addGroupMemberMutation = useMutation({
+    mutationFn: async ({ groupId, userId }: { groupId: number; userId: number }) => {
+      return apiRequest('/api/group-members', 'POST', { groupId, userId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/group-members'] });
+      toast({
+        title: "Success",
+        description: "User added to group successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error", 
+        description: "Failed to add user to group",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const removeGroupMemberMutation = useMutation({
+    mutationFn: async ({ groupId, userId }: { groupId: number; userId: number }) => {
+      return apiRequest(`/api/group-members/${groupId}/${userId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/group-members'] });
+      toast({
+        title: "Success",
+        description: "User removed from group successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to remove user from group",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleCreateUser = (data: UserFormData) => {
     createUserMutation.mutate(data);
   };
@@ -406,6 +456,25 @@ export default function Users() {
     setSelectedGroupForPermissions(group);
     setGroupPermissionChanges({});
     setIsGroupPermissionDialogOpen(true);
+  };
+
+  const handleOpenGroupMembers = (group: UserGroup) => {
+    setSelectedGroupForMembers(group);
+    setIsGroupMembersDialogOpen(true);
+  };
+
+  const handleAddUserToGroup = (userId: number) => {
+    if (!selectedGroupForMembers) return;
+    addGroupMemberMutation.mutate({ groupId: selectedGroupForMembers.id, userId });
+  };
+
+  const handleRemoveUserFromGroup = (userId: number) => {
+    if (!selectedGroupForMembers) return;
+    removeGroupMemberMutation.mutate({ groupId: selectedGroupForMembers.id, userId });
+  };
+
+  const isUserInGroup = (userId: number) => {
+    return groupMembers.some((member: any) => member.userId === userId);
   };
 
   const getGroupPermissionForResource = (resourceId: number, resourceType: 'vlan' | 'subnet') => {
@@ -995,15 +1064,26 @@ export default function Users() {
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>Created: {new Date(group.createdAt).toLocaleDateString()}</span>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex items-center gap-1"
-                      onClick={() => handleOpenGroupPermissions(group)}
-                    >
-                      <Settings className="h-3 w-3" />
-                      Permissions
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-1"
+                        onClick={() => handleOpenGroupMembers(group)}
+                      >
+                        <Users className="h-3 w-3" />
+                        Members
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-1"
+                        onClick={() => handleOpenGroupPermissions(group)}
+                      >
+                        <Settings className="h-3 w-3" />
+                        Permissions
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1181,6 +1261,113 @@ export default function Users() {
                     className="min-w-24"
                   >
                     {updateGroupPermissionsMutation.isPending ? "Saving..." : "Save Permissions"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Group Members Management Dialog */}
+          <Dialog open={isGroupMembersDialogOpen} onOpenChange={setIsGroupMembersDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Manage Members for Group: {selectedGroupForMembers?.name}</DialogTitle>
+                <div className="text-sm text-muted-foreground">
+                  Add or remove users from this group. Users in this group will inherit all group permissions.
+                </div>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-medium mb-3">All Users</h3>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {users.map((user) => (
+                      <div key={user.id} className="flex items-center justify-between p-2 border rounded">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            {roleIcons[user.role] && (() => {
+                              const Icon = roleIcons[user.role];
+                              return <Icon className="h-4 w-4" />;
+                            })()}
+                            <span className="font-medium">{user.username}</span>
+                          </div>
+                          <Badge className={`${roleColors[user.role]} text-xs`}>
+                            {user.role}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isUserInGroup(user.id) ? (
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="text-xs">
+                                Member
+                              </Badge>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRemoveUserFromGroup(user.id)}
+                                disabled={removeGroupMemberMutation.isPending}
+                              >
+                                <Minus className="h-3 w-3" />
+                                Remove
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAddUserToGroup(user.id)}
+                              disabled={addGroupMemberMutation.isPending}
+                            >
+                              <Plus className="h-3 w-3" />
+                              Add
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-medium mb-3">
+                    Current Members ({groupMembers.length})
+                  </h3>
+                  {groupMembers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">
+                      No members in this group yet. Add users above to apply group permissions.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {groupMembers.map((member: any) => {
+                        const user = users.find(u => u.id === member.userId);
+                        if (!user) return null;
+                        return (
+                          <div key={member.id} className="flex items-center justify-between p-2 bg-muted/20 rounded">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                {roleIcons[user.role] && (() => {
+                                  const Icon = roleIcons[user.role];
+                                  return <Icon className="h-4 w-4" />;
+                                })()}
+                                <span className="font-medium">{user.username}</span>
+                              </div>
+                              <Badge className={`${roleColors[user.role]} text-xs`}>
+                                {user.role}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Added: {new Date(member.createdAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex justify-end pt-4 border-t">
+                  <Button variant="outline" onClick={() => setIsGroupMembersDialogOpen(false)}>
+                    Done
                   </Button>
                 </div>
               </div>
