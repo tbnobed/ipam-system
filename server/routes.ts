@@ -749,13 +749,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userId = parseInt(req.params.id);
-      const { username, password, role, isActive } = req.body;
+      const { username, password, role, isActive, groupId } = req.body;
       
       const user = await storage.updateUser(userId, {
         username,
         password,
         role,
-        isActive
+        isActive,
+        groupId
       });
       
       if (!user) {
