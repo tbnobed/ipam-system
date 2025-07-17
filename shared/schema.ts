@@ -83,7 +83,36 @@ export const settings = pgTable("settings", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// User permissions for VLANs and subnets
+// User groups for organizing permissions
+export const userGroups = pgTable("user_groups", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: text("name").unique().notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Group permissions for VLANs and subnets
+export const groupPermissions = pgTable("group_permissions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  groupId: integer("group_id").references(() => userGroups.id, { onDelete: "cascade" }).notNull(),
+  vlanId: integer("vlan_id").references(() => vlans.id, { onDelete: "cascade" }),
+  subnetId: integer("subnet_id").references(() => subnets.id, { onDelete: "cascade" }),
+  permission: text("permission", { enum: ["read", "write", "admin"] }).default("read").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Group memberships - linking users to groups
+export const groupMemberships = pgTable("group_memberships", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  groupId: integer("group_id").references(() => userGroups.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Individual user permissions for VLANs and subnets (overrides group permissions)
 export const userPermissions = pgTable("user_permissions", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
@@ -125,6 +154,24 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs, {
 
 export const insertSettingSchema = createInsertSchema(settings);
 
+export const insertUserGroupSchema = createInsertSchema(userGroups, {
+  name: z.string().min(1, "Group name is required"),
+  description: z.string().optional(),
+  isActive: z.boolean().default(true)
+});
+
+export const insertGroupPermissionSchema = createInsertSchema(groupPermissions, {
+  groupId: z.number(),
+  vlanId: z.number().optional(),
+  subnetId: z.number().optional(),
+  permission: z.enum(["read", "write", "admin"])
+});
+
+export const insertGroupMembershipSchema = createInsertSchema(groupMemberships, {
+  userId: z.number(),
+  groupId: z.number()
+});
+
 export const insertUserPermissionSchema = createInsertSchema(userPermissions, {
   userId: z.number(),
   vlanId: z.number().optional(),
@@ -155,6 +202,15 @@ export type Migration = typeof migrations.$inferSelect;
 
 export type Setting = typeof settings.$inferSelect;
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
+
+export type UserGroup = typeof userGroups.$inferSelect;
+export type InsertUserGroup = z.infer<typeof insertUserGroupSchema>;
+
+export type GroupPermission = typeof groupPermissions.$inferSelect;
+export type InsertGroupPermission = z.infer<typeof insertGroupPermissionSchema>;
+
+export type GroupMembership = typeof groupMemberships.$inferSelect;
+export type InsertGroupMembership = z.infer<typeof insertGroupMembershipSchema>;
 
 export type UserPermission = typeof userPermissions.$inferSelect;
 export type InsertUserPermission = z.infer<typeof insertUserPermissionSchema>;
