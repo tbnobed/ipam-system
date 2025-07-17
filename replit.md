@@ -46,6 +46,10 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - **2025-01-16**: Added group memberships system linking users to groups with cascading permissions
 - **2025-01-16**: Fixed Settings page visibility - now properly hidden from non-admin users
 - **2025-01-16**: Enhanced sidebar navigation with improved role-based filtering using .filter() method
+- **2025-01-16**: **GROUPS UI COMPLETE**: Integrated Groups functionality into Users page with tabbed interface
+- **2025-01-16**: Added comprehensive group permissions dialog with VLAN→Subnet hierarchy management
+- **2025-01-16**: Implemented group CRUD operations with create, edit, delete, and permissions management
+- **2025-01-16**: Fixed group permissions button functionality - now opens full permissions management dialog
 
 ## User Preferences
 - Clean database initialization without hardcoded subnet IDs or network configurations
