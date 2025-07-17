@@ -9,13 +9,26 @@ async function throwIfResNotOk(res: Response) {
 
 export async function apiRequest(
   url: string,
-  method: string,
+  methodOrOptions?: string | { method?: string; body?: string },
   data?: unknown | undefined,
 ): Promise<Response> {
+  let method = 'GET';
+  let body = undefined;
+  
+  if (typeof methodOrOptions === 'string') {
+    // Old signature: apiRequest(url, method, data)
+    method = methodOrOptions;
+    body = data ? JSON.stringify(data) : undefined;
+  } else if (methodOrOptions && typeof methodOrOptions === 'object') {
+    // New signature: apiRequest(url, {method, body})
+    method = methodOrOptions.method || 'GET';
+    body = methodOrOptions.body;
+  }
+  
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
+    headers: body ? { "Content-Type": "application/json" } : {},
+    body,
     credentials: "include",
   });
 
