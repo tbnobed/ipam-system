@@ -161,8 +161,8 @@ export const insertUserGroupSchema = createInsertSchema(userGroups, {
 
 export const insertGroupPermissionSchema = createInsertSchema(groupPermissions, {
   groupId: z.number(),
-  vlanId: z.number().optional(),
-  subnetId: z.number().optional(),
+  vlanId: z.number().nullable().optional(),
+  subnetId: z.number().nullable().optional(),
   permission: z.enum(["read", "write", "admin"])
 });
 
