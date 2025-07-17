@@ -349,13 +349,20 @@ export default function Users() {
       const response = await apiRequest(`/api/group-permissions/${group.id}`);
       const permissions = response as any[];
       
+      console.log('Fetched permissions:', permissions);
+      
       // Convert to our format
       const changes: Record<string, string> = {};
       permissions.forEach(permission => {
-        const key = permission.vlanId ? `vlan-${permission.vlanId}` : `subnet-${permission.subnetId}`;
-        changes[key] = permission.permission;
+        if (permission.vlanId) {
+          changes[`vlan-${permission.vlanId}`] = permission.permission;
+        }
+        if (permission.subnetId) {
+          changes[`subnet-${permission.subnetId}`] = permission.permission;
+        }
       });
       
+      console.log('Converted changes:', changes);
       setGroupPermissionChanges(changes);
     } catch (error) {
       console.error('Failed to fetch group permissions:', error);
@@ -398,9 +405,25 @@ export default function Users() {
         description: "Group permissions updated successfully"
       });
       
-      setIsGroupPermissionsDialogOpen(false);
-      setSelectedGroupForPermissions(null);
-      setGroupPermissionChanges({});
+      // Refresh the permissions after saving
+      const refreshResponse = await apiRequest(`/api/group-permissions/${selectedGroupForPermissions.id}`);
+      const refreshedPermissions = refreshResponse as any[];
+      
+      console.log('Refreshed permissions after save:', refreshedPermissions);
+      
+      // Convert to our format
+      const refreshedChanges: Record<string, string> = {};
+      refreshedPermissions.forEach(permission => {
+        if (permission.vlanId) {
+          refreshedChanges[`vlan-${permission.vlanId}`] = permission.permission;
+        }
+        if (permission.subnetId) {
+          refreshedChanges[`subnet-${permission.subnetId}`] = permission.permission;
+        }
+      });
+      
+      console.log('Refreshed changes after save:', refreshedChanges);
+      setGroupPermissionChanges(refreshedChanges);
     } catch (error) {
       console.error('Failed to save group permissions:', error);
       toast({
