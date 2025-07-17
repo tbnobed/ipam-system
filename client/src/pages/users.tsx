@@ -592,13 +592,11 @@ export default function Users() {
               <h2 className="text-lg font-semibold">Users</h2>
               <p className="text-sm text-gray-600">Manage individual user accounts and permissions</p>
             </div>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add User
+            </Button>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add User
-                </Button>
-              </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create User</DialogTitle>
@@ -972,13 +970,11 @@ export default function Users() {
               <h2 className="text-lg font-semibold">Groups</h2>
               <p className="text-sm text-gray-600">Manage user groups and their permissions</p>
             </div>
+            <Button onClick={() => setIsCreateGroupDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Group
+            </Button>
             <Dialog open={isCreateGroupDialogOpen} onOpenChange={setIsCreateGroupDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Group
-                </Button>
-              </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create New Group</DialogTitle>
