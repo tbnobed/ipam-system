@@ -515,14 +515,14 @@ export default function Users() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Group (Optional)</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString()}>
+                      <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a group" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No Group</SelectItem>
+                          <SelectItem value="none">No Group</SelectItem>
                           {userGroups.map((group) => (
                             <SelectItem key={group.id} value={group.id.toString()}>
                               {group.name}
@@ -609,14 +609,14 @@ export default function Users() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Group (Optional)</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString()}>
+                      <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a group" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No Group</SelectItem>
+                          <SelectItem value="none">No Group</SelectItem>
                           {userGroups.map((group) => (
                             <SelectItem key={group.id} value={group.id.toString()}>
                               {group.name}
@@ -629,7 +629,7 @@ export default function Users() {
                   )}
                 />
                 <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={closeDialog}>
+                  <Button type="button" variant="outline" onClick={closeDialog">
                     Cancel
                   </Button>
                   <Button type="submit" disabled={updateUserMutation.isPending}>
