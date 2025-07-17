@@ -629,7 +629,7 @@ export default function Users() {
                   )}
                 />
                 <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={closeDialog">
+                  <Button type="button" variant="outline" onClick={closeDialog}>
                     Cancel
                   </Button>
                   <Button type="submit" disabled={updateUserMutation.isPending}>
