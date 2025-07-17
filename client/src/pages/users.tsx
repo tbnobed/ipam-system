@@ -587,8 +587,143 @@ export default function Users() {
             </Button>
           </div>
 
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogContent>
+          <Card>
+            <CardHeader>
+              <CardTitle>Users</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {users.map((user) => {
+                  const RoleIcon = roleIcons[user.role];
+                  return (
+                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <RoleIcon className="h-5 w-5" />
+                          <span className="font-medium">{user.username}</span>
+                        </div>
+                        <Badge className={roleColors[user.role]}>
+                          {user.role}
+                        </Badge>
+                        <Badge variant={user.isActive ? "default" : "secondary"}>
+                          {user.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {(user.role === "user" || user.role === "viewer") && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUserForPermissions(user);
+                              setPermissionChanges({});
+                              setIsPermissionDialogOpen(true);
+                            }}
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(user)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteUser(user.id)}
+                          disabled={deleteUserMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="groups" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Groups</h2>
+              <p className="text-sm text-gray-600">Manage user groups and their permissions</p>
+            </div>
+            <Button onClick={() => setIsCreateGroupDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Group
+            </Button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {groups?.map((group: UserGroup) => (
+              <Card key={group.id} className="relative">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <UsersIcon className="h-5 w-5 text-gray-500" />
+                      <CardTitle className="text-lg">{group.name}</CardTitle>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge variant={group.isActive ? "default" : "secondary"}>
+                        {group.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditGroup(group)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteGroup(group.id)}
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-gray-600 mb-3">
+                    {group.description || "No description provided"}
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <span>Created: {new Date(group.createdAt).toLocaleDateString()}</span>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleOpenGroupPermissions(group)}
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleOpenGroupMembers(group)}
+                      >
+                        <Users className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* All Dialogs Moved Outside Tabs */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
             <DialogHeader>
               <DialogTitle>Create User</DialogTitle>
             </DialogHeader>
@@ -890,324 +1025,288 @@ export default function Users() {
           </div>
         </DialogContent>
       </Dialog>
-        </TabsContent>
-        
-        <TabsContent value="groups" className="space-y-4">
-          <div className="flex items-center justify-between">
+
+      {/* Create Group Dialog */}
+      <Dialog open={isCreateGroupDialogOpen} onOpenChange={setIsCreateGroupDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Group</DialogTitle>
+            <DialogDescription>
+              Create a new user group to organize permissions.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-semibold">Groups</h2>
-              <p className="text-sm text-gray-600">Manage user groups and their permissions</p>
+              <Label htmlFor="name">Group Name</Label>
+              <Input
+                id="name"
+                value={groupFormData.name}
+                onChange={(e) => setGroupFormData({ ...groupFormData, name: e.target.value })}
+                placeholder="Enter group name"
+              />
             </div>
-            <Button onClick={() => setIsCreateGroupDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Group
-            </Button>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={groupFormData.description}
+                onChange={(e) => setGroupFormData({ ...groupFormData, description: e.target.value })}
+                placeholder="Enter group description"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="active"
+                checked={groupFormData.isActive}
+                onCheckedChange={(checked) => setGroupFormData({ ...groupFormData, isActive: checked })}
+              />
+              <Label htmlFor="active">Active</Label>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsCreateGroupDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateGroup} disabled={createGroupMutation.isPending}>
+                {createGroupMutation.isPending ? "Creating..." : "Create Group"}
+              </Button>
+            </div>
           </div>
+        </DialogContent>
+      </Dialog>
 
-          <Dialog open={isCreateGroupDialogOpen} onOpenChange={setIsCreateGroupDialogOpen}>
-            <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Group</DialogTitle>
-                  <DialogDescription>
-                    Create a new user group to organize permissions.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Group Name</Label>
-                    <Input
-                      id="name"
-                      value={groupFormData.name}
-                      onChange={(e) => setGroupFormData({ ...groupFormData, name: e.target.value })}
-                      placeholder="Enter group name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={groupFormData.description}
-                      onChange={(e) => setGroupFormData({ ...groupFormData, description: e.target.value })}
-                      placeholder="Enter group description"
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="active"
-                      checked={groupFormData.isActive}
-                      onCheckedChange={(checked) => setGroupFormData({ ...groupFormData, isActive: checked })}
-                    />
-                    <Label htmlFor="active">Active</Label>
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setIsCreateGroupDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleCreateGroup} disabled={createGroupMutation.isPending}>
-                      {createGroupMutation.isPending ? "Creating..." : "Create Group"}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {groups?.map((group: UserGroup) => (
-              <Card key={group.id} className="relative">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <UsersIcon className="h-5 w-5 text-gray-500" />
-                      <CardTitle className="text-lg">{group.name}</CardTitle>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant={group.isActive ? "default" : "secondary"}>
-                        {group.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditGroup(group)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteGroup(group.id)}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-gray-600 mb-3">
-                    {group.description || "No description provided"}
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span>Created: {new Date(group.createdAt).toLocaleDateString()}</span>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex items-center gap-1"
-                        onClick={() => handleOpenGroupMembers(group)}
-                      >
-                        <Users className="h-3 w-3" />
-                        Members
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex items-center gap-1"
-                        onClick={() => handleOpenGroupPermissions(group)}
-                      >
-                        <Settings className="h-3 w-3" />
-                        Permissions
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+      {/* Edit Group Dialog */}
+      <Dialog open={isEditGroupDialogOpen} onOpenChange={setIsEditGroupDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Group</DialogTitle>
+            <DialogDescription>
+              Update the group information.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-name">Group Name</Label>
+              <Input
+                id="edit-name"
+                value={groupFormData.name}
+                onChange={(e) => setGroupFormData({ ...groupFormData, name: e.target.value })}
+                placeholder="Enter group name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={groupFormData.description}
+                onChange={(e) => setGroupFormData({ ...groupFormData, description: e.target.value })}
+                placeholder="Enter group description"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="edit-active"
+                checked={groupFormData.isActive}
+                onCheckedChange={(checked) => setGroupFormData({ ...groupFormData, isActive: checked })}
+              />
+              <Label htmlFor="edit-active">Active</Label>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsEditGroupDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateGroup} disabled={updateGroupMutation.isPending}>
+                {updateGroupMutation.isPending ? "Updating..." : "Update Group"}
+              </Button>
+            </div>
           </div>
+        </DialogContent>
+      </Dialog>
 
-          {/* Edit Group Dialog */}
-          <Dialog open={isEditGroupDialogOpen} onOpenChange={setIsEditGroupDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit Group</DialogTitle>
-                <DialogDescription>
-                  Update the group information.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="edit-name">Group Name</Label>
-                  <Input
-                    id="edit-name"
-                    value={groupFormData.name}
-                    onChange={(e) => setGroupFormData({ ...groupFormData, name: e.target.value })}
-                    placeholder="Enter group name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-description">Description</Label>
-                  <Textarea
-                    id="edit-description"
-                    value={groupFormData.description}
-                    onChange={(e) => setGroupFormData({ ...groupFormData, description: e.target.value })}
-                    placeholder="Enter group description"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="edit-active"
-                    checked={groupFormData.isActive}
-                    onCheckedChange={(checked) => setGroupFormData({ ...groupFormData, isActive: checked })}
-                  />
-                  <Label htmlFor="edit-active">Active</Label>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsEditGroupDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleUpdateGroup} disabled={updateGroupMutation.isPending}>
-                    {updateGroupMutation.isPending ? "Updating..." : "Update Group"}
-                  </Button>
-                </div>
+      {/* Group Permission Management Dialog */}
+      <Dialog open={isGroupPermissionDialogOpen} onOpenChange={setIsGroupPermissionDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Permissions for Group: {selectedGroupForPermissions?.name}</DialogTitle>
+            <div className="text-sm text-muted-foreground">
+              Configure granular access permissions for VLANs and their associated subnets for this group
+            </div>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Legend */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-muted/20 rounded-lg">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-gray-400 rounded"></div>
+                <span className="text-sm">None</span>
               </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Group Permission Management Dialog */}
-          <Dialog open={isGroupPermissionDialogOpen} onOpenChange={setIsGroupPermissionDialogOpen}>
-            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Manage Permissions for Group: {selectedGroupForPermissions?.name}</DialogTitle>
-                <div className="text-sm text-muted-foreground">
-                  Configure granular access permissions for VLANs and their associated subnets for this group
-                </div>
-              </DialogHeader>
-              
-              <div className="space-y-6">
-                {/* Legend */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-muted/20 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-gray-400 rounded"></div>
-                    <span className="text-sm">None</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-500 rounded"></div>
-                    <span className="text-sm">View Only</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-                    <span className="text-sm">Edit Access</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-red-500 rounded"></div>
-                    <span className="text-sm">Admin Access</span>
-                  </div>
-                </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-green-500 rounded"></div>
+                <span className="text-sm">View Only</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+                <span className="text-sm">Edit Access</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-red-500 rounded"></div>
+                <span className="text-sm">Admin Access</span>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              {vlans.map((vlan: any) => {
+                const vlanSubnets = subnets.filter((subnet: any) => subnet.vlanId === vlan.id);
                 
-                <div className="space-y-6">
-                  {vlans.map((vlan: any) => {
-                    const vlanSubnets = subnets.filter((subnet: any) => subnet.vlanId === vlan.id);
-                    
-                    return (
-                      <div key={vlan.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                              <h3 className="font-medium text-lg">VLAN {vlan.vlanId}</h3>
-                            </div>
-                            <span className="text-sm text-muted-foreground">({vlan.name})</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">Permission:</span>
-                            <Select 
-                              value={groupPermissionChanges[`vlan_${vlan.id}`] || getGroupPermissionForResource(vlan.id, 'vlan')}
-                              onValueChange={(value) => handleGroupPermissionChange(vlan.id, 'vlan', value)}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                <SelectItem value="read">View</SelectItem>
-                                <SelectItem value="write">Edit</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                return (
+                  <div key={vlan.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                          <h3 className="font-medium text-lg">VLAN {vlan.vlanId}</h3>
                         </div>
-                        
-                        {vlanSubnets.length > 0 && (
-                          <div className="ml-6 space-y-3">
-                            <div className="text-sm font-medium text-muted-foreground border-b pb-2">
-                              Associated Subnets
-                            </div>
-                            {vlanSubnets.map((subnet: any) => (
-                              <div key={subnet.id} className="flex items-center justify-between p-3 bg-muted/10 rounded border-l-4 border-l-blue-200">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                                  <div>
-                                    <div className="font-medium">{subnet.network}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      Gateway: {subnet.gateway || 'Not specified'}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-muted-foreground">Permission:</span>
-                                  <Select 
-                                    value={groupPermissionChanges[`subnet_${subnet.id}`] || getGroupPermissionForResource(subnet.id, 'subnet')}
-                                    onValueChange={(value) => handleGroupPermissionChange(subnet.id, 'subnet', value)}
-                                  >
-                                    <SelectTrigger className="w-32">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="none">None</SelectItem>
-                                      <SelectItem value="read">View</SelectItem>
-                                      <SelectItem value="write">Edit</SelectItem>
-                                      <SelectItem value="admin">Admin</SelectItem>
-                                    </SelectContent>
-                                  </Select>
+                        <span className="text-sm text-muted-foreground">({vlan.name})</span>
+                      </div>
+                    </div>
+                    
+                    {vlanSubnets.length > 0 && (
+                      <div className="space-y-3">
+                        {vlanSubnets.map((subnet: any) => (
+                          <div key={subnet.id} className="flex items-center justify-between p-3 bg-muted/10 rounded border-l-4 border-blue-300">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                <div className="font-medium">{subnet.network}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  Gateway: {subnet.gateway || 'Not specified'}
                                 </div>
                               </div>
-                            ))}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">Permission:</span>
+                              <Select 
+                                value={groupPermissionChanges[`subnet_${subnet.id}`] || getGroupPermissionForResource(subnet.id, 'subnet')}
+                                onValueChange={(value) => handleGroupPermissionChange(subnet.id, 'subnet', value)}
+                              >
+                                <SelectTrigger className="w-32">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">None</SelectItem>
+                                  <SelectItem value="read">View</SelectItem>
+                                  <SelectItem value="write">Edit</SelectItem>
+                                  <SelectItem value="admin">Admin</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
-                        )}
-                        
-                        {/* Show message if no subnets */}
-                        {vlanSubnets.length === 0 && (
-                          <div className="ml-6 text-sm text-muted-foreground italic p-3 bg-muted/20 rounded">
-                            No subnets configured for this VLAN
-                          </div>
-                        )}
+                        ))}
                       </div>
-                    );
-                  })}
-                </div>
-                
-                <div className="flex justify-end space-x-2 pt-4 border-t">
-                  <Button variant="outline" onClick={() => setIsGroupPermissionDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleSaveGroupPermissions}
-                    disabled={updateGroupPermissionsMutation.isPending}
-                    className="min-w-24"
-                  >
-                    {updateGroupPermissionsMutation.isPending ? "Saving..." : "Save Permissions"}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+                    )}
+                    
+                    {/* Show message if no subnets */}
+                    {vlanSubnets.length === 0 && (
+                      <div className="ml-6 text-sm text-muted-foreground italic p-3 bg-muted/20 rounded">
+                        No subnets configured for this VLAN
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="flex justify-end space-x-2 pt-4 border-t">
+              <Button variant="outline" onClick={() => setIsGroupPermissionDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSaveGroupPermissions}
+                disabled={updateGroupPermissionsMutation.isPending}
+                className="min-w-24"
+              >
+                {updateGroupPermissionsMutation.isPending ? "Saving..." : "Save Permissions"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-          {/* Group Members Management Dialog */}
-          <Dialog open={isGroupMembersDialogOpen} onOpenChange={setIsGroupMembersDialogOpen}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Manage Members for Group: {selectedGroupForMembers?.name}</DialogTitle>
-                <div className="text-sm text-muted-foreground">
-                  Add or remove users from this group. Users in this group will inherit all group permissions.
-                </div>
-              </DialogHeader>
-              
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-medium mb-3">All Users</h3>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {users.map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-2 border rounded">
+      {/* Group Members Management Dialog */}
+      <Dialog open={isGroupMembersDialogOpen} onOpenChange={setIsGroupMembersDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Manage Members for Group: {selectedGroupForMembers?.name}</DialogTitle>
+            <div className="text-sm text-muted-foreground">
+              Add or remove users from this group. Users in this group will inherit all group permissions.
+            </div>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="border rounded-lg p-4">
+              <h3 className="font-medium mb-3">All Users</h3>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {users.map((user) => (
+                  <div key={user.id} className="flex items-center justify-between p-2 border rounded">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        {roleIcons[user.role] && (() => {
+                          const Icon = roleIcons[user.role];
+                          return <Icon className="h-4 w-4" />;
+                        })()}
+                        <span className="font-medium">{user.username}</span>
+                      </div>
+                      <Badge className={`${roleColors[user.role]} text-xs`}>
+                        {user.role}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isUserInGroup(user.id) ? (
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs">
+                            Member
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRemoveUserFromGroup(user.id)}
+                            disabled={removeGroupMemberMutation.isPending}
+                          >
+                            <Minus className="h-3 w-3" />
+                            Remove
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddUserToGroup(user.id)}
+                          disabled={addGroupMemberMutation.isPending}
+                        >
+                          <Plus className="h-3 w-3" />
+                          Add
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="border rounded-lg p-4">
+              <h3 className="font-medium mb-3">
+                Current Members ({groupMembers.length})
+              </h3>
+              {groupMembers.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">
+                  No members in this group yet. Add users above to apply group permissions.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {groupMembers.map((member: any) => {
+                    const user = users.find(u => u.id === member.userId);
+                    if (!user) return null;
+                    return (
+                      <div key={member.id} className="flex items-center justify-between p-2 bg-muted/20 rounded">
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-2">
                             {roleIcons[user.role] && (() => {
@@ -1220,86 +1319,24 @@ export default function Users() {
                             {user.role}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {isUserInGroup(user.id) ? (
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="text-xs">
-                                Member
-                              </Badge>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRemoveUserFromGroup(user.id)}
-                                disabled={removeGroupMemberMutation.isPending}
-                              >
-                                <Minus className="h-3 w-3" />
-                                Remove
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleAddUserToGroup(user.id)}
-                              disabled={addGroupMemberMutation.isPending}
-                            >
-                              <Plus className="h-3 w-3" />
-                              Add
-                            </Button>
-                          )}
+                        <div className="text-xs text-muted-foreground">
+                          Added: {new Date(member.createdAt).toLocaleDateString()}
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
-                
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-medium mb-3">
-                    Current Members ({groupMembers.length})
-                  </h3>
-                  {groupMembers.length === 0 ? (
-                    <p className="text-sm text-muted-foreground italic">
-                      No members in this group yet. Add users above to apply group permissions.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {groupMembers.map((member: any) => {
-                        const user = users.find(u => u.id === member.userId);
-                        if (!user) return null;
-                        return (
-                          <div key={member.id} className="flex items-center justify-between p-2 bg-muted/20 rounded">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-2">
-                                {roleIcons[user.role] && (() => {
-                                  const Icon = roleIcons[user.role];
-                                  return <Icon className="h-4 w-4" />;
-                                })()}
-                                <span className="font-medium">{user.username}</span>
-                              </div>
-                              <Badge className={`${roleColors[user.role]} text-xs`}>
-                                {user.role}
-                              </Badge>
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              Added: {new Date(member.createdAt).toLocaleDateString()}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex justify-end pt-4 border-t">
-                  <Button variant="outline" onClick={() => setIsGroupMembersDialogOpen(false)}>
-                    Done
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </TabsContent>
-      </Tabs>
+              )}
+            </div>
+            
+            <div className="flex justify-end pt-4 border-t">
+              <Button variant="outline" onClick={() => setIsGroupMembersDialogOpen(false)}>
+                Done
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
