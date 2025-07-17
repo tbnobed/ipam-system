@@ -20,6 +20,11 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Activity logging and audit trails
 
 ## Recent Changes
+- **2025-01-17**: **CRITICAL FIX**: Resolved group permissions saving issues by implementing bulk save API endpoint
+- **2025-01-17**: Fixed migration file 007_add_user_groups_and_permissions.sql to use proper PostgreSQL syntax
+- **2025-01-17**: Added deleteGroupPermissions method to storage interface for bulk permission updates
+- **2025-01-17**: Enhanced group permissions API to handle both individual and bulk permission operations
+- **2025-01-17**: Confirmed group permissions inheritance works - all users in a group automatically inherit permissions
 - **2025-01-17**: **MAJOR**: Implemented complete group permissions system with inheritance functionality
 - **2025-01-17**: Added user_groups and group_permissions database tables with proper foreign key relationships
 - **2025-01-17**: Created comprehensive group management UI with dual-tab interface for users and groups

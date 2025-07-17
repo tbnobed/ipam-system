@@ -86,6 +86,7 @@ interface IStorage {
   createGroupPermission(insertPermission: InsertGroupPermission): Promise<GroupPermission>;
   updateGroupPermission(id: number, updates: Partial<InsertGroupPermission>): Promise<GroupPermission>;
   deleteGroupPermission(id: number): Promise<void>;
+  deleteGroupPermissions(groupId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -885,6 +886,10 @@ export class DatabaseStorage implements IStorage {
 
   async deleteGroupPermission(id: number): Promise<void> {
     await db.delete(groupPermissions).where(eq(groupPermissions.id, id));
+  }
+
+  async deleteGroupPermissions(groupId: number): Promise<void> {
+    await db.delete(groupPermissions).where(eq(groupPermissions.groupId, groupId));
   }
 }
 

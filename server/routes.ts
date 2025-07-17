@@ -895,9 +895,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Insufficient permissions" });
       }
       
-      const validatedData = insertGroupPermissionSchema.parse(req.body);
-      const permission = await storage.createGroupPermission(validatedData);
-      res.status(201).json(permission);
+      const { groupId, permissions } = req.body;
+      
+      // Handle bulk save if permissions array is provided
+      if (groupId && permissions && Array.isArray(permissions)) {
+        // Delete existing permissions for this group
+        await storage.deleteGroupPermissions(groupId);
+        
+        // Create new permissions
+        const createdPermissions = [];
+        for (const perm of permissions) {
+          const permissionData = {
+            groupId,
+            vlanId: perm.vlanId || null,
+            subnetId: perm.subnetId || null,
+            permission: perm.permission
+          };
+          
+          const validatedData = insertGroupPermissionSchema.parse(permissionData);
+          const permission = await storage.createGroupPermission(validatedData);
+          createdPermissions.push(permission);
+        }
+        
+        res.status(201).json(createdPermissions);
+      } else {
+        // Handle single permission creation
+        const validatedData = insertGroupPermissionSchema.parse(req.body);
+        const permission = await storage.createGroupPermission(validatedData);
+        res.status(201).json(permission);
+      }
     } catch (error) {
       console.error("Error creating group permission:", error);
       res.status(400).json({ error: "Failed to create group permission" });
