@@ -20,6 +20,12 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Activity logging and audit trails
 
 ## Recent Changes
+- **2025-01-17**: **UI IMPROVEMENT**: Enhanced edit user form with optional password change functionality
+- **2025-01-17**: Added separate "Change Password" button to edit user dialog instead of requiring password for all edits
+- **2025-01-17**: Created separate EditUserFormData schema with optional password field for editing
+- **2025-01-17**: **CRITICAL FIX**: Resolved apiRequest JSON parsing issue causing group permissions display failures
+- **2025-01-17**: Fixed frontend to properly call .json() on Response objects from apiRequest function
+- **2025-01-17**: **MAJOR FIX**: Group permissions now load and display correctly in frontend dialog
 - **2025-01-17**: **CRITICAL FIX**: Resolved group permissions saving issues by implementing bulk save API endpoint
 - **2025-01-17**: Fixed migration file 007_add_user_groups_and_permissions.sql to use proper PostgreSQL syntax
 - **2025-01-17**: Added deleteGroupPermissions method to storage interface for bulk permission updates

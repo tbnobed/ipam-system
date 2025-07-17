@@ -25,6 +25,13 @@ const userSchema = z.object({
   groupId: z.number().optional()
 });
 
+const editUserSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().optional(), // Optional for edit
+  role: z.enum(["admin", "user", "viewer"]),
+  groupId: z.number().optional()
+});
+
 const groupSchema = z.object({
   name: z.string().min(1, "Group name is required"),
   description: z.string().optional(),
@@ -63,6 +70,7 @@ const roleColors = {
 };
 
 type UserFormData = z.infer<typeof userSchema>;
+type EditUserFormData = z.infer<typeof editUserSchema>;
 type GroupFormData = z.infer<typeof groupSchema>;
 
 export default function Users() {
@@ -71,6 +79,7 @@ export default function Users() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
   const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<User | null>(null);
   const [permissionChanges, setPermissionChanges] = useState<Record<string, string>>({});
@@ -117,6 +126,15 @@ export default function Users() {
     }
   });
 
+  const editForm = useForm<EditUserFormData>({
+    resolver: zodResolver(editUserSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      role: "viewer"
+    }
+  });
+
   const groupForm = useForm<GroupFormData>({
     resolver: zodResolver(groupSchema),
     defaultValues: {
@@ -156,7 +174,8 @@ export default function Users() {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setIsEditDialogOpen(false);
       setEditingUser(null);
-      form.reset();
+      setIsChangingPassword(false);
+      editForm.reset();
       toast({
         title: "Success",
         description: "User updated successfully",
@@ -283,9 +302,17 @@ export default function Users() {
     createUserMutation.mutate(data);
   };
 
-  const handleUpdateUser = (data: UserFormData) => {
+  const handleUpdateUser = (data: EditUserFormData) => {
     if (editingUser) {
-      updateUserMutation.mutate({ id: editingUser.id, ...data });
+      // Only include password if user wants to change it and it's not empty
+      const updateData = {
+        id: editingUser.id,
+        username: data.username,
+        role: data.role,
+        groupId: data.groupId,
+        ...(isChangingPassword && data.password ? { password: data.password } : {})
+      };
+      updateUserMutation.mutate(updateData);
     }
   };
 
@@ -297,7 +324,8 @@ export default function Users() {
 
   const openEditDialog = (user: User) => {
     setEditingUser(user);
-    form.reset({
+    setIsChangingPassword(false);
+    editForm.reset({
       username: user.username,
       password: "", // Don't prefill password
       role: user.role,
@@ -310,7 +338,9 @@ export default function Users() {
     setIsCreateDialogOpen(false);
     setIsEditDialogOpen(false);
     setEditingUser(null);
+    setIsChangingPassword(false);
     form.reset();
+    editForm.reset();
   };
 
   // Group handlers
@@ -650,10 +680,10 @@ export default function Users() {
             <DialogHeader>
               <DialogTitle>Edit User</DialogTitle>
             </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleUpdateUser)} className="space-y-4">
+            <Form {...editForm}>
+              <form onSubmit={editForm.handleSubmit(handleUpdateUser)} className="space-y-4">
                 <FormField
-                  control={form.control}
+                  control={editForm.control}
                   name="username"
                   render={({ field }) => (
                     <FormItem>
@@ -665,21 +695,39 @@ export default function Users() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                
+                {/* Password change section */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Password</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsChangingPassword(!isChangingPassword)}
+                    >
+                      {isChangingPassword ? "Cancel Change" : "Change Password"}
+                    </Button>
+                  </div>
+                  
+                  {isChangingPassword && (
+                    <FormField
+                      control={editForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input type="password" placeholder="Enter new password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   )}
-                />
+                </div>
+                
                 <FormField
-                  control={form.control}
+                  control={editForm.control}
                   name="role"
                   render={({ field }) => (
                     <FormItem>
@@ -701,7 +749,7 @@ export default function Users() {
                   )}
                 />
                 <FormField
-                  control={form.control}
+                  control={editForm.control}
                   name="groupId"
                   render={({ field }) => (
                     <FormItem>
