@@ -49,13 +49,15 @@ CREATE INDEX IF NOT EXISTS idx_group_permissions_vlan_id ON group_permissions(vl
 CREATE INDEX IF NOT EXISTS idx_group_permissions_subnet_id ON group_permissions(subnet_id);
 CREATE INDEX IF NOT EXISTS idx_users_group_id ON users(group_id);
 
--- Insert default Engineering group
-INSERT INTO user_groups (name, description, role, created_at, updated_at)
-VALUES ('Engineering', 'Default engineering group with network access', 'user', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT (name) DO UPDATE SET
-  description = 'Default engineering group with network access',
-  role = 'user',
-  updated_at = CURRENT_TIMESTAMP;
+-- Insert default Engineering group if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM user_groups WHERE name = 'Engineering') THEN
+    INSERT INTO user_groups (name, description, role, created_at, updated_at)
+    VALUES ('Engineering', 'Default engineering group with network access', 'user', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+  END IF;
+END
+$$;
 
 -- Log the migration
 INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details, timestamp)

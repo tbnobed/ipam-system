@@ -15,8 +15,12 @@ export NODE_ENV=production
 
 # Run database migration with automatic confirmation
 echo "Setting up database schema..."
-echo "y" | timeout 30 npm run db:push || echo "Database schema setup may have failed, but continuing..."
+echo "y" | timeout 60 npm run db:push || echo "Database schema setup may have failed, but continuing..."
 echo "Database schema setup completed successfully"
+
+# Force push schema changes to ensure all tables are up to date
+echo "Force updating database schema..."
+npm run db:push -- --force || echo "Force schema update failed, but continuing..."
 
 # Ensure all required tables exist
 echo "Verifying database tables..."
@@ -44,7 +48,18 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 
 # Run additional migrations for user groups and permissions
 echo "Running user groups and permissions migration..."
-PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -f /app/migrations/007_add_user_groups_and_permissions.sql || echo "Group permissions migration failed, but continuing..."
+if [ -f /app/migrations/007_add_user_groups_and_permissions.sql ]; then
+  echo "Migration file exists, running..."
+  PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -f /app/migrations/007_add_user_groups_and_permissions.sql || echo "Group permissions migration failed, but continuing..."
+else
+  echo "Migration file not found, skipping..."
+fi
+
+# Verify current database structure
+echo "Checking current database structure..."
+PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
+SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('user_groups', 'group_permissions');
+" || echo "Database structure check failed"
 
 # Ensure group permissions tables exist manually if migration failed
 echo "Creating group permissions tables manually..."
@@ -54,10 +69,22 @@ CREATE TABLE IF NOT EXISTS user_groups (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL UNIQUE,
   description TEXT,
-  role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'user', 'viewer')),
+  role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'user', 'viewer')) DEFAULT 'viewer',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add role column to user_groups if it doesn't exist
+DO \$\$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'user_groups' AND column_name = 'role'
+  ) THEN
+    ALTER TABLE user_groups ADD COLUMN role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'user', 'viewer')) DEFAULT 'viewer';
+  END IF;
+END
+\$\$;
 
 -- Create group_permissions table if it doesn't exist
 CREATE TABLE IF NOT EXISTS group_permissions (
@@ -97,13 +124,15 @@ CREATE INDEX IF NOT EXISTS idx_group_permissions_vlan_id ON group_permissions(vl
 CREATE INDEX IF NOT EXISTS idx_group_permissions_subnet_id ON group_permissions(subnet_id);
 CREATE INDEX IF NOT EXISTS idx_users_group_id ON users(group_id);
 
--- Insert default Engineering group
-INSERT INTO user_groups (name, description, role, created_at, updated_at)
-VALUES ('Engineering', 'Default engineering group with network access', 'user', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT (name) DO UPDATE SET
-  description = 'Default engineering group with network access',
-  role = 'user',
-  updated_at = CURRENT_TIMESTAMP;
+-- Insert default Engineering group if it doesn't exist
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM user_groups WHERE name = 'Engineering') THEN
+    INSERT INTO user_groups (name, description, role, created_at, updated_at)
+    VALUES ('Engineering', 'Default engineering group with network access', 'user', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+  END IF;
+END
+\$\$;
 " || echo "Manual group permissions table creation failed, but continuing..."
 
 # Ensure all required columns exist in users table
