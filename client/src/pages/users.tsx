@@ -533,18 +533,7 @@ export default function Users() {
 
     const permissions = [];
     
-    // Process VLAN permissions
-    for (const vlan of vlans) {
-      const key = `vlan_${vlan.id}`;
-      const permission = permissionChanges[key] || getPermissionForResource(vlan.id, 'vlan');
-      // Always include the permission, even if it's 'none' - the backend will handle deletion
-      permissions.push({
-        vlanId: vlan.id,
-        permission
-      });
-    }
-    
-    // Process subnet permissions
+    // Process subnet permissions only (simplified model)
     for (const subnet of subnets) {
       const key = `subnet_${subnet.id}`;
       const permission = permissionChanges[key] || getPermissionForResource(subnet.id, 'subnet');
@@ -596,8 +585,10 @@ export default function Users() {
               <Plus className="mr-2 h-4 w-4" />
               Add User
             </Button>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent>
+          </div>
+
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>Create User</DialogTitle>
             </DialogHeader>
@@ -732,220 +723,157 @@ export default function Users() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {users.map((user) => {
-              const RoleIcon = roleIcons[user.role];
-              return (
-                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <RoleIcon className="h-5 w-5" />
-                      <span className="font-medium">{user.username}</span>
-                    </div>
-                    <Badge className={roleColors[user.role]}>
-                      {user.role}
-                    </Badge>
-                    <Badge variant={user.isActive ? "default" : "secondary"}>
-                      {user.isActive ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {(user.role === "user" || user.role === "viewer") && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedUserForPermissions(user);
-                          setPermissionChanges({});
-                          setIsPermissionDialogOpen(true);
-                        }}
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditDialog(user)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteUser(user.id)}
-                      disabled={deleteUserMutation.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Permission Management Dialog */}
-      <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Manage Permissions for {selectedUserForPermissions?.username}</DialogTitle>
-            <div className="text-sm text-muted-foreground">
-              Configure granular access permissions for VLANs and their associated subnets
-            </div>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            {/* Legend */}
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <h4 className="font-semibold mb-2">Permission Levels:</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-gray-400 rounded"></div>
-                  <span><strong>None:</strong> No access</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded"></div>
-                  <span><strong>View:</strong> Read-only access</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                  <span><strong>Edit:</strong> Modify devices/settings</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded"></div>
-                  <span><strong>Admin:</strong> Full control</span>
-                </div>
-              </div>
-            </div>
-
-            {/* VLAN Hierarchy */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Network Access Control</h3>
-              
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {vlans.map((vlan: any) => {
-                  const vlanSubnets = subnets.filter((subnet: any) => subnet.vlanId === vlan.id);
-                  const vlanPermission = permissionChanges[`vlan_${vlan.id}`] || getPermissionForResource(vlan.id, 'vlan');
-                  
+          <Card>
+            <CardHeader>
+              <CardTitle>Users</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {users.map((user) => {
+                  const RoleIcon = roleIcons[user.role];
                   return (
-                    <div key={vlan.id} className="border rounded-lg p-4 space-y-4">
-                      {/* VLAN Header */}
-                      <div className="flex items-center justify-between bg-muted/30 p-3 rounded">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-6 h-6 bg-primary/10 rounded flex items-center justify-center">
-                            <span className="text-xs font-bold text-primary">V</span>
-                          </div>
-                          <div>
-                            <span className="font-semibold text-base">{vlan.name}</span>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <Badge variant="outline" className="text-xs">VLAN {vlan.vlanId}</Badge>
-                              {vlan.description && (
-                                <span className="text-xs text-muted-foreground">({vlan.description})</span>
-                              )}
-                            </div>
-                          </div>
+                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <RoleIcon className="h-5 w-5" />
+                          <span className="font-medium">{user.username}</span>
                         </div>
-                        
-                        <div className="flex items-center space-x-4">
-                          <div className="text-right">
-                            <div className="text-xs text-muted-foreground mb-1">VLAN Access</div>
-                            <Select 
-                              value={vlanPermission}
-                              onValueChange={(value) => handlePermissionChange(vlan.id, 'vlan', value)}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {getAvailablePermissions(selectedUserForPermissions?.role || 'viewer').map((permission) => (
-                                  <SelectItem key={permission.value} value={permission.value}>
-                                    <div className="flex items-center space-x-2">
-                                      <div className={`w-2 h-2 ${permission.color} rounded`}></div>
-                                      <span>{permission.label}</span>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
+                        <Badge className={roleColors[user.role]}>
+                          {user.role}
+                        </Badge>
+                        <Badge variant={user.isActive ? "default" : "secondary"}>
+                          {user.isActive ? "Active" : "Inactive"}
+                        </Badge>
                       </div>
-                      
-                      {/* Subnets for this VLAN */}
-                      {vlanSubnets.length > 0 && (
-                        <div className="ml-6 space-y-3">
-                          <div className="text-sm font-medium text-muted-foreground flex items-center space-x-2">
-                            <span>Subnets in this VLAN:</span>
-                            <Badge variant="secondary" className="text-xs">{vlanSubnets.length} subnet{vlanSubnets.length !== 1 ? 's' : ''}</Badge>
-                          </div>
-                          
-                          {vlanSubnets.map((subnet: any) => (
-                            <div key={subnet.id} className="flex items-center justify-between p-3 bg-muted/20 rounded border-l-4 border-l-primary/30">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-5 h-5 bg-secondary/20 rounded flex items-center justify-center">
-                                  <span className="text-xs font-bold text-secondary-foreground">S</span>
-                                </div>
-                                <div>
-                                  <span className="font-mono text-sm font-medium">{subnet.network}</span>
-                                  <div className="flex items-center space-x-2 mt-1">
-                                    {subnet.gateway && (
-                                      <Badge variant="outline" className="text-xs">GW: {subnet.gateway}</Badge>
-                                    )}
-                                    {subnet.description && (
-                                      <span className="text-xs text-muted-foreground">({subnet.description})</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center space-x-4">
-                                <div className="text-right">
-                                  <div className="text-xs text-muted-foreground mb-1">Subnet Access</div>
-                                  <Select 
-                                    value={permissionChanges[`subnet_${subnet.id}`] || getPermissionForResource(subnet.id, 'subnet')}
-                                    onValueChange={(value) => handlePermissionChange(subnet.id, 'subnet', value)}
-                                  >
-                                    <SelectTrigger className="w-28">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {getAvailablePermissions(selectedUserForPermissions?.role || 'viewer').map((permission) => (
-                                        <SelectItem key={permission.value} value={permission.value}>
-                                          <div className="flex items-center space-x-2">
-                                            <div className={`w-2 h-2 ${permission.color} rounded`}></div>
-                                            <span>{permission.label}</span>
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {/* Show message if no subnets */}
-                      {vlanSubnets.length === 0 && (
-                        <div className="ml-6 text-sm text-muted-foreground italic p-3 bg-muted/20 rounded">
-                          No subnets configured for this VLAN
-                        </div>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        {(user.role === "user" || user.role === "viewer") && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUserForPermissions(user);
+                              setPermissionChanges({});
+                              setIsPermissionDialogOpen(true);
+                            }}
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(user)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteUser(user.id)}
+                          disabled={deleteUserMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-            </div>
+            </CardContent>
+          </Card>
+
+          {/* Permission Management Dialog */}
+          <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Manage Permissions for {selectedUserForPermissions?.username}</DialogTitle>
+                <div className="text-sm text-muted-foreground">
+                  Set subnet-level permissions to control network access
+                </div>
+              </DialogHeader>
+              
+              <div className="space-y-6">
+                {/* Legend */}
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <h4 className="font-semibold mb-2">Permission Levels:</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-gray-400 rounded"></div>
+                      <span><strong>None:</strong> No access</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-green-500 rounded"></div>
+                      <span><strong>View:</strong> Read-only access</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                      <span><strong>Edit:</strong> Modify devices/settings</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-red-500 rounded"></div>
+                      <span><strong>Admin:</strong> Full control</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Simplified Network Access Control */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Network Access Control</h3>
+                  
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {vlans.map((vlan: any) => {
+                      const vlanSubnets = subnets.filter((subnet: any) => subnet.vlanId === vlan.id);
+                  
+                      return (
+                        <div key={vlan.id} className="border rounded-lg p-4 space-y-3">
+                          {/* VLAN Header - Just as label, no permissions */}
+                          <div className="flex items-center space-x-3 pb-2 border-b">
+                            <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                            <span className="font-semibold text-base">VLAN {vlan.vlanId}</span>
+                            <span className="text-muted-foreground">{vlan.name}</span>
+                          </div>
+                          
+                          {/* Subnets with permissions */}
+                          {vlanSubnets.length > 0 && (
+                            <div className="space-y-2">
+                              {vlanSubnets.map((subnet: any) => (
+                                <div key={subnet.id} className="flex items-center justify-between p-3 bg-muted/20 rounded">
+                                  <div className="flex items-center space-x-3">
+                                    <span className="font-mono text-sm font-medium">S</span>
+                                    <span className="font-mono text-sm">{subnet.network}</span>
+                                  </div>
+                                  
+                                  <Select 
+                                    value={permissionChanges[`subnet_${subnet.id}`] || getPermissionForResource(subnet.id, 'subnet')}
+                                    onValueChange={(value) => handlePermissionChange(subnet.id, 'subnet', value)}
+                                  >
+                                    <SelectTrigger className="w-32">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">None</SelectItem>
+                                      <SelectItem value="view">View</SelectItem>
+                                      <SelectItem value="edit">Edit</SelectItem>
+                                      <SelectItem value="admin">Admin</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Show message if no subnets */}
+                          {vlanSubnets.length === 0 && (
+                            <div className="text-sm text-muted-foreground italic p-3 bg-muted/10 rounded">
+                              No subnets configured for this VLAN
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
             
             <div className="flex justify-end space-x-2 pt-4 border-t">
               <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>
@@ -974,8 +902,10 @@ export default function Users() {
               <Plus className="mr-2 h-4 w-4" />
               Create Group
             </Button>
-            <Dialog open={isCreateGroupDialogOpen} onOpenChange={setIsCreateGroupDialogOpen}>
-              <DialogContent>
+          </div>
+
+          <Dialog open={isCreateGroupDialogOpen} onOpenChange={setIsCreateGroupDialogOpen}>
+            <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create New Group</DialogTitle>
                   <DialogDescription>
@@ -1020,7 +950,6 @@ export default function Users() {
                 </div>
               </DialogContent>
             </Dialog>
-          </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {groups?.map((group: UserGroup) => (
