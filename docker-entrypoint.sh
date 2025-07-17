@@ -40,43 +40,6 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   details JSONB,
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- Create user groups table if it doesn't exist
-CREATE TABLE IF NOT EXISTS user_groups (
-  id SERIAL PRIMARY KEY,
-  name TEXT UNIQUE NOT NULL,
-  description TEXT,
-  is_active BOOLEAN DEFAULT true NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create group permissions table if it doesn't exist
-CREATE TABLE IF NOT EXISTS group_permissions (
-  id SERIAL PRIMARY KEY,
-  group_id INTEGER REFERENCES user_groups(id) ON DELETE CASCADE NOT NULL,
-  vlan_id INTEGER REFERENCES vlans(id) ON DELETE CASCADE,
-  subnet_id INTEGER REFERENCES subnets(id) ON DELETE CASCADE,
-  permission TEXT CHECK (permission IN ('read', 'write', 'admin')) DEFAULT 'read' NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create group memberships table if it doesn't exist
-CREATE TABLE IF NOT EXISTS group_memberships (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-  group_id INTEGER REFERENCES user_groups(id) ON DELETE CASCADE NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(user_id, group_id)
-);
-
--- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_group_permissions_group_id ON group_permissions(group_id);
-CREATE INDEX IF NOT EXISTS idx_group_permissions_vlan_id ON group_permissions(vlan_id);
-CREATE INDEX IF NOT EXISTS idx_group_permissions_subnet_id ON group_permissions(subnet_id);
-CREATE INDEX IF NOT EXISTS idx_group_memberships_user_id ON group_memberships(user_id);
-CREATE INDEX IF NOT EXISTS idx_group_memberships_group_id ON group_memberships(group_id);
 " || echo "Table creation verification failed, but continuing..."
 
 # Ensure all required columns exist in users table
@@ -220,31 +183,11 @@ async function setupProduction() {
     
     console.log('✅ Default settings configured');
     
-    // Create default groups
-    const defaultGroups = [
-      { name: 'Network Administrators', description: 'Full access to all network resources', is_active: true },
-      { name: 'Device Managers', description: 'Read/write access to devices and subnets', is_active: true },
-      { name: 'Viewers', description: 'Read-only access to network resources', is_active: true }
-    ];
-    
-    for (const group of defaultGroups) {
-      await pool.query(`
-        INSERT INTO user_groups (name, description, is_active, created_at, updated_at)
-        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ON CONFLICT (name) DO UPDATE SET
-          description = $2,
-          is_active = $3,
-          updated_at = CURRENT_TIMESTAMP
-      `, [group.name, group.description, group.is_active]);
-    }
-    
-    console.log('✅ Default groups created/updated');
-    
     // Log the initialization
     await pool.query(`
       INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details, timestamp)
       VALUES (1, 'system_init', 'system', 1, 
-        '{"message": "Production database initialized with user groups"}',
+        '{"message": "Production database initialized"}',
         CURRENT_TIMESTAMP)
     `);
     
@@ -302,19 +245,6 @@ ON CONFLICT (username) DO UPDATE SET
   is_active = true,
   updated_at = CURRENT_TIMESTAMP;
 " || echo "Manual viewer creation failed"
-
-echo "Creating default groups manually..."
-PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "
-INSERT INTO user_groups (name, description, is_active, created_at, updated_at)
-VALUES 
-  ('Network Administrators', 'Full access to all network resources', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-  ('Device Managers', 'Read/write access to devices and subnets', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-  ('Viewers', 'Read-only access to network resources', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT (name) DO UPDATE SET
-  description = EXCLUDED.description,
-  is_active = EXCLUDED.is_active,
-  updated_at = CURRENT_TIMESTAMP;
-" || echo "Manual groups creation failed"
 
 echo "Verifying users were created..."
 PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -c "SELECT username, role, is_active FROM users;" || echo "User verification failed"

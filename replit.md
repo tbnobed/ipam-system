@@ -39,21 +39,6 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - **2025-01-16**: Fixed module path resolution by running setup from app directory instead of /tmp
 - **2025-01-16**: **AUTHENTICATION FIX**: Corrected login system to use bcrypt.compare() for password validation
 - **2025-01-16**: Resolved Docker deployment authentication issue - admin/admin login now works correctly
-- **2025-01-16**: **MAJOR**: Implemented comprehensive user groups system with group-based permissions
-- **2025-01-16**: Added database schema for user groups, group permissions, and group memberships
-- **2025-01-16**: Created complete API endpoints for user groups management (CRUD operations)
-- **2025-01-16**: Implemented group permissions allowing inheritance from groups to users
-- **2025-01-16**: Added group memberships system linking users to groups with cascading permissions
-- **2025-01-16**: Fixed Settings page visibility - now properly hidden from non-admin users
-- **2025-01-16**: Enhanced sidebar navigation with improved role-based filtering using .filter() method
-- **2025-01-16**: **GROUPS UI COMPLETE**: Integrated Groups functionality into Users page with tabbed interface
-- **2025-01-16**: Added comprehensive group permissions dialog with VLAN→Subnet hierarchy management
-- **2025-01-16**: Implemented group CRUD operations with create, edit, delete, and permissions management
-- **2025-01-16**: Fixed group permissions button functionality - now opens full permissions management dialog
-- **2025-01-16**: **DOCKER DEPLOYMENT UPDATED**: Updated Docker build files to include groups feature
-- **2025-01-16**: Enhanced docker-entrypoint.sh to create user groups tables and default groups
-- **2025-01-16**: Added groups table verification to Docker container initialization
-- **2025-01-16**: Integrated groups creation into both automated and manual database setup procedures
 
 ## User Preferences
 - Clean database initialization without hardcoded subnet IDs or network configurations

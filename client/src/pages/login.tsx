@@ -113,6 +113,12 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               </Button>
             </form>
           </Form>
+          
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Demo credentials: admin/admin
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -6,31 +6,21 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Trash2, Edit, Plus, Shield, UserCheck, Eye, Settings, Users as UsersIcon, User } from "lucide-react";
+import { Trash2, Edit, Plus, Shield, UserCheck, Eye, Settings } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Header from "@/components/layout/header";
-import type { UserGroup } from "@shared/schema";
 
 const userSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   role: z.enum(["admin", "user", "viewer"])
-});
-
-const groupSchema = z.object({
-  name: z.string().min(1, "Group name is required"),
-  description: z.string().optional(),
-  isActive: z.boolean().default(true)
 });
 
 type User = {
@@ -41,12 +31,6 @@ type User = {
   createdAt: string;
   updatedAt: string;
 };
-
-interface GroupFormData {
-  name: string;
-  description: string;
-  isActive: boolean;
-}
 
 const roleIcons = {
   admin: Shield,
@@ -65,36 +49,15 @@ type UserFormData = z.infer<typeof userSchema>;
 export default function Users() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  // User state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
   const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<User | null>(null);
   const [permissionChanges, setPermissionChanges] = useState<Record<string, string>>({});
-  
-  // Group state
-  const [isCreateGroupDialogOpen, setIsCreateGroupDialogOpen] = useState(false);
-  const [isEditGroupDialogOpen, setIsEditGroupDialogOpen] = useState(false);
-  const [isGroupPermissionDialogOpen, setIsGroupPermissionDialogOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<UserGroup | null>(null);
-  const [selectedGroupForPermissions, setSelectedGroupForPermissions] = useState<UserGroup | null>(null);
-  const [groupPermissionChanges, setGroupPermissionChanges] = useState<Record<string, string>>({});
-  const [selectedGroupForMembers, setSelectedGroupForMembers] = useState<UserGroup | null>(null);
-  const [isGroupMembersDialogOpen, setIsGroupMembersDialogOpen] = useState(false);
-  const [groupFormData, setGroupFormData] = useState<GroupFormData>({
-    name: "",
-    description: "",
-    isActive: true
-  });
 
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['/api/users'],
-  });
-
-  const { data: groups = [], isLoading: isGroupsLoading } = useQuery<UserGroup[]>({
-    queryKey: ['/api/user-groups'],
   });
 
   const { data: vlans = [] } = useQuery({
@@ -111,22 +74,6 @@ export default function Users() {
       ? fetch(`/api/user-permissions/${selectedUserForPermissions.id}`).then(res => res.json())
       : Promise.resolve([]),
     enabled: !!selectedUserForPermissions?.id,
-  });
-
-  const { data: groupPermissions = [] } = useQuery({
-    queryKey: ['/api/group-permissions', selectedGroupForPermissions?.id],
-    queryFn: () => selectedGroupForPermissions?.id 
-      ? fetch(`/api/group-permissions/${selectedGroupForPermissions.id}`).then(res => res.json())
-      : Promise.resolve([]),
-    enabled: !!selectedGroupForPermissions?.id,
-  });
-
-  const { data: groupMembers = [] } = useQuery({
-    queryKey: ['/api/group-members', selectedGroupForMembers?.id],
-    queryFn: () => selectedGroupForMembers?.id 
-      ? fetch(`/api/group-members/${selectedGroupForMembers.id}`).then(res => res.json())
-      : Promise.resolve([]),
-    enabled: !!selectedGroupForMembers?.id,
   });
 
   const form = useForm<UserFormData>({
@@ -225,134 +172,6 @@ export default function Users() {
     }
   });
 
-  // Group mutations
-  const createGroupMutation = useMutation({
-    mutationFn: async (data: GroupFormData) => {
-      return await apiRequest("/api/user-groups", "POST", data);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Group created successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/user-groups"] });
-      setIsCreateGroupDialogOpen(false);
-      setGroupFormData({ name: "", description: "", isActive: true });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to create group",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateGroupMutation = useMutation({
-    mutationFn: async (data: GroupFormData) => {
-      return await apiRequest(`/api/user-groups/${selectedGroup?.id}`, "PUT", data);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Group updated successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/user-groups"] });
-      setIsEditGroupDialogOpen(false);
-      setSelectedGroup(null);
-      setGroupFormData({ name: "", description: "", isActive: true });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to update group",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteGroupMutation = useMutation({
-    mutationFn: async (groupId: number) => {
-      return await apiRequest(`/api/user-groups/${groupId}`, "DELETE");
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Group deleted successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/user-groups"] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to delete group",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateGroupPermissionsMutation = useMutation({
-    mutationFn: async (permissions: { groupId: number; permissions: Array<{ vlanId?: number; subnetId?: number; permission: string }> }) => {
-      return apiRequest('/api/group-permissions', 'POST', permissions);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/group-permissions'] });
-      setIsGroupPermissionDialogOpen(false);
-      setGroupPermissionChanges({});
-      toast({
-        title: "Success",
-        description: "Group permissions updated successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to update group permissions",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const addGroupMemberMutation = useMutation({
-    mutationFn: async ({ groupId, userId }: { groupId: number; userId: number }) => {
-      return apiRequest(`/api/group-members`, 'POST', { groupId, userId });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/group-members'] });
-      toast({
-        title: "Success",
-        description: "User added to group successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to add user to group",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const removeGroupMemberMutation = useMutation({
-    mutationFn: async ({ groupId, userId }: { groupId: number; userId: number }) => {
-      return apiRequest(`/api/group-members/${groupId}/${userId}`, 'DELETE');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/group-members'] });
-      toast({
-        title: "Success",
-        description: "User removed from group successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to remove user from group",
-        variant: "destructive",
-      });
-    }
-  });
-
   const handleCreateUser = (data: UserFormData) => {
     createUserMutation.mutate(data);
   };
@@ -427,126 +246,6 @@ export default function Users() {
     return allPermissions;
   };
 
-  // Group handler functions
-  const handleCreateGroup = () => {
-    createGroupMutation.mutate(groupFormData);
-  };
-
-  const handleUpdateGroup = () => {
-    updateGroupMutation.mutate(groupFormData);
-  };
-
-  const handleDeleteGroup = (groupId: number) => {
-    if (confirm("Are you sure you want to delete this group?")) {
-      deleteGroupMutation.mutate(groupId);
-    }
-  };
-
-  const handleEditGroup = (group: UserGroup) => {
-    // Close any other dialogs first
-    setIsGroupMembersDialogOpen(false);
-    setIsGroupPermissionDialogOpen(false);
-    setIsCreateGroupDialogOpen(false);
-    setIsEditUserDialogOpen(false);
-    setIsPermissionDialogOpen(false);
-    
-    setSelectedGroup(group);
-    setGroupFormData({
-      name: group.name,
-      description: group.description || "",
-      isActive: group.isActive
-    });
-    setIsEditGroupDialogOpen(true);
-  };
-
-  const handleOpenGroupPermissions = (group: UserGroup) => {
-    // Close any other dialogs first
-    setIsGroupMembersDialogOpen(false);
-    setIsEditGroupDialogOpen(false);
-    setIsCreateGroupDialogOpen(false);
-    setIsEditUserDialogOpen(false);
-    setIsPermissionDialogOpen(false);
-    
-    setSelectedGroupForPermissions(group);
-    setGroupPermissionChanges({});
-    setIsGroupPermissionDialogOpen(true);
-  };
-
-  const handleOpenGroupMembers = (group: UserGroup) => {
-    // Close any other dialogs first
-    setIsGroupPermissionDialogOpen(false);
-    setIsEditGroupDialogOpen(false);
-    setIsCreateGroupDialogOpen(false);
-    setIsEditUserDialogOpen(false);
-    setIsPermissionDialogOpen(false);
-    
-    setSelectedGroupForMembers(group);
-    setIsGroupMembersDialogOpen(true);
-  };
-
-  const handleAddUserToGroup = (userId: number) => {
-    if (selectedGroupForMembers) {
-      addGroupMemberMutation.mutate({ groupId: selectedGroupForMembers.id, userId });
-    }
-  };
-
-  const handleRemoveUserFromGroup = (userId: number) => {
-    if (selectedGroupForMembers) {
-      removeGroupMemberMutation.mutate({ groupId: selectedGroupForMembers.id, userId });
-    }
-  };
-
-  const getGroupPermissionForResource = (resourceId: number, resourceType: 'vlan' | 'subnet') => {
-    if (!groupPermissions) return 'none';
-    
-    const permission = groupPermissions.find((p: any) => 
-      resourceType === 'vlan' ? p.vlanId === resourceId : p.subnetId === resourceId
-    );
-    
-    return permission?.permission || 'none';
-  };
-
-  const handleGroupPermissionChange = (resourceId: number, resourceType: 'vlan' | 'subnet', permission: string) => {
-    const key = `${resourceType}_${resourceId}`;
-    setGroupPermissionChanges(prev => ({
-      ...prev,
-      [key]: permission
-    }));
-  };
-
-  const handleSaveGroupPermissions = async () => {
-    if (!selectedGroupForPermissions) return;
-
-    const permissions = [];
-    
-    // Process VLAN permissions
-    for (const vlan of vlans) {
-      const key = `vlan_${vlan.id}`;
-      const permission = groupPermissionChanges[key] || getGroupPermissionForResource(vlan.id, 'vlan');
-      // Always include the permission, even if it's 'none' - the backend will handle deletion
-      permissions.push({
-        vlanId: vlan.id,
-        permission
-      });
-    }
-    
-    // Process subnet permissions
-    for (const subnet of subnets) {
-      const key = `subnet_${subnet.id}`;
-      const permission = groupPermissionChanges[key] || getGroupPermissionForResource(subnet.id, 'subnet');
-      // Always include the permission, even if it's 'none' - the backend will handle deletion
-      permissions.push({
-        subnetId: subnet.id,
-        permission
-      });
-    }
-
-    updateGroupPermissionsMutation.mutate({
-      groupId: selectedGroupForPermissions.id,
-      permissions
-    });
-  };
-
   const handleSavePermissions = async () => {
     if (!selectedUserForPermissions) return;
 
@@ -591,33 +290,15 @@ export default function Users() {
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6">
-      <Header title="User Management" />
-      
-      <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Users
-          </TabsTrigger>
-          <TabsTrigger value="groups" className="flex items-center gap-2">
-            <UsersIcon className="h-4 w-4" />
-            Groups
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="users" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">Users</h2>
-              <p className="text-sm text-gray-600">Manage individual user accounts and permissions</p>
-            </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add User
-                </Button>
-              </DialogTrigger>
+      <div className="flex items-center justify-between">
+        <Header title="User Management" />
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add User
+            </Button>
+          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create User</DialogTitle>
@@ -983,406 +664,6 @@ export default function Users() {
           </div>
         </DialogContent>
       </Dialog>
-        </TabsContent>
-        
-        <TabsContent value="groups" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">Groups</h2>
-              <p className="text-sm text-gray-600">Manage user groups and their permissions</p>
-            </div>
-            <Dialog open={isCreateGroupDialogOpen} onOpenChange={setIsCreateGroupDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Group
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Group</DialogTitle>
-                  <DialogDescription>
-                    Create a new user group to organize permissions.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Group Name</Label>
-                    <Input
-                      id="name"
-                      value={groupFormData.name}
-                      onChange={(e) => setGroupFormData({ ...groupFormData, name: e.target.value })}
-                      placeholder="Enter group name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={groupFormData.description}
-                      onChange={(e) => setGroupFormData({ ...groupFormData, description: e.target.value })}
-                      placeholder="Enter group description"
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="active"
-                      checked={groupFormData.isActive}
-                      onCheckedChange={(checked) => setGroupFormData({ ...groupFormData, isActive: checked })}
-                    />
-                    <Label htmlFor="active">Active</Label>
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setIsCreateGroupDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleCreateGroup} disabled={createGroupMutation.isPending}>
-                      {createGroupMutation.isPending ? "Creating..." : "Create Group"}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {groups?.map((group: UserGroup) => (
-              <Card key={group.id} className="relative">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <UsersIcon className="h-5 w-5 text-gray-500" />
-                      <CardTitle className="text-lg">{group.name}</CardTitle>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant={group.isActive ? "default" : "secondary"}>
-                        {group.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditGroup(group);
-                        }}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteGroup(group.id);
-                        }}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-gray-600 mb-3">
-                    {group.description || "No description provided"}
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span>Created: {new Date(group.createdAt).toLocaleDateString()}</span>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex items-center gap-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenGroupMembers(group);
-                        }}
-                      >
-                        <Users className="h-3 w-3" />
-                        Members
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex items-center gap-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenGroupPermissions(group);
-                        }}
-                      >
-                        <Settings className="h-3 w-3" />
-                        Permissions
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Edit Group Dialog */}
-          <Dialog open={isEditGroupDialogOpen} onOpenChange={setIsEditGroupDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit Group</DialogTitle>
-                <DialogDescription>
-                  Update the group information.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="edit-name">Group Name</Label>
-                  <Input
-                    id="edit-name"
-                    value={groupFormData.name}
-                    onChange={(e) => setGroupFormData({ ...groupFormData, name: e.target.value })}
-                    placeholder="Enter group name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-description">Description</Label>
-                  <Textarea
-                    id="edit-description"
-                    value={groupFormData.description}
-                    onChange={(e) => setGroupFormData({ ...groupFormData, description: e.target.value })}
-                    placeholder="Enter group description"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="edit-active"
-                    checked={groupFormData.isActive}
-                    onCheckedChange={(checked) => setGroupFormData({ ...groupFormData, isActive: checked })}
-                  />
-                  <Label htmlFor="edit-active">Active</Label>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsEditGroupDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleUpdateGroup} disabled={updateGroupMutation.isPending}>
-                    {updateGroupMutation.isPending ? "Updating..." : "Update Group"}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Group Permission Management Dialog */}
-          <Dialog open={isGroupPermissionDialogOpen} onOpenChange={setIsGroupPermissionDialogOpen}>
-            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Manage Permissions for Group: {selectedGroupForPermissions?.name}</DialogTitle>
-                <div className="text-sm text-muted-foreground">
-                  Configure granular access permissions for VLANs and their associated subnets for this group
-                </div>
-              </DialogHeader>
-              
-              <div className="space-y-6">
-                {/* Legend */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-muted/20 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-gray-400 rounded"></div>
-                    <span className="text-sm">None</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-500 rounded"></div>
-                    <span className="text-sm">View Only</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-                    <span className="text-sm">Edit Access</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-red-500 rounded"></div>
-                    <span className="text-sm">Admin Access</span>
-                  </div>
-                </div>
-                
-                <div className="space-y-6">
-                  {vlans.map((vlan: any) => {
-                    const vlanSubnets = subnets.filter((subnet: any) => subnet.vlanId === vlan.id);
-                    
-                    return (
-                      <div key={vlan.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                              <h3 className="font-medium text-lg">VLAN {vlan.vlanId}</h3>
-                            </div>
-                            <span className="text-sm text-muted-foreground">({vlan.name})</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">Permission:</span>
-                            <Select 
-                              value={groupPermissionChanges[`vlan_${vlan.id}`] || getGroupPermissionForResource(vlan.id, 'vlan')}
-                              onValueChange={(value) => handleGroupPermissionChange(vlan.id, 'vlan', value)}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                <SelectItem value="read">View</SelectItem>
-                                <SelectItem value="write">Edit</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        
-                        {vlanSubnets.length > 0 && (
-                          <div className="ml-6 space-y-3">
-                            <div className="text-sm font-medium text-muted-foreground border-b pb-2">
-                              Associated Subnets
-                            </div>
-                            {vlanSubnets.map((subnet: any) => (
-                              <div key={subnet.id} className="flex items-center justify-between p-3 bg-muted/10 rounded border-l-4 border-l-blue-200">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                                  <div>
-                                    <div className="font-medium">{subnet.network}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      Gateway: {subnet.gateway || 'Not specified'}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-muted-foreground">Permission:</span>
-                                  <Select 
-                                    value={groupPermissionChanges[`subnet_${subnet.id}`] || getGroupPermissionForResource(subnet.id, 'subnet')}
-                                    onValueChange={(value) => handleGroupPermissionChange(subnet.id, 'subnet', value)}
-                                  >
-                                    <SelectTrigger className="w-32">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="none">None</SelectItem>
-                                      <SelectItem value="read">View</SelectItem>
-                                      <SelectItem value="write">Edit</SelectItem>
-                                      <SelectItem value="admin">Admin</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {/* Show message if no subnets */}
-                        {vlanSubnets.length === 0 && (
-                          <div className="ml-6 text-sm text-muted-foreground italic p-3 bg-muted/20 rounded">
-                            No subnets configured for this VLAN
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                <div className="flex justify-end space-x-2 pt-4 border-t">
-                  <Button variant="outline" onClick={() => setIsGroupPermissionDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleSaveGroupPermissions}
-                    disabled={updateGroupPermissionsMutation.isPending}
-                    className="min-w-24"
-                  >
-                    {updateGroupPermissionsMutation.isPending ? "Saving..." : "Save Permissions"}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Group Members Management Dialog */}
-          <Dialog open={isGroupMembersDialogOpen} onOpenChange={setIsGroupMembersDialogOpen}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Manage Members: {selectedGroupForMembers?.name}</DialogTitle>
-                <div className="text-sm text-muted-foreground">
-                  Add or remove users from this group
-                </div>
-              </DialogHeader>
-              
-              <div className="space-y-6">
-                {/* Current Members */}
-                <div>
-                  <h3 className="font-medium mb-3">Current Members</h3>
-                  <div className="space-y-2">
-                    {groupMembers.length === 0 ? (
-                      <div className="text-sm text-muted-foreground italic p-3 bg-muted/20 rounded">
-                        No members in this group
-                      </div>
-                    ) : (
-                      groupMembers.map((member: any) => (
-                        <div key={member.id} className="flex items-center justify-between p-3 bg-muted/20 rounded">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                              {member.username.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="font-medium">{member.username}</div>
-                              <div className="text-sm text-muted-foreground capitalize">{member.role}</div>
-                            </div>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRemoveUserFromGroup(member.id)}
-                            disabled={removeGroupMemberMutation.isPending}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Available Users */}
-                <div>
-                  <h3 className="font-medium mb-3">Available Users</h3>
-                  <div className="space-y-2">
-                    {users
-                      .filter(user => !groupMembers.find((member: any) => member.id === user.id))
-                      .map((user) => (
-                        <div key={user.id} className="flex items-center justify-between p-3 bg-muted/20 rounded">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                              {user.username.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="font-medium">{user.username}</div>
-                              <div className="text-sm text-muted-foreground capitalize">{user.role}</div>
-                            </div>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAddUserToGroup(user.id)}
-                            disabled={addGroupMemberMutation.isPending}
-                          >
-                            Add
-                          </Button>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-                
-                <div className="flex justify-end pt-4 border-t">
-                  <Button variant="outline" onClick={() => setIsGroupMembersDialogOpen(false)}>
-                    Close
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }

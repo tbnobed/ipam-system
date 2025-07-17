@@ -47,10 +47,15 @@ export default function Sidebar() {
         {/* Navigation */}
         <div className="mt-8 flex-grow flex flex-col">
           <nav className="flex-1 px-4 space-y-1">
-            {navigation.filter((item) => {
+            {navigation.map((item) => {
+              // Debug: Log user role for Settings check
+              if (item.name === "Settings") {
+                console.log("Settings check - user role:", user?.role, "should hide:", user?.role !== "admin");
+              }
+              
               // Hide Users and Settings menu for non-admin users
               if ((item.name === "Users" || item.name === "Settings") && user?.role !== "admin") {
-                return false;
+                return null;
               }
               
               // Hide Discovery and Analytics pages for viewer users
@@ -58,11 +63,9 @@ export default function Sidebar() {
                 item.name === "Discovery" || 
                 item.name === "Analytics"
               )) {
-                return false;
+                return null;
               }
               
-              return true;
-            }).map((item) => {
               const isActive = location === item.href;
               const Icon = item.icon;
               
