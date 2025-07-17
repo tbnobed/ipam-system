@@ -20,6 +20,10 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Activity logging and audit trails
 
 ## Recent Changes
+- **2025-01-17**: **CRITICAL FIX**: Fixed database constraint violation preventing group permissions from saving
+- **2025-01-17**: Updated database constraints to use "view" instead of "read" for permission levels
+- **2025-01-17**: Fixed permission enum mismatch between frontend and backend schemas
+- **2025-01-17**: Group permissions now save correctly with all permission levels (view, write, admin)
 - **2025-01-17**: **UI IMPROVEMENT**: Enhanced edit user form with optional password change functionality
 - **2025-01-17**: Added separate "Change Password" button to edit user dialog instead of requiring password for all edits
 - **2025-01-17**: Created separate EditUserFormData schema with optional password field for editing
