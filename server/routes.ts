@@ -1055,6 +1055,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Group members endpoints (frontend-compatible)
+  app.get("/api/group-members/:groupId", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const groupId = parseInt(req.params.groupId);
+      const members = await storage.getGroupMembers(groupId);
+      res.json(members);
+    } catch (error) {
+      console.error("Error fetching group members:", error);
+      res.status(500).json({ error: "Failed to fetch group members" });
+    }
+  });
+
+  app.post("/api/group-members", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const { groupId, userId } = req.body;
+      const membership = await storage.createGroupMembership({ groupId, userId });
+      res.status(201).json(membership);
+    } catch (error) {
+      console.error("Error adding group member:", error);
+      res.status(400).json({ error: "Failed to add group member" });
+    }
+  });
+
+  app.delete("/api/group-members/:groupId/:userId", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const groupId = parseInt(req.params.groupId);
+      const userId = parseInt(req.params.userId);
+      await storage.deleteGroupMembershipByUserAndGroup(groupId, userId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error removing group member:", error);
+      res.status(500).json({ error: "Failed to remove group member" });
+    }
+  });
+
   // User's group memberships endpoint
   app.get("/api/users/:userId/groups", requireAuth, async (req: any, res) => {
     try {

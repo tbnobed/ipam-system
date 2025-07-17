@@ -864,6 +864,25 @@ export class DatabaseStorage implements IStorage {
     );
   }
 
+  async getGroupMembers(groupId: number): Promise<User[]> {
+    return await db.select({
+      id: users.id,
+      username: users.username,
+      role: users.role,
+      isActive: users.isActive,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt
+    }).from(users)
+    .innerJoin(groupMemberships, eq(users.id, groupMemberships.userId))
+    .where(eq(groupMemberships.groupId, groupId));
+  }
+
+  async deleteGroupMembershipByUserAndGroup(groupId: number, userId: number): Promise<void> {
+    await db.delete(groupMemberships).where(
+      and(eq(groupMemberships.userId, userId), eq(groupMemberships.groupId, groupId))
+    );
+  }
+
   // Enhanced method to ensure deleteUserPermissions exists
   async deleteUserPermissions(userId: number): Promise<void> {
     await db.delete(userPermissions).where(eq(userPermissions.userId, userId));
