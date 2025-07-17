@@ -618,46 +618,51 @@ export class DatabaseStorage implements IStorage {
 
   // User Permissions (includes group permissions)
   async getUserPermissions(userId: number): Promise<UserPermission[]> {
-    // Get direct user permissions
-    const directPermissions = await db.select().from(userPermissions).where(eq(userPermissions.userId, userId));
-    
-    // Get user's group
-    const [user] = await db.select().from(users).where(eq(users.id, userId));
-    if (!user?.groupId) {
-      return directPermissions;
-    }
-    
-    // Get group permissions
-    const groupPermissions = await db.select().from(groupPermissions).where(eq(groupPermissions.groupId, user.groupId));
-    
-    // Convert group permissions to user permission format
-    const inheritedPermissions: UserPermission[] = groupPermissions.map(gp => ({
-      id: gp.id,
-      userId: userId,
-      vlanId: gp.vlanId,
-      subnetId: gp.subnetId,
-      permission: gp.permission,
-      createdAt: gp.createdAt,
-      updatedAt: gp.updatedAt
-    }));
-    
-    // Merge permissions (direct permissions override group permissions)
-    const mergedPermissions = [...inheritedPermissions];
-    
-    // Add or override with direct permissions
-    directPermissions.forEach(directPerm => {
-      const existingIndex = mergedPermissions.findIndex(p => 
-        p.vlanId === directPerm.vlanId && p.subnetId === directPerm.subnetId
-      );
+    try {
+      // Get direct user permissions
+      const directPermissions = await db.select().from(userPermissions).where(eq(userPermissions.userId, userId));
       
-      if (existingIndex !== -1) {
-        mergedPermissions[existingIndex] = directPerm;
-      } else {
-        mergedPermissions.push(directPerm);
+      // Get user's group
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.groupId) {
+        return directPermissions;
       }
-    });
-    
-    return mergedPermissions;
+      
+      // Get group permissions
+      const groupPermissionsResult = await db.select().from(groupPermissions).where(eq(groupPermissions.groupId, user.groupId));
+      
+      // Convert group permissions to user permission format
+      const inheritedPermissions: UserPermission[] = groupPermissionsResult.map(gp => ({
+        id: gp.id,
+        userId: userId,
+        vlanId: gp.vlanId,
+        subnetId: gp.subnetId,
+        permission: gp.permission,
+        createdAt: gp.createdAt,
+        updatedAt: gp.updatedAt
+      }));
+      
+      // Merge permissions (direct permissions override group permissions)
+      const mergedPermissions = [...inheritedPermissions];
+      
+      // Add or override with direct permissions
+      directPermissions.forEach(directPerm => {
+        const existingIndex = mergedPermissions.findIndex(p => 
+          p.vlanId === directPerm.vlanId && p.subnetId === directPerm.subnetId
+        );
+        
+        if (existingIndex !== -1) {
+          mergedPermissions[existingIndex] = directPerm;
+        } else {
+          mergedPermissions.push(directPerm);
+        }
+      });
+      
+      return mergedPermissions;
+    } catch (error) {
+      console.error('Error in getUserPermissions:', error);
+      throw error;
+    }
   }
 
   async createUserPermission(insertPermission: InsertUserPermission): Promise<UserPermission> {
