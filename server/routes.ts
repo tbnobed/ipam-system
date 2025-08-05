@@ -598,6 +598,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export all data endpoint
+  app.get("/api/export", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      const excelBuffer = await generateDeviceExcel();
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="ipam_system_export.xlsx"');
+      res.send(excelBuffer);
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      res.status(500).json({ error: "Failed to export data" });
+    }
+  });
+
+  // Clear historical data endpoint
+  app.post("/api/clear-historical-data", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      // Clear old activity logs based on data retention setting
+      const retentionSetting = await storage.getSetting('data_retention');
+      const retentionDays = retentionSetting ? parseInt(retentionSetting.value) : 90;
+      
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+      
+      await storage.clearHistoricalData(cutoffDate);
+      
+      res.json({ message: "Historical data cleared successfully" });
+    } catch (error) {
+      console.error("Error clearing historical data:", error);
+      res.status(500).json({ error: "Failed to clear historical data" });
+    }
+  });
+
   // Authentication endpoints
   app.post("/api/auth/login", async (req, res) => {
     try {

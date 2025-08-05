@@ -59,6 +59,7 @@ interface IStorage {
   getSetting(key: string): Promise<Setting | undefined>;
   setSetting(key: string, value: string, description?: string): Promise<Setting>;
   deleteSetting(key: string): Promise<void>;
+  clearHistoricalData(cutoffDate: Date): Promise<void>;
   
   // User Management
   getAllUsers(): Promise<User[]>;
@@ -596,6 +597,14 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSetting(key: string): Promise<void> {
     await db.delete(settings).where(eq(settings.key, key));
+  }
+
+  async clearHistoricalData(cutoffDate: Date): Promise<void> {
+    // Clear old activity logs
+    await db.delete(activityLogs).where(sql`${activityLogs.timestamp} < ${cutoffDate}`);
+    
+    // Clear old network scans
+    await db.delete(networkScans).where(sql`${networkScans.startTime} < ${cutoffDate}`);
   }
 
   // User Management
