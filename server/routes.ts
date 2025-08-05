@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { insertDeviceSchema, insertVlanSchema, insertSubnetSchema, insertSettingSchema, insertUserSchema, insertUserPermissionSchema, insertUserGroupSchema, insertGroupPermissionSchema } from "@shared/schema";
 import { networkScanner } from "./network";
 import { migrationManager } from "./migrations";
+import { notificationService } from "./notifications";
 import { z } from "zod";
 import * as XLSX from 'xlsx';
 import session from 'express-session';
@@ -540,13 +541,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Settings
-  app.get("/api/settings", async (req, res) => {
+  app.get("/api/settings", requireAuth, async (req, res) => {
     try {
       const settings = await storage.getAllSettings();
       res.json(settings);
     } catch (error) {
       console.error("Error fetching settings:", error);
       res.status(500).json({ error: "Failed to fetch settings" });
+    }
+  });
+
+  // Test notification endpoint (admin only)
+  app.post('/api/test-notification', requireAuth, async (req: any, res) => {
+    try {
+      const user = req.user;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { type, message } = req.body;
+      
+      // Send a test notification
+      await notificationService.processAlert({
+        type: type || 'device_offline',
+        message: message || 'Test notification from IPAM system',
+        severity: 'medium',
+        timestamp: new Date(),
+        metadata: { source: 'manual_test', userId: user.id }
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Test notification sent. Check console logs for delivery details.' 
+      });
+    } catch (error) {
+      console.error('Error sending test notification:', error);
+      res.status(500).json({ error: 'Failed to send test notification' });
     }
   });
 
