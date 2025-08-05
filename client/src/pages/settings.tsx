@@ -85,8 +85,10 @@ export default function Settings() {
   });
 
   const onSubmit = async (data: SettingsFormData) => {
+    console.log('=== FORM SUBMIT START ===');
     console.log('Form submission started with data:', data);
     console.log('Form errors:', form.formState.errors);
+    console.log('Toast function available?', typeof toast);
     
     try {
       // Update each setting
@@ -102,20 +104,29 @@ export default function Settings() {
       ];
 
       console.log('Updating settings with:', updates);
-      await Promise.all(updates.map(update => updateSettingMutation.mutateAsync(update)));
+      const results = await Promise.all(updates.map(update => updateSettingMutation.mutateAsync(update)));
+      console.log('All mutations completed:', results.length);
 
-      toast({
+      console.log('Settings updated successfully, calling toast...');
+      const toastResult = toast({
         title: "Settings Updated",
         description: "System settings have been saved successfully.",
       });
+      console.log('Toast called with result:', toastResult);
+      
+      // Also try an alert as fallback
+      alert('Settings have been saved successfully!');
+      
     } catch (error) {
       console.error('Settings update error:', error);
       toast({
         title: "Error",
-        description: "Failed to update settings. Please try again.",
+        description: `Failed to update settings: ${error}`,
         variant: "destructive",
       });
+      alert(`Error: Failed to update settings: ${error}`);
     }
+    console.log('=== FORM SUBMIT END ===');
   };
 
   const resetToDefaults = async () => {
