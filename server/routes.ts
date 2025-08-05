@@ -88,6 +88,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // Health check endpoint for Docker
+  app.get('/api/auth/health', (req, res) => {
+    res.status(200).json({ 
+      status: 'healthy', 
+      timestamp: new Date().toISOString(),
+      features: {
+        authentication: true,
+        notifications: !!process.env.SENDGRID_API_KEY,
+        database: true
+      }
+    });
+  });
+
 
 
   // Dashboard metrics - requires authentication

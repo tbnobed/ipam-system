@@ -254,13 +254,17 @@ async function setupProduction() {
     
     console.log('✅ Demo viewer created/updated');
     
-    // Set default settings
+    // Set default settings including new notification settings
     const defaultSettings = [
-      { key: 'scan_interval', value: '300', description: 'Network scan interval in seconds' },
-      { key: 'max_devices', value: '10000', description: 'Maximum number of devices to track' },
-      { key: 'data_retention_days', value: '90', description: 'Days to retain historical data' },
-      { key: 'notifications_enabled', value: 'true', description: 'Enable system notifications' },
-      { key: 'email_notifications', value: 'false', description: 'Enable email notifications' }
+      { key: 'scan_interval', value: '5', description: 'Network scan interval in minutes' },
+      { key: 'ping_timeout', value: '2', description: 'Ping timeout in seconds' },
+      { key: 'auto_discovery', value: 'true', description: 'Enable automatic device discovery' },
+      { key: 'port_scanning', value: 'false', description: 'Scan common ports during discovery' },
+      { key: 'device_alerts', value: 'true', description: 'Alert when devices go offline' },
+      { key: 'subnet_alerts', value: 'true', description: 'Alert when subnet utilization exceeds threshold' },
+      { key: 'alert_threshold', value: '90', description: 'Utilization alert threshold percentage' },
+      { key: 'data_retention', value: '90', description: 'Data retention period in days' },
+      { key: 'alert_emails', value: process.env.ALERT_EMAILS || 'alerts@obedtv.com', description: 'Email recipients for alerts (comma-separated)' }
     ];
     
     for (const setting of defaultSettings) {
