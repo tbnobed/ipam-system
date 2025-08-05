@@ -37,8 +37,8 @@ export class NotificationService {
       enabled: !!sendGridApiKey, // Enable if SendGrid API key is available
       config: {
         apiKey: sendGridApiKey,
-        fromEmail: process.env.FROM_EMAIL || 'noreply@ipam.local',
-        toEmails: process.env.ALERT_EMAILS?.split(',') || []
+        fromEmail: process.env.FROM_EMAIL || 'alerts@obedtv.com',
+        toEmails: process.env.ALERT_EMAILS?.split(',') || ['alerts@obedtv.com']
       }
     });
 

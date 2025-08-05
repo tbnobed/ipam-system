@@ -26,6 +26,7 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const [isResetting, setIsResetting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTestingNotification, setIsTestingNotification] = useState(false);
 
   // Fetch all settings
   const { data: settingsData = [], isLoading } = useQuery<any[]>({
@@ -207,6 +208,30 @@ export default function Settings() {
     }
   };
 
+  const testNotification = async () => {
+    setIsTestingNotification(true);
+    try {
+      const response = await apiRequest('/api/test-notification', 'POST', {
+        type: 'device_offline',
+        message: 'Test SendGrid email notification from IPAM system'
+      });
+      
+      toast({
+        title: "Test Email Sent",
+        description: "Check alerts@obedtv.com for the test notification email.",
+      });
+    } catch (error) {
+      console.error('Test notification error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send test notification. Check console logs.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestingNotification(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <>
@@ -289,6 +314,7 @@ export default function Settings() {
             <Card>
               <CardHeader>
                 <CardTitle>Notifications</CardTitle>
+                <p className="text-sm text-gray-600">Email alerts sent via SendGrid to alerts@obedtv.com</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center space-x-2">
@@ -317,6 +343,19 @@ export default function Settings() {
                     value={settings.alert_threshold}
                     onChange={(e) => setSettings(prev => ({ ...prev, alert_threshold: e.target.value }))}
                   />
+                </div>
+
+                <div className="pt-4 border-t">
+                  <Button
+                    onClick={testNotification}
+                    variant="outline"
+                    disabled={isTestingNotification}
+                  >
+                    {isTestingNotification ? 'Sending...' : 'Test SendGrid Email'}
+                  </Button>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Send a test email to verify SendGrid configuration
+                  </p>
                 </div>
               </CardContent>
             </Card>
