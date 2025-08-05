@@ -20,6 +20,10 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Activity logging and audit trails
 
 ## Recent Changes
+- **2025-01-17**: **UI CLEANUP**: Removed duplicate settings pages - consolidated into single functional settings.tsx
+- **2025-01-17**: **SETTINGS COMPLETE**: Implemented full settings functionality with React Hook Form backend connectivity
+- **2025-01-17**: Added working save functionality for all setting categories (scanning, notifications, data management)
+- **2025-01-17**: Connected export data feature with Excel download and clear historical data with backend API
 - **2025-01-17**: **CRITICAL FIX**: Fixed database constraint violation preventing group permissions from saving
 - **2025-01-17**: Updated database constraints to use "view" instead of "read" for permission levels
 - **2025-01-17**: Fixed permission enum mismatch between frontend and backend schemas
