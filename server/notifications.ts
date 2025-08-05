@@ -146,14 +146,25 @@ export class NotificationService {
   }
 
   private async sendEmail(config: any, event: AlertEvent): Promise<void> {
-    if (!config.apiKey || !config.toEmails.length) {
-      console.log(`📧 [EMAIL] Skipped - missing API key or recipients`);
+    if (!config.apiKey) {
+      console.log(`📧 [EMAIL] Skipped - missing SendGrid API key`);
+      return;
+    }
+
+    // Get current email settings from database
+    const settings = await this.getNotificationSettings();
+    const emailRecipients = settings.alert_emails ? 
+      settings.alert_emails.split(',').map((email: string) => email.trim()) : 
+      config.toEmails;
+
+    if (!emailRecipients || emailRecipients.length === 0) {
+      console.log(`📧 [EMAIL] Skipped - no recipients configured`);
       return;
     }
 
     try {
       const msg = {
-        to: config.toEmails,
+        to: emailRecipients,
         from: config.fromEmail,
         subject: `IPAM Alert: ${event.type.replace('_', ' ').toUpperCase()}`,
         text: event.message,
@@ -161,7 +172,7 @@ export class NotificationService {
       };
 
       await sgMail.send(msg);
-      console.log(`📧 [EMAIL] Sent ${event.severity.toUpperCase()} alert to ${config.toEmails.join(', ')}`);
+      console.log(`📧 [EMAIL] Sent ${event.severity.toUpperCase()} alert to ${emailRecipients.join(', ')}`);
     } catch (error) {
       console.error('SendGrid email failed:', error);
       throw error;

@@ -19,6 +19,7 @@ interface SettingsState {
   subnet_alerts: boolean;
   alert_threshold: string;
   data_retention: string;
+  alert_emails?: string;
 }
 
 export default function Settings() {
@@ -63,6 +64,7 @@ export default function Settings() {
         subnet_alerts: settingsMap.subnet_alerts === 'true',
         alert_threshold: settingsMap.alert_threshold || '90',
         data_retention: settingsMap.data_retention || '90',
+        alert_emails: settingsMap.alert_emails || 'alerts@obedtv.com',
       };
       console.log('Loading settings from server:', newSettings);
       setSettings(newSettings);
@@ -343,6 +345,20 @@ export default function Settings() {
                     value={settings.alert_threshold}
                     onChange={(e) => setSettings(prev => ({ ...prev, alert_threshold: e.target.value }))}
                   />
+                </div>
+
+                <div>
+                  <Label htmlFor="alert_emails">Email Recipients (comma-separated)</Label>
+                  <Input
+                    id="alert_emails"
+                    type="email"
+                    placeholder="alerts@obedtv.com, admin@obedtv.com"
+                    value={settings.alert_emails || ''}
+                    onChange={(e) => setSettings(prev => ({ ...prev, alert_emails: e.target.value }))}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter email addresses separated by commas
+                  </p>
                 </div>
 
                 <div className="pt-4 border-t">
