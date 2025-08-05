@@ -98,6 +98,7 @@ export default function Settings() {
         { key: 'subnet_alerts', value: settings.subnet_alerts.toString() },
         { key: 'alert_threshold', value: settings.alert_threshold },
         { key: 'data_retention', value: settings.data_retention },
+        { key: 'alert_emails', value: settings.alert_emails || 'alerts@obedtv.com' },
       ];
 
       console.log('Updating settings with:', updates);

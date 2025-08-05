@@ -20,6 +20,8 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Activity logging and audit trails
 
 ## Recent Changes
+- **2025-08-05**: **EMAIL RECIPIENTS FIX**: Fixed email recipients configuration persistence issue - recipients can now be customized and saved properly
+- **2025-08-05**: **SETTINGS SAVE**: Added alert_emails field to settings save process ensuring email recipients persist across sessions
 - **2025-08-05**: **SENDGRID INTEGRATION**: Successfully integrated SendGrid for email notifications with proper API key configuration
 - **2025-08-05**: **EMAIL NOTIFICATIONS**: Implemented formatted HTML email alerts using SendGrid mail service
 - **2025-08-05**: **NOTIFICATION SYSTEM**: Created comprehensive notification service with support for email, webhook, Slack, and SMS alerts
