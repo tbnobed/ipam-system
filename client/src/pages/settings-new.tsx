@@ -162,15 +162,45 @@ export default function Settings() {
 
   const clearHistoricalData = async () => {
     try {
-      // This would clear old activity logs and scan data
+      await apiRequest("/api/clear-historical-data", "POST");
       toast({
         title: "Data Cleared",
         description: "Historical data has been cleared successfully.",
       });
     } catch (error) {
+      console.error('Clear data error:', error);
       toast({
         title: "Error",
         description: "Failed to clear historical data.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const exportAllData = async () => {
+    try {
+      const response = await apiRequest("/api/export", "GET");
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ipam-export-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Export Complete",
+        description: "Data has been exported successfully.",
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export data.",
         variant: "destructive",
       });
     }
@@ -387,7 +417,7 @@ export default function Settings() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center space-x-4">
-                  <Button variant="outline" type="button">
+                  <Button variant="outline" type="button" onClick={exportAllData}>
                     Export All Data
                   </Button>
                   <Button variant="outline" type="button">
@@ -436,7 +466,7 @@ export default function Settings() {
               <Button 
                 type="submit" 
                 disabled={form.formState.isSubmitting}
-                onClick={() => console.log('Save button clicked')}
+
               >
                 {form.formState.isSubmitting ? "Saving..." : "Save Settings"}
               </Button>
