@@ -153,9 +153,13 @@ export class NotificationService {
 
     // Get current email settings from database
     const settings = await this.getNotificationSettings();
+    console.log('🔍 [EMAIL] Current notification settings:', settings);
+    
     const emailRecipients = settings.alert_emails ? 
-      settings.alert_emails.split(',').map((email: string) => email.trim()) : 
+      settings.alert_emails.split(',').map((email: string) => email.trim()).filter(email => email) : 
       config.toEmails;
+    
+    console.log('📋 [EMAIL] Recipients resolved to:', emailRecipients);
 
     if (!emailRecipients || emailRecipients.length === 0) {
       console.log(`📧 [EMAIL] Skipped - no recipients configured`);
