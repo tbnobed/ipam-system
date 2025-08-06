@@ -806,16 +806,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Insufficient permissions" });
       }
       
-      const { username, password, role = "viewer" } = req.body;
+      const { username, password, role = "viewer", groupId } = req.body;
       
       if (!username || !password) {
         return res.status(400).json({ error: "Username and password are required" });
       }
       
+      // Hash the password before storing
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
       const user = await storage.createUser({
         username,
-        password,
+        password: hashedPassword,
         role,
+        groupId,
         isActive: true
       });
       
@@ -835,13 +839,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.id);
       const { username, password, role, isActive, groupId } = req.body;
       
-      const user = await storage.updateUser(userId, {
+      // Prepare update data
+      const updateData: any = {
         username,
-        password,
         role,
         isActive,
         groupId
-      });
+      };
+      
+      // Only hash and include password if it's provided
+      if (password && password.trim() !== '') {
+        updateData.password = await bcrypt.hash(password, 10);
+      }
+      
+      const user = await storage.updateUser(userId, updateData);
       
       if (!user) {
         return res.status(404).json({ error: "User not found" });
