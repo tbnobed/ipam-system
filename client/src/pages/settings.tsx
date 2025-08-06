@@ -295,15 +295,27 @@ export default function Settings() {
         throw new Error('Invalid configuration file');
       }
 
-      await apiRequest('/api/import-configuration', 'POST', configData);
+      const response = await apiRequest('/api/import-configuration', 'POST', configData);
+      const result = await response.json();
       
-      toast({
-        title: "Configuration Imported",
-        description: "Configuration has been imported successfully.",
-      });
+      if (result.errors && result.errors.length > 0) {
+        toast({
+          title: "Partial Import",
+          description: `Imported ${result.imported.vlans} VLANs, ${result.imported.subnets} subnets, ${result.imported.settings} settings. Some items failed.`,
+          variant: "destructive",
+        });
+        console.warn('Import errors:', result.errors);
+      } else {
+        toast({
+          title: "Configuration Imported",
+          description: `Successfully imported ${result.imported.vlans} VLANs, ${result.imported.subnets} subnets, ${result.imported.settings} settings.`,
+        });
+      }
       
-      // Refresh settings after import
+      // Refresh data after import
       queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/vlans'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/subnets'] });
     } catch (error) {
       toast({
         title: "Import Failed",

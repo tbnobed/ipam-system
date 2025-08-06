@@ -20,6 +20,9 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Activity logging and audit trails
 
 ## Recent Changes
+- **2025-08-06**: **BACKUP AND RESTORE SYSTEM**: Implemented comprehensive backup and restore functionality with two distinct features: Export Configuration (VLANs, subnets, settings without user data) and Full System Backup (complete system including users and permissions) - Import Configuration now fully functional with proper error handling and import order
+- **2025-08-06**: **ENHANCED DATA MANAGEMENT UI**: Redesigned settings page Data Management section with organized export/import options, file upload for configuration imports, and detailed success/error feedback
+- **2025-08-06**: **IMPORT VALIDATION**: Added robust validation and error handling for configuration imports with proper VLAN-first import order, duplicate detection, and comprehensive error reporting
 - **2025-08-06**: **NETWORK SCANNING INTERVAL FIX**: Resolved critical issue where periodic scanning was using hardcoded 5-minute default parameter instead of 60-minute database setting - fixed startPeriodicScanning method default parameter and verified 60-minute intervals working correctly
 - **2025-08-06**: **DEVICE PAGINATION FIX**: Fixed device table pagination issues - backend now properly filters by user permissions first, then paginates, with correct totalPages calculation and working Previous/Next navigation buttons
 - **2025-08-06**: **HARDCODED SETTINGS FIX**: Fixed all hardcoded network settings to read from database - ping timeouts, network delays, port scanning timeouts, and alert thresholds now properly respect user configurations

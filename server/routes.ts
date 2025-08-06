@@ -1489,49 +1489,72 @@ export function registerBackupRoutes(app: Express) {
       }
 
       let imported = { vlans: 0, subnets: 0, settings: 0 };
+      let errors = [];
 
       // Import settings first
       for (const setting of data.settings) {
         try {
           await storage.setSetting(setting.key, setting.value);
           imported.settings++;
-        } catch (error) {
+        } catch (error: any) {
           console.warn(`Failed to import setting ${setting.key}:`, error);
+          errors.push(`Setting ${setting.key}: ${error.message}`);
         }
       }
 
-      // Import VLANs
+      // Import VLANs first (they are referenced by subnets)
       for (const vlan of data.vlans) {
         try {
-          await storage.createVlan({
-            vlanId: vlan.vlanId,
-            name: vlan.name,
-            description: vlan.description
-          });
-          imported.vlans++;
-        } catch (error) {
+          // Check if VLAN already exists
+          const existingVlans = await storage.getAllVlans();
+          const vlanExists = existingVlans.some(v => v.vlanId === vlan.vlanId);
+          
+          if (!vlanExists) {
+            await storage.createVlan({
+              vlanId: vlan.vlanId,
+              name: vlan.name,
+              description: vlan.description
+            });
+            imported.vlans++;
+            console.log(`Successfully imported VLAN ${vlan.vlanId}: ${vlan.name}`);
+          } else {
+            console.log(`VLAN ${vlan.vlanId} already exists, skipping`);
+          }
+        } catch (error: any) {
           console.warn(`Failed to import VLAN ${vlan.vlanId}:`, error);
+          errors.push(`VLAN ${vlan.vlanId}: ${error.message}`);
         }
       }
 
-      // Import subnets
+      // Import subnets after VLANs are created
       for (const subnet of data.subnets) {
         try {
-          await storage.createSubnet({
-            network: subnet.network,
-            gateway: subnet.gateway,
-            vlanId: subnet.vlanId,
-            description: subnet.description
-          });
-          imported.subnets++;
-        } catch (error) {
+          // Check if subnet already exists
+          const existingSubnets = await storage.getAllSubnets();
+          const subnetExists = existingSubnets.some(s => s.network === subnet.network);
+          
+          if (!subnetExists) {
+            await storage.createSubnet({
+              network: subnet.network,
+              gateway: subnet.gateway,
+              vlanId: subnet.vlanId,
+              description: subnet.description
+            });
+            imported.subnets++;
+            console.log(`Successfully imported subnet ${subnet.network}`);
+          } else {
+            console.log(`Subnet ${subnet.network} already exists, skipping`);
+          }
+        } catch (error: any) {
           console.warn(`Failed to import subnet ${subnet.network}:`, error);
+          errors.push(`Subnet ${subnet.network}: ${error.message}`);
         }
       }
 
       res.json({
         message: "Configuration imported successfully",
-        imported
+        imported,
+        errors: errors.length > 0 ? errors : undefined
       });
     } catch (error) {
       console.error("Error importing configuration:", error);
