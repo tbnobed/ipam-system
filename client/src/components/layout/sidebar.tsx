@@ -35,8 +35,12 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="flex items-center flex-shrink-0 px-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Network className="text-white w-4 h-4" />
+            <div className="flex-shrink-0 w-12 h-8 flex items-center justify-center">
+              <img 
+                src="@assets/tbn_logo_1754505164327.webp" 
+                alt="TBN"
+                className="h-6 w-auto object-contain"
+              />
             </div>
             <div className="ml-3">
               <h1 className="text-xl font-semibold text-gray-900">IPAM</h1>
