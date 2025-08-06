@@ -1,0 +1,54 @@
+ipam-app-1  |       "lastSeen": "2025-08-06T19:52:51.211Z",
+ipam-app-1  |       "openPorts": [],
+ipam-app-1  |       "assignmentType": "static",
+ipam-app-1  |       "createdBy": "system scan",
+ipam-app-1  |       "createdAt": "2025-08-06T19:52:51.211Z",
+ipam-app-1  |       "updatedAt": "2025-08-06T19:52:51.211Z"
+ipam-app-1  |     },
+ipam-app-1  |     {
+ipam-app-1  |       "id": 99,
+ipam-app-1  |       "ipAddress": "10.63.21.24",
+ipam-app-1  |       "hostname": null,
+ipam-app-1  |       "macAddress": null,
+ipam-app-1  |       "vendor": null,
+ipam-app-1  |       "deviceType": null,
+ipam-app-1  |       "purpose": null,
+ipam-app-1  |       "location": null,
+ipam-app-1  |       "subnetId": 2,
+ipam-app-1  |       "status": "online",
+ipam-app-1  |       "lastSeen": "2025-08-06T19:52:51.212Z",
+ipam-app-1  |       "openPorts": [
+ipam-app-1  |         "80"
+ipam-app-1  |       ],
+ipam-app-1  |       "assignmentType": "static",
+ipam-app-1  |       "createdBy": "system scan",
+ipam-app-1  |       "createdAt": "2025-08-06T19:52:51.213Z",
+ipam-app-1  |       "updatedAt": "2025-08-06T19:52:51.213Z"
+ipam-app-1  |     },
+ipam-app-1  |     {
+ipam-app-1  |       "id": 100,
+ipam-app-1  |       "ipAddress": "10.63.21.25",
+ipam-app-1  |       "hostname": "polycom64167f1f352d.trinity.local",
+ipam-app-1  |       "macAddress": null,
+ipam-app-1  |       "vendor": null,
+ipam-app-1  |       "deviceType": null,
+ipam-app-1  |       "purpose": null,
+ipam-app-1  |       "location": null,
+ipam-app-1  |       "subnetId": 2,
+ipam-app-1  |       "status": "online",
+ipam-app-1  |       "lastSeen": "2025-08-06T19:52:51.214Z",
+ipam-app-1  |       "openPorts": [
+ipam-app-1  |         "443"
+ipam-app-1  |       ],
+ipam-app-1  |       "assignmentType": "static",
+ipam-app-1  |       "createdBy": "system scan",
+ipam-app-1  |       "createdAt": "2025-08-06T19:52:51.215Z",
+ipam-app-1  |       "updatedAt": "2025-08-06T19:52:51.215Z"
+ipam-app-1  |     }
+ipam-app-1  |   ],
+ipam-app-1  |   "total": 121,
+ipam-app-1  |   "totalPages": 2,
+ipam-app-1  |   "page": 1,
+ipam-app-1  |   "limit": 100
+ipam-app-1  | }
+ipam-app-1  | 7:57:21 PM [express] GET /api/devices 200 in 41ms :: {"data":[{"id":1,"ipAddress":"10.63.20.1","host…
