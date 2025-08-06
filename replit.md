@@ -1,161 +1,32 @@
 # IPAM System - Network IP Address Management
 
-## Project Overview
-A comprehensive IP Address Management (IPAM) solution for broadcast facility network infrastructure, providing advanced network scanning, intelligent device management, and precise subnet tracking with robust data handling and visualization capabilities.
-
-## Current Architecture
-- **Backend**: Node.js with Express, PostgreSQL database with Drizzle ORM
-- **Frontend**: React with TypeScript, Tailwind CSS, shadcn/ui components
-- **Database**: PostgreSQL with comprehensive schema for devices, subnets, VLANs, users, and settings
-- **Real-time**: WebSocket connections for live network monitoring and scan updates
-- **Containerization**: Docker-based deployment with automated database initialization
-
-## Key Features Implemented
-- Real-time network scanning with subnet validation
-- Device tracking across multiple network ranges (10.63.20.0/24, 10.63.21.0/24)
-- Advanced filtering and sorting with numerical IP address ordering
-- Excel export functionality organized by VLAN
-- Comprehensive settings management system
-- Network scan control with stop/start functionality
-- Activity logging and audit trails
-- User profile management with secure credential updates
-- Complete backup and restore functionality for system configuration
-
-## Recent Changes
-- **2025-08-06**: **USER PROFILE MANAGEMENT**: Implemented comprehensive user profile management system allowing all users to update their own credentials - created Profile page with secure forms for username and password updates, added backend API endpoints with bcrypt validation, included proper session updates and error handling
-- **2025-08-06**: **LOGIN PAGE CLEANUP**: Removed demo credentials display from login page for cleaner professional appearance
-- **2025-08-06**: **BACKUP AND RESTORE SYSTEM**: Implemented comprehensive backup and restore functionality with two distinct features: Export Configuration (VLANs, subnets, settings without user data) and Full System Backup (complete system including users and permissions) - Import Configuration now fully functional with proper error handling and import order
-- **2025-08-06**: **ENHANCED DATA MANAGEMENT UI**: Redesigned settings page Data Management section with organized export/import options, file upload for configuration imports, and detailed success/error feedback
-- **2025-08-06**: **IMPORT VALIDATION**: Added robust validation and error handling for configuration imports with proper VLAN-first import order, duplicate detection, and comprehensive error reporting
-- **2025-08-06**: **NETWORK SCANNING INTERVAL FIX**: Resolved critical issue where periodic scanning was using hardcoded 5-minute default parameter instead of 60-minute database setting - fixed startPeriodicScanning method default parameter and verified 60-minute intervals working correctly
-- **2025-08-06**: **DEVICE PAGINATION FIX**: Fixed device table pagination issues - backend now properly filters by user permissions first, then paginates, with correct totalPages calculation and working Previous/Next navigation buttons
-- **2025-08-06**: **HARDCODED SETTINGS FIX**: Fixed all hardcoded network settings to read from database - ping timeouts, network delays, port scanning timeouts, and alert thresholds now properly respect user configurations
-- **2025-08-06**: **PASSWORD HASHING FIX**: Fixed critical security issue where user passwords weren't being properly hashed during creation and updates - all passwords now use bcrypt hashing
-- **2025-08-06**: **SETTINGS PERSISTENCE**: Fixed settings initialization to preserve user customizations across app rebuilds - only missing settings get defaults from environment variables
-- **2025-08-06**: **UI IMPROVEMENT**: Updated device table to display "Ports Open" instead of "MAC Address" for better network monitoring
-- **2025-08-05**: **DOCKER DEPLOYMENT**: Updated Docker deployment files with SendGrid configuration and comprehensive deployment automation
-- **2025-08-05**: **HEALTH CHECKS**: Added Docker health check endpoint and automated deployment script with validation
-- **2025-08-05**: **PRODUCTION READY**: Complete Docker deployment with all authentication, notifications, and IPAM features
-- **2025-08-05**: **EMAIL RECIPIENTS FIX**: Fixed email recipients configuration persistence issue - recipients can now be customized and saved properly
-- **2025-08-05**: **SETTINGS SAVE**: Added alert_emails field to settings save process ensuring email recipients persist across sessions
-- **2025-08-05**: **SENDGRID INTEGRATION**: Successfully integrated SendGrid for email notifications with proper API key configuration
-- **2025-08-05**: **EMAIL NOTIFICATIONS**: Implemented formatted HTML email alerts using SendGrid mail service
-- **2025-08-05**: **NOTIFICATION SYSTEM**: Created comprehensive notification service with support for email, webhook, Slack, and SMS alerts
-- **2025-08-05**: **NOTIFICATION ARCHITECTURE**: Implemented NotificationService class with configurable channels and alert processing
-- **2025-08-05**: **ALERT TRIGGERS**: Added device status change detection and subnet utilization monitoring
-- **2025-08-05**: **NOTIFICATION SETTINGS**: Connected UI settings to backend notification delivery system
-- **2025-08-05**: **TESTING**: Added /api/test-notification endpoint for admin testing of notification channels
-- **2025-01-17**: **UI CLEANUP**: Removed duplicate settings pages - consolidated into single functional settings.tsx
-- **2025-01-17**: **SETTINGS COMPLETE**: Implemented full settings functionality with React Hook Form backend connectivity
-- **2025-01-17**: Added working save functionality for all setting categories (scanning, notifications, data management)
-- **2025-01-17**: Connected export data feature with Excel download and clear historical data with backend API
-- **2025-01-17**: **CRITICAL FIX**: Fixed database constraint violation preventing group permissions from saving
-- **2025-01-17**: Updated database constraints to use "view" instead of "read" for permission levels
-- **2025-01-17**: Fixed permission enum mismatch between frontend and backend schemas
-- **2025-01-17**: Group permissions now save correctly with all permission levels (view, write, admin)
-- **2025-01-17**: **UI IMPROVEMENT**: Enhanced edit user form with optional password change functionality
-- **2025-01-17**: Added separate "Change Password" button to edit user dialog instead of requiring password for all edits
-- **2025-01-17**: Created separate EditUserFormData schema with optional password field for editing
-- **2025-01-17**: **CRITICAL FIX**: Resolved apiRequest JSON parsing issue causing group permissions display failures
-- **2025-01-17**: Fixed frontend to properly call .json() on Response objects from apiRequest function
-- **2025-01-17**: **MAJOR FIX**: Group permissions now load and display correctly in frontend dialog
-- **2025-01-17**: **CRITICAL FIX**: Resolved group permissions saving issues by implementing bulk save API endpoint
-- **2025-01-17**: Fixed migration file 007_add_user_groups_and_permissions.sql to use proper PostgreSQL syntax
-- **2025-01-17**: Added deleteGroupPermissions method to storage interface for bulk permission updates
-- **2025-01-17**: Enhanced group permissions API to handle both individual and bulk permission operations
-- **2025-01-17**: Confirmed group permissions inheritance works - all users in a group automatically inherit permissions
-- **2025-01-17**: **MAJOR**: Implemented complete group permissions system with inheritance functionality
-- **2025-01-17**: Added user_groups and group_permissions database tables with proper foreign key relationships
-- **2025-01-17**: Created comprehensive group management UI with dual-tab interface for users and groups
-- **2025-01-17**: Implemented group permissions dialog with hierarchical VLAN→Subnet permission structure
-- **2025-01-17**: Added automatic permission inheritance - all users in a group inherit group permissions
-- **2025-01-17**: Enhanced backend to merge group permissions with individual user permissions
-- **2025-01-17**: Created Docker migration support for group permissions tables
-- **2025-01-17**: Updated docker-entrypoint.sh to handle group permissions database schema
-- **2025-01-17**: Added "Engineering" default group with network access permissions
-- **2025-01-17**: Implemented group assignment functionality in user creation and editing forms
-- **2025-01-16**: **MAJOR**: Implemented complete backend authentication and authorization system
-- **2025-01-16**: Added session-based authentication with requireAuth middleware to all API endpoints
-- **2025-01-16**: Implemented resource-based access control filtering data by user permissions
-- **2025-01-16**: Added comprehensive permission checks for devices, subnets, and VLANs
-- **2025-01-16**: Created device permission filtering ensuring users only see/modify allowed resources
-- **2025-01-16**: Enhanced network scanning with subnet-based permission filtering
-- **2025-01-16**: Added write permission requirements for device create/update/delete operations
-- **2025-01-16**: Implemented admin-only restrictions for sensitive operations (fix subnets, etc.)
-- **2025-01-16**: Fixed TypeScript schema errors and permission type definitions
-- **2025-01-16**: Redesigned permissions dialog with super granular VLAN→Subnet hierarchy
-- **2025-01-16**: Added visual permission legend with color-coded levels (None/View/Edit/Admin)
-- **2025-01-16**: Implemented hierarchical permissions showing subnets under their parent VLANs
-- **2025-01-16**: Enhanced permission dialog with detailed resource information and visual indicators
-- **2025-01-16**: **CRITICAL FIX**: Resolved Docker deployment syntax errors and module loading issues
-- **2025-01-16**: Fixed unterminated string literal error in production setup script
-- **2025-01-16**: Implemented standalone JavaScript setup script using pg library for database initialization
-- **2025-01-16**: Fixed module path resolution by running setup from app directory instead of /tmp
-- **2025-01-16**: **AUTHENTICATION FIX**: Corrected login system to use bcrypt.compare() for password validation
-- **2025-01-16**: Resolved Docker deployment authentication issue - admin/admin login now works correctly
+## Overview
+This project delivers a comprehensive IP Address Management (IPAM) solution designed for broadcast facility network infrastructure. Its primary purpose is to provide advanced network scanning, intelligent device management, and precise subnet tracking with robust data handling and visualization capabilities. The system aims to streamline network administration, enhance visibility, and improve the efficiency of managing IP addresses and network devices within complex broadcast environments. Key capabilities include real-time network monitoring, device tracking, detailed data exports, and comprehensive system configuration management.
 
 ## User Preferences
 - Clean database initialization without hardcoded subnet IDs or network configurations
 - Focus on production-ready code with proper error handling
 - Emphasis on data integrity and authentic data sources
 - Prefer comprehensive solutions over partial implementations
-- **NEVER suggest commands that delete production data** (e.g., docker-compose down --volumes)
+- NEVER suggest commands that delete production data
 - Always provide data-safe deployment options and backup procedures
 
-## Current Status
-**COMPLETED**: Full-stack authentication and authorization system with group permissions successfully implemented and deployed:
+## System Architecture
+The IPAM system is built as a full-stack application. The backend is developed using Node.js with Express, leveraging a PostgreSQL database with Drizzle ORM for data persistence. The frontend is a React application built with TypeScript, styled using Tailwind CSS, and incorporating shadcn/ui components for a modern user interface. Real-time functionalities, such as live network monitoring and scan updates, are handled via WebSocket connections. The entire application is designed for Docker-based deployment, including automated database initialization.
 
-### Backend Security (✅ Complete)
-- Session-based authentication with requireAuth middleware on all API endpoints
-- Resource-based access control filtering data by user permissions
-- Comprehensive permission checks for devices, subnets, VLANs, and network operations
-- Write permission requirements for device create/update/delete operations
-- Admin-only restrictions for sensitive operations (fix subnets, user management)
-- Subnet-based permission filtering for network scanning
+Key architectural decisions and technical implementations include:
+- **UI/UX:** Modern professional appearance with consistent branding (TBN logo integration), improved spacing, typography, blue accent colors, smooth transitions, and enhanced user profile sections. User management interfaces feature dual-tabbed layouts for users and groups, and hierarchical permission dialogs.
+- **Authentication & Authorization:** A complete session-based authentication and authorization system with `requireAuth` middleware applied to all API endpoints. It features resource-based access control, comprehensive permission checks for devices, subnets, and VLANs, and granular write permissions.
+- **Group Permissions:** A robust group permissions system with inheritance, allowing users to inherit permissions from assigned groups. Individual user permissions can override group permissions. The UI supports group management with a hierarchical VLAN-to-Subnet permission structure.
+- **User Roles:** Defined user roles (Admin, User, Viewer) with distinct access levels and UI restrictions.
+- **Network Scanning:** Real-time network scanning with subnet validation, configurable intervals, and dynamic settings read from the database (e.g., ping timeouts, port scanning timeouts).
+- **Data Management:** Features for exporting configuration (VLANs, subnets, settings) and full system backups. Configuration imports include robust validation, error handling, and proper import order.
+- **Notification System:** A comprehensive notification service supporting various channels (email via SendGrid) triggered by device status changes and subnet utilization.
+- **Settings Management:** A comprehensive system for managing application settings, including scanning parameters, notification preferences, and data retention policies, with persistence across application rebuilds.
+- **Data Integrity:** Elimination of hardcoded VLAN/subnet IDs, ensuring all configurations and permissions are dynamically sourced from the database. Critical security fixes include bcrypt hashing for all user passwords.
 
-### Group Permissions System (✅ Complete)
-- User groups database tables with proper foreign key relationships
-- Group permissions inheritance - all users in a group automatically inherit group permissions
-- Group management UI with dual-tab interface for users and groups
-- Hierarchical permission structure showing VLANs and their subnets
-- Backend automatically merges group permissions with individual user permissions
-- Individual user permissions can override group permissions
-- Docker migration support for group permissions tables
-
-### Frontend Access Control (✅ Complete)  
-- User management interface with create, edit, delete capabilities
-- Role-based UI restrictions and navigation filtering
-- Permission dialog with hierarchical VLAN→Subnet structure
-- Visual permission indicators and color-coded levels
-- Device table actions (Add/Edit/Delete) properly hidden based on user permissions
-- Group permissions dialog with Settings button for each group
-
-### User Role System (✅ Complete)
-1. **Admin**: Full control over entire application and all resources
-2. **User**: Can modify VLANs and subnets they have permissions for  
-3. **Viewer**: Read-only access to assigned resources only
-
-### Authentication Features (✅ Complete)
-- Login/logout functionality with session management
-- Demo credentials: admin/admin for testing
-- Protected routes with 401 responses for unauthenticated access
-- User data filtering ensuring permission-based visibility
-- Group assignment functionality in user creation and editing
-
-### Docker Production Deployment (✅ Complete)
-- Complete Docker containerization with PostgreSQL database
-- Automated database schema migrations via docker-entrypoint.sh
-- Session table creation and user account setup during container startup
-- Production-ready environment configuration with .env.docker
-- Health checks and proper container orchestration
-- Default users created: admin/admin, user/user, viewer/viewer
-- Default "Engineering" group created with network access
-- bcrypt password hashing with proper authentication validation
-- Bulletproof user account creation with fallback mechanisms
-- Group permissions tables migration support in Docker deployment
-
-## Technical Notes
-- Production environment has 122 devices across 2 subnets
-- Backend properly extracts subnet, sortBy, and sortOrder parameters
-- Settings system includes scanning intervals, notifications, and data retention
-- Network scanner uses WebSocket for real-time status updates
+## External Dependencies
+- **PostgreSQL:** Primary database for storing all system data, including devices, subnets, VLANs, users, and settings.
+- **Drizzle ORM:** Used for interacting with the PostgreSQL database from the Node.js backend.
+- **SendGrid:** Integrated for sending email notifications and alerts.
+- **Docker:** Used for containerization and deployment of the entire application stack.
