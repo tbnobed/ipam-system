@@ -254,28 +254,39 @@ async function setupProduction() {
     
     console.log('✅ Demo viewer created/updated');
     
-    // Set default settings including new notification settings
+    // Set default settings including new notification settings from environment variables
     const defaultSettings = [
-      { key: 'scan_interval', value: '5', description: 'Network scan interval in minutes' },
+      { key: 'scan_interval', value: process.env.DEFAULT_SCAN_INTERVAL || '5', description: 'Network scan interval in minutes' },
       { key: 'ping_timeout', value: '2', description: 'Ping timeout in seconds' },
       { key: 'auto_discovery', value: 'true', description: 'Enable automatic device discovery' },
       { key: 'port_scanning', value: 'false', description: 'Scan common ports during discovery' },
       { key: 'device_alerts', value: 'true', description: 'Alert when devices go offline' },
       { key: 'subnet_alerts', value: 'true', description: 'Alert when subnet utilization exceeds threshold' },
       { key: 'alert_threshold', value: '90', description: 'Utilization alert threshold percentage' },
-      { key: 'data_retention', value: '90', description: 'Data retention period in days' },
+      { key: 'data_retention', value: process.env.DATA_RETENTION_DAYS || '90', description: 'Data retention period in days' },
       { key: 'alert_emails', value: process.env.ALERT_EMAILS || 'alerts@obedtv.com', description: 'Email recipients for alerts (comma-separated)' }
     ];
+
+    // Log environment variables for debugging
+    console.log('📋 Environment variables for settings:');
+    console.log(`   DEFAULT_SCAN_INTERVAL: ${process.env.DEFAULT_SCAN_INTERVAL || 'not set'}`);
+    console.log(`   DATA_RETENTION_DAYS: ${process.env.DATA_RETENTION_DAYS || 'not set'}`);
+    console.log(`   ALERT_EMAILS: ${process.env.ALERT_EMAILS || 'not set'}`);
+    console.log(`   SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? 'set' : 'not set'}`);
     
     for (const setting of defaultSettings) {
-      await pool.query(`
-        INSERT INTO settings (key, value, description, updated_at)
-        VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-        ON CONFLICT (key) DO UPDATE SET
-          value = $2,
-          description = $3,
-          updated_at = CURRENT_TIMESTAMP
-      `, [setting.key, setting.value, setting.description]);
+      // Only set if it doesn't exist (preserve user customizations)
+      const existingResult = await pool.query('SELECT * FROM settings WHERE key = $1', [setting.key]);
+      
+      if (existingResult.rows.length === 0) {
+        await pool.query(`
+          INSERT INTO settings (key, value, description, created_at, updated_at)
+          VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `, [setting.key, setting.value, setting.description]);
+        console.log(`✅ Created setting: ${setting.key} = ${setting.value}`);
+      } else {
+        console.log(`⏭️  Setting exists: ${setting.key} = ${existingResult.rows[0].value} (preserving user value)`);
+      }
     }
     
     console.log('✅ Default settings configured');

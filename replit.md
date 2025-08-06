@@ -20,6 +20,7 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Activity logging and audit trails
 
 ## Recent Changes
+- **2025-08-06**: **SETTINGS PERSISTENCE**: Fixed settings initialization to preserve user customizations across app rebuilds - only missing settings get defaults from environment variables
 - **2025-08-06**: **UI IMPROVEMENT**: Updated device table to display "Ports Open" instead of "MAC Address" for better network monitoring
 - **2025-08-05**: **DOCKER DEPLOYMENT**: Updated Docker deployment files with SendGrid configuration and comprehensive deployment automation
 - **2025-08-05**: **HEALTH CHECKS**: Added Docker health check endpoint and automated deployment script with validation
