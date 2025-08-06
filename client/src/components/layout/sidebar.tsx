@@ -36,11 +36,11 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="flex items-center flex-shrink-0 px-6 py-6 border-b border-gray-50">
           <div className="flex items-center">
-            <div className="flex-shrink-0 w-10 h-8 flex items-center justify-center">
+            <div className="flex-shrink-0 w-12 h-10 flex items-center justify-center">
               <img 
                 src={tbnLogo} 
                 alt="TBN"
-                className="h-7 w-auto object-contain"
+                className="h-10 w-auto object-contain"
               />
             </div>
             <div className="ml-4">
