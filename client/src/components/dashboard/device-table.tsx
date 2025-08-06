@@ -551,7 +551,7 @@ export default function DeviceTable() {
                     {getSortIcon("location")}
                   </Button>
                 </TableHead>
-                <TableHead>MAC Address</TableHead>
+                <TableHead>Ports Open</TableHead>
                 <TableHead>
                   <Button
                     variant="ghost"
@@ -613,8 +613,15 @@ export default function DeviceTable() {
                     {device.location}
                   </TableCell>
                   <TableCell>
-                    <div className="font-mono text-sm">{device.macAddress}</div>
-                    <div className="text-xs text-gray-500">{device.vendor}</div>
+                    <div className="font-mono text-sm">
+                      {device.openPorts && device.openPorts.length > 0 
+                        ? device.openPorts.join(', ')
+                        : 'No open ports'
+                      }
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {device.macAddress ? `MAC: ${device.macAddress}` : 'Unknown MAC'}
+                    </div>
                   </TableCell>
                   <TableCell className="text-sm text-gray-500">
                     {device.lastSeen 
