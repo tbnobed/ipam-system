@@ -39,7 +39,7 @@ class NetworkScanner {
     this.scanProgress = { current: 0, total: 0 };
   }
 
-  async startPeriodicScanning(intervalMinutes: number = 5) {
+  async startPeriodicScanning(intervalMinutes: number = 60) {
     if (this.scanInterval) {
       clearInterval(this.scanInterval);
     }

@@ -20,8 +20,9 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Activity logging and audit trails
 
 ## Recent Changes
+- **2025-08-06**: **NETWORK SCANNING INTERVAL FIX**: Resolved critical issue where periodic scanning was using hardcoded 5-minute default parameter instead of 60-minute database setting - fixed startPeriodicScanning method default parameter and verified 60-minute intervals working correctly
+- **2025-08-06**: **DEVICE PAGINATION FIX**: Fixed device table pagination issues - backend now properly filters by user permissions first, then paginates, with correct totalPages calculation and working Previous/Next navigation buttons
 - **2025-08-06**: **HARDCODED SETTINGS FIX**: Fixed all hardcoded network settings to read from database - ping timeouts, network delays, port scanning timeouts, and alert thresholds now properly respect user configurations
-- **2025-08-06**: **NETWORK SCANNING FIX**: Fixed critical issue where periodic scanning was hardcoded to 5 minutes instead of reading the 60-minute setting - now properly respects user-configured scan intervals
 - **2025-08-06**: **PASSWORD HASHING FIX**: Fixed critical security issue where user passwords weren't being properly hashed during creation and updates - all passwords now use bcrypt hashing
 - **2025-08-06**: **SETTINGS PERSISTENCE**: Fixed settings initialization to preserve user customizations across app rebuilds - only missing settings get defaults from environment variables
 - **2025-08-06**: **UI IMPROVEMENT**: Updated device table to display "Ports Open" instead of "MAC Address" for better network monitoring
