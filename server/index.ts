@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { migrationManager } from "./migrations";
 import { networkScanner } from "./network";
+import { storage } from "./storage";
 
 const app = express();
 app.use(express.json());
@@ -57,6 +58,13 @@ app.use((req, res, next) => {
     await migrationManager.runPendingMigrations();
   } catch (error) {
     console.error("Migration failed on startup:", error);
+  }
+
+  // Initialize settings from environment variables
+  try {
+    await storage.initializeSettingsFromEnv();
+  } catch (error) {
+    console.error("Settings initialization failed:", error);
   }
 
   // Fix existing device subnet assignments

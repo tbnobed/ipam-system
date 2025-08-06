@@ -607,6 +607,94 @@ export class DatabaseStorage implements IStorage {
     await db.delete(networkScans).where(sql`${networkScans.startTime} < ${cutoffDate}`);
   }
 
+  async initializeSettingsFromEnv(): Promise<void> {
+    console.log('Initializing settings from environment variables...');
+    
+    const envSettings = [
+      { 
+        key: 'scan_interval', 
+        value: process.env.DEFAULT_SCAN_INTERVAL || '5', 
+        description: 'Network scan interval in minutes' 
+      },
+      { 
+        key: 'ping_timeout', 
+        value: '2', 
+        description: 'Ping timeout in seconds' 
+      },
+      { 
+        key: 'auto_discovery', 
+        value: 'true', 
+        description: 'Enable automatic device discovery' 
+      },
+      { 
+        key: 'port_scanning', 
+        value: 'false', 
+        description: 'Scan common ports during discovery' 
+      },
+      { 
+        key: 'device_alerts', 
+        value: 'true', 
+        description: 'Alert when devices go offline' 
+      },
+      { 
+        key: 'subnet_alerts', 
+        value: 'true', 
+        description: 'Alert when subnet utilization exceeds threshold' 
+      },
+      { 
+        key: 'alert_threshold', 
+        value: '90', 
+        description: 'Utilization alert threshold percentage' 
+      },
+      { 
+        key: 'data_retention', 
+        value: process.env.DATA_RETENTION_DAYS || '90', 
+        description: 'Data retention period in days' 
+      },
+      { 
+        key: 'alert_emails', 
+        value: process.env.ALERT_EMAILS || 'alerts@obedtv.com', 
+        description: 'Email recipients for alerts (comma-separated)' 
+      }
+    ];
+
+    for (const setting of envSettings) {
+      const existing = await this.getSetting(setting.key);
+      if (!existing) {
+        // Only create if it doesn't exist - preserves user customizations
+        await this.setSetting(setting.key, setting.value, setting.description);
+        console.log(`✅ Initialized setting: ${setting.key} = ${setting.value}`);
+      } else {
+        console.log(`⏭️  Setting exists: ${setting.key} = ${existing.value} (keeping user value)`);
+      }
+    }
+    
+    console.log('Settings initialization complete');
+  }
+
+  async updateSettingsFromEnv(): Promise<void> {
+    console.log('Updating settings from environment variables (preserving user customizations)...');
+    
+    // Only update specific settings that should sync with environment changes
+    const envOnlySettings = [
+      { 
+        key: 'alert_emails', 
+        value: process.env.ALERT_EMAILS, 
+        description: 'Email recipients for alerts (comma-separated)' 
+      }
+    ];
+
+    for (const setting of envOnlySettings) {
+      if (setting.value) {
+        const existing = await this.getSetting(setting.key);
+        if (existing && existing.value !== setting.value) {
+          await this.setSetting(setting.key, setting.value, setting.description);
+          console.log(`🔄 Updated setting from env: ${setting.key} = ${setting.value}`);
+        }
+      }
+    }
+  }
+
   // User Management
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
