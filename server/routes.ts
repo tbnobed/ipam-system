@@ -1573,10 +1573,7 @@ export function registerBackupRoutes(app: Express) {
         }
       }
 
-      // Create a mapping of exported VLAN IDs to actual database IDs
-      const vlanIdMapping = new Map<number, number>();
-
-      // Import VLANs first (they are referenced by subnets)
+      // Import VLANs as standalone entities - no hardcoded relationships
       for (const vlan of data.vlans) {
         try {
           // Check if VLAN already exists by vlanId
@@ -1589,14 +1586,10 @@ export function registerBackupRoutes(app: Express) {
               name: vlan.name,
               description: vlan.description
             });
-            // Map the old database ID to the new database ID
-            vlanIdMapping.set(vlan.id, createdVlan.id);
             imported.vlans++;
-            console.log(`Successfully imported VLAN ${vlan.vlanId}: ${vlan.name} (DB ID: ${vlan.id} -> ${createdVlan.id})`);
+            console.log(`Successfully imported VLAN ${vlan.vlanId}: ${vlan.name} (subnet assignments will be discovered dynamically)`);
           } else {
-            // Map to existing VLAN's database ID
-            vlanIdMapping.set(vlan.id, existingVlan.id);
-            console.log(`VLAN ${vlan.vlanId} already exists, using existing DB ID: ${existingVlan.id}`);
+            console.log(`VLAN ${vlan.vlanId} already exists, skipping`);
           }
         } catch (error: any) {
           console.warn(`Failed to import VLAN ${vlan.vlanId}:`, error);
@@ -1604,7 +1597,7 @@ export function registerBackupRoutes(app: Express) {
         }
       }
 
-      // Import subnets after VLANs are created and mapped
+      // Import subnets without VLAN assignments - let discovery handle the relationships
       for (const subnet of data.subnets) {
         try {
           // Check if subnet already exists
@@ -1612,20 +1605,16 @@ export function registerBackupRoutes(app: Express) {
           const subnetExists = existingSubnets.some(s => s.network === subnet.network);
           
           if (!subnetExists) {
-            // Use the mapped VLAN ID instead of the original one
-            const mappedVlanId = vlanIdMapping.get(subnet.vlanId);
-            if (!mappedVlanId) {
-              throw new Error(`Cannot find mapped VLAN ID for original ID ${subnet.vlanId}`);
-            }
-
+            // Create subnet without VLAN assignment - discovery will determine this
             await storage.createSubnet({
               network: subnet.network,
               gateway: subnet.gateway,
-              vlanId: mappedVlanId,
-              description: subnet.description
+              vlanId: null, // No VLAN assignment during import
+              description: subnet.description,
+              assignmentType: subnet.assignmentType || 'static'
             });
             imported.subnets++;
-            console.log(`Successfully imported subnet ${subnet.network} with VLAN ID ${mappedVlanId}`);
+            console.log(`Successfully imported subnet ${subnet.network} (VLAN assignment will be determined by discovery)`);
           } else {
             console.log(`Subnet ${subnet.network} already exists, skipping`);
           }
@@ -1637,14 +1626,44 @@ export function registerBackupRoutes(app: Express) {
 
 
 
+      // After successful import, run discovery to assign VLAN-subnet relationships
+      console.log('🔍 Running dynamic VLAN-subnet discovery after import...');
+      
+      // Import the discovery service
+      const { discoveryService } = await import('./discovery');
+      
+      // Run discovery to assign subnets to VLANs
+      const discoveryResults = await discoveryService.discoverVlanSubnetRelationships();
+      
       res.json({
         message: "Configuration imported successfully",
         imported,
+        discovery: discoveryResults,
         errors: errors.length > 0 ? errors : undefined
       });
     } catch (error) {
       console.error("Error importing configuration:", error);
       res.status(500).json({ error: "Failed to import configuration" });
+    }
+  });
+
+  // Test endpoint for discovery service
+  app.post("/api/test-discovery", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+
+      const { discoveryService } = await import('./discovery');
+      const results = await discoveryService.discoverVlanSubnetRelationships();
+      
+      res.json({
+        message: "Discovery completed",
+        results
+      });
+    } catch (error) {
+      console.error("Discovery test error:", error);
+      res.status(500).json({ error: "Discovery test failed" });
     }
   });
 }
