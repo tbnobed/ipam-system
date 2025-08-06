@@ -33,14 +33,14 @@ export default function Sidebar() {
   return (
     <div className="hidden md:flex md:w-72 md:flex-col">
       <div className="flex flex-col flex-grow bg-white border-r border-gray-100 shadow-sm">
-        {/* Logo */}
+        {/* Logo Section */}
         <div className="flex items-center flex-shrink-0 px-6 py-6 border-b border-gray-50">
           <div className="flex items-center">
-            <div className="flex-shrink-0 w-12 h-10 flex items-center justify-center">
+            <div className="flex-shrink-0 w-16 h-12 flex items-center justify-center">
               <img 
                 src={tbnLogo} 
                 alt="TBN"
-                className="h-10 w-auto object-contain"
+                className="h-12 w-auto object-contain"
               />
             </div>
             <div className="ml-4">
