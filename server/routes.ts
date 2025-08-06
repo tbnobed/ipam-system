@@ -303,23 +303,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       console.log("Device query filters:", filters);
-      const devices = await storage.getDevices(filters);
+      // Get ALL devices first, then filter by permissions, then paginate
+      const allDevicesResult = await storage.getDevices({
+        ...filters,
+        page: 1,
+        limit: 10000 // Get all devices to filter properly
+      });
       
       // Filter devices by accessible subnets
-      const filteredDevices = await filterDevicesByAccessibleSubnets(devices.data, req.user.id, req.user.role);
+      const filteredDevices = await filterDevicesByAccessibleSubnets(allDevicesResult.data, req.user.id, req.user.role);
       
-      console.log(`Returned ${filteredDevices.length} devices out of ${devices.total} total (filtered by permissions)`);
-      console.log("Sample device IPs:", filteredDevices.slice(0, 5).map(d => `${d.id}:${d.ipAddress}:subnet${d.subnetId}`));
+      // Now apply pagination to filtered results
+      const totalFilteredDevices = filteredDevices.length;
+      const totalPages = Math.max(1, Math.ceil(totalFilteredDevices / filters.limit));
+      const startIndex = (filters.page - 1) * filters.limit;
+      const endIndex = startIndex + filters.limit;
+      const paginatedDevices = filteredDevices.slice(startIndex, endIndex);
+      
+      console.log(`DEBUG - totalFilteredDevices: ${totalFilteredDevices}, filters.limit: ${filters.limit}, Math.ceil: ${Math.ceil(totalFilteredDevices / filters.limit)}, totalPages: ${totalPages}`);
+      
+      console.log(`Returned ${paginatedDevices.length} devices out of ${totalFilteredDevices} total (filtered by permissions)`);
+      console.log("Sample device IPs:", paginatedDevices.slice(0, 5).map(d => `${d.id}:${d.ipAddress}:subnet${d.subnetId}`));
+      
+      console.log(`Pagination calculation: total=${totalFilteredDevices}, limit=${filters.limit}, totalPages=${totalPages}`);
       
       // Set proper headers for large JSON responses
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Transfer-Encoding', 'chunked');
-      res.json({
-        data: filteredDevices,
-        total: filteredDevices.length,
+      const responseData = {
+        data: paginatedDevices,
+        total: totalFilteredDevices,
+        totalPages: totalPages,
         page: filters.page,
         limit: filters.limit
-      });
+      };
+      
+      console.log('Final response data:', JSON.stringify(responseData, null, 2));
+      res.json(responseData);
     } catch (error) {
       console.error("Error fetching devices:", error);
       res.status(500).json({ error: "Failed to fetch devices" });

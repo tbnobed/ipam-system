@@ -255,8 +255,22 @@ export default function DeviceTable() {
   }
 
   const rawDevices = deviceData?.data || [];
-  const totalPages = deviceData?.totalPages || 1;
-  const currentPage = deviceData?.page || 1;
+  const totalPages = deviceData?.totalPages || Math.ceil((deviceData?.total || 0) / (filters.limit || 100));
+  const currentPage = filters.page || 1;
+  
+  console.log('Frontend Pagination debug:', {
+    currentPage,
+    totalPages,
+    deviceTotal: deviceData?.total,
+    limit: filters.limit,
+    deviceDataLength: deviceData?.data?.length,
+    backendTotalPages: deviceData?.totalPages,
+    backendPage: deviceData?.page,
+    navigationDisabled: {
+      prevDisabled: currentPage <= 1,
+      nextDisabled: currentPage >= totalPages
+    }
+  });
 
   // Apply client-side sorting since backend sorting has issues
   const devices = [...rawDevices].sort((a, b) => {
