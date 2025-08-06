@@ -234,7 +234,7 @@ class NetworkScanner {
           devicesFound: results.filter(d => d.isAlive).length,
           status: 'scan_completed'
         });
-      }, 100);
+      }, 100); // Keep this fixed at 100ms as it's for WebSocket message delivery, not network timing
 
       // Log scan completion activity
       await storage.createActivityLog({
@@ -322,8 +322,11 @@ class NetworkScanner {
       this.scanProgress.current = previousCurrent + Math.min(i + batchSize, ipRange.length);
       this.broadcastProgress();
 
-      // Small delay to prevent network flooding
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Get configurable delay to prevent network flooding
+      const timeoutSetting = await storage.getSetting('ping_timeout');
+      const baseTimeout = timeoutSetting ? parseInt(timeoutSetting.value) : 2;
+      const networkDelay = Math.max(100, baseTimeout * 50); // Scale delay with timeout, minimum 100ms
+      await new Promise(resolve => setTimeout(resolve, networkDelay));
     }
 
     return results;
@@ -411,9 +414,13 @@ class NetworkScanner {
 
   async pingDevice(ipAddress: string): Promise<PingResult> {
     try {
+      // Get ping timeout from settings
+      const timeoutSetting = await storage.getSetting('ping_timeout');
+      const timeout = timeoutSetting ? parseInt(timeoutSetting.value) : 2;
+      
       // Enhanced ping settings for shared gateway networks
       // Use multiple attempts with different timing for better reliability
-      const { stdout } = await execAsync(`ping -c 3 -W 3 -i 0.3 ${ipAddress}`);
+      const { stdout } = await execAsync(`ping -c 3 -W ${timeout} -i 0.3 ${ipAddress}`);
       
       // Parse response time from ping output
       const match = stdout.match(/time=([0-9.]+)/);
@@ -426,7 +433,9 @@ class NetworkScanner {
     } catch (error) {
       // Fallback with single packet and longer timeout
       try {
-        const { stdout } = await execAsync(`ping -c 1 -W 5 ${ipAddress}`);
+        const timeoutSetting = await storage.getSetting('ping_timeout');
+        const timeout = timeoutSetting ? parseInt(timeoutSetting.value) * 2 : 5; // Double timeout for fallback
+        const { stdout } = await execAsync(`ping -c 1 -W ${timeout} ${ipAddress}`);
         const match = stdout.match(/time=([0-9.]+)/);
         const responseTime = match ? parseFloat(match[1]) : undefined;
         
@@ -473,7 +482,9 @@ class NetworkScanner {
         // Method 3: arping (most reliable for shared gateways)
         async () => {
           try {
-            const { stdout } = await execAsync(`timeout 3 arping -c 2 ${ipAddress}`);
+            const timeoutSetting = await storage.getSetting('ping_timeout');
+            const timeout = timeoutSetting ? parseInt(timeoutSetting.value) + 1 : 3; // Slightly longer for arping
+            const { stdout } = await execAsync(`timeout ${timeout} arping -c 2 ${ipAddress}`);
             const match = stdout.match(/([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})/i);
             return match ? match[1].toLowerCase() : undefined;
           } catch (arpingError) {
@@ -529,9 +540,13 @@ class NetworkScanner {
     const commonPorts = [22, 23, 53, 80, 135, 139, 443, 445, 993, 995];
     const openPorts: number[] = [];
 
+    // Get ping timeout from settings for port scanning
+    const timeoutSetting = await storage.getSetting('ping_timeout');
+    const timeout = timeoutSetting ? parseInt(timeoutSetting.value) : 2;
+
     const portPromises = commonPorts.map(async (port) => {
       try {
-        await execAsync(`timeout 2 nc -z ${ipAddress} ${port}`);
+        await execAsync(`timeout ${timeout} nc -z ${ipAddress} ${port}`);
         return port;
       } catch (error) {
         return null;

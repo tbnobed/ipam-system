@@ -156,7 +156,7 @@ export class NotificationService {
     console.log('🔍 [EMAIL] Current notification settings:', settings);
     
     const emailRecipients = settings.alert_emails ? 
-      settings.alert_emails.split(',').map((email: string) => email.trim()).filter(email => email) : 
+      settings.alert_emails.split(',').map((email: string) => email.trim()).filter((email: string) => email) : 
       config.toEmails;
     
     console.log('📋 [EMAIL] Recipients resolved to:', emailRecipients);
@@ -312,7 +312,7 @@ export class NotificationService {
       
       for (const subnet of subnets) {
         // Get devices in this subnet using the getDevices method
-        const deviceResponse = await storage.getDevices();
+        const deviceResponse = await storage.getDevices({});
         const devices = deviceResponse.data.filter((device: any) => device.subnetId === subnet.id);
         
         // Calculate utilization (simplified - you may want more sophisticated calculation)
@@ -355,7 +355,7 @@ export class NotificationService {
   async handleDeviceStatusChange(deviceId: number, oldStatus: string, newStatus: string): Promise<void> {
     if (oldStatus === newStatus) return;
 
-    const deviceResponse = await storage.getDevices();
+    const deviceResponse = await storage.getDevices({});
     const device = deviceResponse.data.find((d: any) => d.id === deviceId);
     if (!device) return;
 

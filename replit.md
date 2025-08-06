@@ -20,6 +20,7 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Activity logging and audit trails
 
 ## Recent Changes
+- **2025-08-06**: **HARDCODED SETTINGS FIX**: Fixed all hardcoded network settings to read from database - ping timeouts, network delays, port scanning timeouts, and alert thresholds now properly respect user configurations
 - **2025-08-06**: **NETWORK SCANNING FIX**: Fixed critical issue where periodic scanning was hardcoded to 5 minutes instead of reading the 60-minute setting - now properly respects user-configured scan intervals
 - **2025-08-06**: **PASSWORD HASHING FIX**: Fixed critical security issue where user passwords weren't being properly hashed during creation and updates - all passwords now use bcrypt hashing
 - **2025-08-06**: **SETTINGS PERSISTENCE**: Fixed settings initialization to preserve user customizations across app rebuilds - only missing settings get defaults from environment variables
