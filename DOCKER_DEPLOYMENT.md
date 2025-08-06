@@ -20,10 +20,11 @@ This guide explains how to deploy the IPAM System using Docker with complete aut
 That's it! The system will automatically:
 - Build the application container
 - Set up PostgreSQL database (preserving existing data)
-- Update database schema safely
-- Create session table
+- Apply all 9 database migrations including device creation tracking
+- Update database schema safely (including createdBy column for devices)
+- Create session table and group permissions
 - Set up default users (admin/admin, user/user, viewer/viewer)
-- Configure default settings
+- Configure default settings and notification preferences
 
 ## Manual Deployment Steps
 
@@ -92,9 +93,12 @@ The system includes complete authentication and authorization:
 
 - Real-time network scanning with WebSocket updates
 - Multi-subnet support with VLAN organization
-- Device discovery and tracking
+- Device discovery and tracking with creation attribution
+- Device creation tracking (shows who added each device: username or "system scan")
 - Excel export organized by VLAN
 - Permission-based data filtering
+- Enhanced group permissions system with inheritance
+- TBN organizational branding and modern UI
 
 ## Access
 
