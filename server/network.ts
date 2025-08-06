@@ -608,21 +608,30 @@ class NetworkScanner {
   }
 
   private async findSubnetForIP(ipAddress: string): Promise<number | null> {
-    const subnets = await storage.getAllSubnets();
-    
-    // Sort by CIDR specificity (most specific first) to prevent conflicts
-    const sortedSubnets = subnets.sort((a, b) => {
-      const cidrA = parseInt(a.network.split('/')[1]);
-      const cidrB = parseInt(b.network.split('/')[1]);
-      // Higher CIDR = more specific, should be checked first
-      if (cidrA !== cidrB) return cidrB - cidrA;
-      return a.network.localeCompare(b.network);
-    });
-    
-    for (const subnet of sortedSubnets) {
-      if (this.isIPInSubnet(ipAddress, subnet.network)) {
-        return subnet.id;
+    try {
+      const subnets = await storage.getAllSubnets();
+      console.log(`🔍 Finding subnet for IP ${ipAddress}, available subnets:`, subnets.map(s => `${s.id}: ${s.network}`));
+      
+      // Sort by CIDR specificity (most specific first) to prevent conflicts
+      const sortedSubnets = subnets.sort((a, b) => {
+        const cidrA = parseInt(a.network.split('/')[1]);
+        const cidrB = parseInt(b.network.split('/')[1]);
+        // Higher CIDR = more specific, should be checked first
+        if (cidrA !== cidrB) return cidrB - cidrA;
+        return a.network.localeCompare(b.network);
+      });
+      
+      for (const subnet of sortedSubnets) {
+        const isMatch = this.isIPInSubnet(ipAddress, subnet.network);
+        console.log(`   Checking ${ipAddress} against subnet ${subnet.id} (${subnet.network}): ${isMatch ? '✅ MATCH' : '❌ no match'}`);
+        if (isMatch) {
+          console.log(`✅ Found subnet ${subnet.id} for IP ${ipAddress}`);
+          return subnet.id;
+        }
       }
+      console.error(`❌ No subnet found for IP ${ipAddress}`);
+    } catch (error) {
+      console.error(`Error finding subnet for IP ${ipAddress}:`, error);
     }
     
     return null;
