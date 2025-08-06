@@ -36,7 +36,7 @@ export default function DeviceTable() {
   const { user } = useAuth();
   const [filters, setFilters] = useState<DeviceFilters>({
     page: 1,
-    limit: 50,
+    limit: 100, // Increased default limit to show more devices per page
   });
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -673,10 +673,31 @@ export default function DeviceTable() {
 
         {/* Pagination */}
         <div className="flex items-center justify-between mt-4">
-          <div className="text-sm text-gray-700">
-            Showing {((currentPage - 1) * filters.limit!) + 1} to{' '}
-            {Math.min(currentPage * filters.limit!, deviceData?.total || 0)} of{' '}
-            {deviceData?.total || 0} devices
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-gray-700">
+              Showing {((currentPage - 1) * filters.limit!) + 1} to{' '}
+              {Math.min(currentPage * filters.limit!, deviceData?.total || 0)} of{' '}
+              {deviceData?.total || 0} devices
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-700">Show:</span>
+              <Select 
+                value={filters.limit?.toString() || "100"} 
+                onValueChange={(value) => setFilters(prev => ({ ...prev, limit: parseInt(value), page: 1 }))}
+              >
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="200">200</SelectItem>
+                  <SelectItem value="500">500</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-700">per page</span>
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <Button

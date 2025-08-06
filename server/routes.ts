@@ -290,7 +290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Devices - requires authentication and filters by accessible subnets
   app.get("/api/devices", requireAuth, async (req: any, res) => {
     try {
-      const { search, vlan, subnet, status, page = "1", limit = "50", sortBy, sortOrder } = req.query;
+      const { search, vlan, subnet, status, page = "1", limit = "100", sortBy, sortOrder } = req.query;
       const filters = {
         search: search ? search as string : undefined,
         vlan: vlan ? vlan as string : undefined,
