@@ -66,7 +66,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img 
-              src="@assets/tbn_logo_1754505164327.webp" 
+              src="/attached_assets/tbn_logo_1754505164327.webp" 
               alt="TBN"
               className="h-12 w-auto object-contain"
             />

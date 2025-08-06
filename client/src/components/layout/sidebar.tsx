@@ -37,7 +37,7 @@ export default function Sidebar() {
           <div className="flex items-center">
             <div className="flex-shrink-0 w-12 h-8 flex items-center justify-center">
               <img 
-                src="@assets/tbn_logo_1754505164327.webp" 
+                src="/attached_assets/tbn_logo_1754505164327.webp" 
                 alt="TBN"
                 className="h-6 w-auto object-contain"
               />
