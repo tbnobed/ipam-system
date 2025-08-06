@@ -637,6 +637,11 @@ class NetworkScanner {
     return null;
   }
 
+  // Public method for device import to find subnet for IP
+  async findSubnetForDeviceIP(ipAddress: string): Promise<number | null> {
+    return this.findSubnetForIP(ipAddress);
+  }
+
   private isIPInSubnet(ipAddress: string, subnet: string): boolean {
     const [network, cidr] = subnet.split('/');
     const cidrNum = parseInt(cidr, 10);
