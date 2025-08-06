@@ -660,20 +660,25 @@ class NetworkScanner {
           openPorts: (discovery.openPorts || []).map(String),
         });
       } else {
-        // Create new device - let database function determine correct subnet
+        // Create new device - ALWAYS determine correct subnet by IP address
         const correctSubnetId = await this.findSubnetForIP(discovery.ipAddress);
-        await storage.createDevice({
-          ipAddress: discovery.ipAddress,
-          hostname: discovery.hostname,
-          macAddress: discovery.macAddress,
-          vendor: discovery.vendor,
-          subnetId: correctSubnetId || originalSubnetId,
-          status: 'online',
-          lastSeen: new Date(),
-          openPorts: (discovery.openPorts || []).map(String),
-          assignmentType: 'static',
-          createdBy: 'system scan',
-        });
+        if (correctSubnetId) {
+          await storage.createDevice({
+            ipAddress: discovery.ipAddress,
+            hostname: discovery.hostname,
+            macAddress: discovery.macAddress,
+            vendor: discovery.vendor,
+            subnetId: correctSubnetId, // Use ONLY the calculated subnet ID
+            status: 'online',
+            lastSeen: new Date(),
+            openPorts: (discovery.openPorts || []).map(String),
+            assignmentType: 'static',
+            createdBy: 'system scan',
+          });
+          console.log(`✅ Created device ${discovery.ipAddress} in subnet ${correctSubnetId}`);
+        } else {
+          console.error(`❌ Could not assign subnet for IP ${discovery.ipAddress} - skipping device creation`);
+        }
       }
     } catch (error) {
       console.error(`Error updating device ${discovery.ipAddress}:`, error);
