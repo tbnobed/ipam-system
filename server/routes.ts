@@ -1216,6 +1216,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Register backup and restore routes
+  registerBackupRoutes(app);
+
   // Create WebSocket server for real-time scan updates
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
@@ -1381,4 +1384,158 @@ async function generateDeviceExcel(): Promise<Buffer> {
   
   // Generate Excel file buffer
   return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+}
+
+// Backup and Restore endpoints - Admin only
+export function registerBackupRoutes(app: Express) {
+  app.get("/api/export-configuration", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+
+      // Export VLANs, subnets, and settings (no user data)
+      const [vlans, subnets, settings] = await Promise.all([
+        storage.getAllVlans(),
+        storage.getAllSubnets(),
+        storage.getAllSettings()
+      ]);
+
+      const configExport = {
+        version: "1.0",
+        exportDate: new Date().toISOString(),
+        type: "configuration",
+        data: {
+          vlans,
+          subnets,
+          settings
+        }
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="ipam-config-${new Date().toISOString().split('T')[0]}.json"`);
+      res.json(configExport);
+    } catch (error) {
+      console.error("Error exporting configuration:", error);
+      res.status(500).json({ error: "Failed to export configuration" });
+    }
+  });
+
+  app.get("/api/export-full-backup", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+
+      // Export everything including users and permissions
+      const [vlans, subnets, settings, users, groups, devices] = await Promise.all([
+        storage.getAllVlans(),
+        storage.getAllSubnets(),
+        storage.getAllSettings(),
+        storage.getAllUsers(),
+        storage.getAllUserGroups(),
+        storage.getDevices({ page: 1, limit: 10000 }) // Get all devices
+      ]);
+
+      // Get all permissions separately
+      const allUsers = await storage.getAllUsers();
+      const userPermissions = [];
+      const groupPermissions = [];
+      
+      for (const user of allUsers) {
+        const perms = await storage.getUserPermissions(user.id);
+        userPermissions.push(...perms);
+      }
+      
+      for (const group of groups) {
+        const perms = await storage.getGroupPermissions(group.id);
+        groupPermissions.push(...perms);
+      }
+
+      const fullBackup = {
+        version: "1.0",
+        exportDate: new Date().toISOString(),
+        type: "full_backup",
+        data: {
+          vlans,
+          subnets,
+          settings,
+          users: users.map((user: any) => ({ ...user, password: '[PROTECTED]' })), // Don't export actual passwords
+          groups,
+          devices: devices.data,
+          userPermissions,
+          groupPermissions
+        }
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="ipam-full-backup-${new Date().toISOString().split('T')[0]}.json"`);
+      res.json(fullBackup);
+    } catch (error) {
+      console.error("Error exporting full backup:", error);
+      res.status(500).json({ error: "Failed to export full backup" });
+    }
+  });
+
+  app.post("/api/import-configuration", requireAuth, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+
+      const { data } = req.body;
+      if (!data || !data.vlans || !data.subnets || !data.settings) {
+        return res.status(400).json({ error: "Invalid configuration format" });
+      }
+
+      let imported = { vlans: 0, subnets: 0, settings: 0 };
+
+      // Import settings first
+      for (const setting of data.settings) {
+        try {
+          await storage.setSetting(setting.key, setting.value);
+          imported.settings++;
+        } catch (error) {
+          console.warn(`Failed to import setting ${setting.key}:`, error);
+        }
+      }
+
+      // Import VLANs
+      for (const vlan of data.vlans) {
+        try {
+          await storage.createVlan({
+            vlanId: vlan.vlanId,
+            name: vlan.name,
+            description: vlan.description
+          });
+          imported.vlans++;
+        } catch (error) {
+          console.warn(`Failed to import VLAN ${vlan.vlanId}:`, error);
+        }
+      }
+
+      // Import subnets
+      for (const subnet of data.subnets) {
+        try {
+          await storage.createSubnet({
+            network: subnet.network,
+            gateway: subnet.gateway,
+            vlanId: subnet.vlanId,
+            description: subnet.description
+          });
+          imported.subnets++;
+        } catch (error) {
+          console.warn(`Failed to import subnet ${subnet.network}:`, error);
+        }
+      }
+
+      res.json({
+        message: "Configuration imported successfully",
+        imported
+      });
+    } catch (error) {
+      console.error("Error importing configuration:", error);
+      res.status(500).json({ error: "Failed to import configuration" });
+    }
+  });
 }

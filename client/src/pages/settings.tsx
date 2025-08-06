@@ -211,6 +211,111 @@ export default function Settings() {
     }
   };
 
+  const exportConfiguration = async () => {
+    try {
+      const response = await fetch('/api/export-configuration', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ipam-config-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Configuration Exported",
+        description: "Configuration (VLANs, subnets, settings) has been exported.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export configuration. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const exportFullBackup = async () => {
+    try {
+      const response = await fetch('/api/export-full-backup', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Backup failed');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ipam-full-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Full Backup Exported",
+        description: "Complete system backup (including users) has been exported.",
+      });
+    } catch (error) {
+      toast({
+        title: "Backup Failed",
+        description: "Failed to create backup. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const configData = JSON.parse(text);
+      
+      if (configData.type !== 'configuration') {
+        throw new Error('Invalid configuration file');
+      }
+
+      await apiRequest('/api/import-configuration', 'POST', configData);
+      
+      toast({
+        title: "Configuration Imported",
+        description: "Configuration has been imported successfully.",
+      });
+      
+      // Refresh settings after import
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: `Failed to import configuration: ${error}`,
+        variant: "destructive",
+      });
+    }
+    
+    // Clear the file input
+    event.target.value = '';
+  };
+
   const testNotification = async () => {
     setIsTestingNotification(true);
     try {
@@ -414,13 +519,42 @@ export default function Settings() {
                 <CardTitle>Data Management</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center space-x-4">
-                  <Button variant="outline" type="button" onClick={exportAllData}>
-                    Export All Data
-                  </Button>
-                  <Button variant="outline" type="button">
-                    Import Configuration
-                  </Button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Data Export</Label>
+                    <div className="flex flex-col space-y-2">
+                      <Button variant="outline" type="button" onClick={exportAllData}>
+                        Export All Data (Excel)
+                      </Button>
+                      <Button variant="outline" type="button" onClick={exportConfiguration}>
+                        Export Configuration
+                      </Button>
+                      <Button variant="outline" type="button" onClick={exportFullBackup}>
+                        Full System Backup
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Data Import</Label>
+                    <div className="flex flex-col space-y-2">
+                      <Label htmlFor="config-import" className="cursor-pointer">
+                        <Button variant="outline" type="button" asChild>
+                          <span>Import Configuration</span>
+                        </Button>
+                        <input
+                          id="config-import"
+                          type="file"
+                          accept=".json"
+                          onChange={handleFileImport}
+                          className="hidden"
+                        />
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Import VLANs, subnets, and settings from JSON file
+                      </p>
+                    </div>
+                  </div>
                 </div>
                 
                 <div>
