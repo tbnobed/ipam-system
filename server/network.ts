@@ -249,7 +249,9 @@ class NetworkScanner {
         },
       });
 
-      console.log(`Network scan ${scanId} completed. Found ${results.length} devices.`);
+      const aliveCount = results.filter(d => d.isAlive).length;
+      console.log(`Network scan ${scanId} completed. Scanned ${results.length} IPs, found ${aliveCount} alive devices.`);
+      console.log(`Production debug - alive devices:`, results.filter(d => d.isAlive).map(d => d.ipAddress));
     } catch (error) {
       console.error(`Network scan ${scanId} failed:`, error);
       
@@ -304,6 +306,12 @@ class NetworkScanner {
       
       const aliveResults = batchResults.filter(result => result.isAlive);
       results.push(...aliveResults);
+      
+      // Enhanced logging for production debugging
+      console.log(`Batch scan results for ${network}: ${batchResults.length} scanned, ${aliveResults.length} alive`);
+      if (aliveResults.length > 0) {
+        console.log(`Found alive devices:`, aliveResults.map(d => `${d.ipAddress}(alive:${d.isAlive})`));
+      }
       
       // Broadcast newly found devices immediately
       if (aliveResults.length > 0) {
@@ -382,6 +390,11 @@ class NetworkScanner {
       // Enhanced ping for shared gateway networks
       const pingResult = await this.pingDevice(ipAddress);
       result.isAlive = pingResult.success;
+      
+      // Enhanced logging for debugging production scan issues
+      if (result.isAlive) {
+        console.log(`✅ Device found at ${ipAddress} - ping success`);
+      }
 
       if (result.isAlive) {
         // Try to get hostname
