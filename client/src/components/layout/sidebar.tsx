@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import tbnLogo from "@/assets/tbn-logo.webp";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
@@ -37,7 +38,7 @@ export default function Sidebar() {
           <div className="flex items-center">
             <div className="flex-shrink-0 w-12 h-8 flex items-center justify-center">
               <img 
-                src="/attached_assets/tbn_logo_1754505164327.webp" 
+                src={tbnLogo} 
                 alt="TBN"
                 className="h-6 w-auto object-contain"
               />

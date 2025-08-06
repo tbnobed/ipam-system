@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import tbnLogo from "@/assets/tbn-logo.webp";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -66,7 +67,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img 
-              src="/attached_assets/tbn_logo_1754505164327.webp" 
+              src={tbnLogo} 
               alt="TBN"
               className="h-12 w-auto object-contain"
             />
