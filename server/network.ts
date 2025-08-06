@@ -391,7 +391,9 @@ class NetworkScanner {
       const pingResult = await this.pingDevice(ipAddress);
       result.isAlive = pingResult.success;
       
-      // Enhanced logging for debugging production scan issues
+      // Enhanced logging for debugging scan logic
+      console.log(`🔍 Scanning ${ipAddress}: ${result.isAlive ? '✅ ALIVE' : '❌ no response'} (${pingResult.responseTime ? pingResult.responseTime + 'ms' : 'timeout'})`);
+      
       if (result.isAlive) {
         console.log(`✅ Device found at ${ipAddress} - ping success`);
       }
@@ -431,6 +433,11 @@ class NetworkScanner {
       const timeoutSetting = await storage.getSetting('ping_timeout');
       const timeout = timeoutSetting ? parseInt(timeoutSetting.value) : 2;
       
+      // Test localhost first to ensure ping works
+      if (ipAddress === '127.0.0.1') {
+        console.log(`🧪 Testing localhost ping for verification...`);
+      }
+      
       // Enhanced ping settings for shared gateway networks
       // Use multiple attempts with different timing for better reliability
       const { stdout } = await execAsync(`ping -c 3 -W ${timeout} -i 0.3 ${ipAddress}`);
@@ -439,6 +446,7 @@ class NetworkScanner {
       const match = stdout.match(/time=([0-9.]+)/);
       const responseTime = match ? parseFloat(match[1]) : undefined;
 
+      console.log(`🏓 Ping ${ipAddress}: SUCCESS (${responseTime}ms)`);
       return {
         success: true,
         responseTime,
@@ -452,11 +460,13 @@ class NetworkScanner {
         const match = stdout.match(/time=([0-9.]+)/);
         const responseTime = match ? parseFloat(match[1]) : undefined;
         
+        console.log(`🏓 Ping ${ipAddress}: SUCCESS on fallback (${responseTime}ms)`);
         return {
           success: true,
           responseTime,
         };
       } catch (fallbackError) {
+        console.log(`🏓 Ping ${ipAddress}: FAILED - ${String(error).slice(0, 100)}`);
         return {
           success: false,
           error: String(error),
