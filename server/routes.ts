@@ -1559,7 +1559,7 @@ export function registerBackupRoutes(app: Express) {
         return res.status(400).json({ error: "Invalid configuration format" });
       }
 
-      let imported = { vlans: 0, subnets: 0, settings: 0, devices: 0 };
+      let imported = { vlans: 0, subnets: 0, settings: 0 };
       let errors = [];
 
       // Import settings first
@@ -1635,60 +1635,7 @@ export function registerBackupRoutes(app: Express) {
         }
       }
 
-      // Create a mapping of exported subnet IDs to actual database IDs
-      const subnetIdMapping = new Map<number, number>();
-      
-      // Build subnet mapping for device import
-      if (data.devices && data.devices.length > 0) {
-        const existingSubnets = await storage.getAllSubnets();
-        for (const subnet of data.subnets) {
-          const existingSubnet = existingSubnets.find(s => s.network === subnet.network);
-          if (existingSubnet) {
-            subnetIdMapping.set(subnet.id, existingSubnet.id);
-            console.log(`Mapped exported subnet ${subnet.id} (${subnet.network}) -> DB subnet ${existingSubnet.id}`);
-          }
-        }
 
-        // Import devices after subnets are created and mapped
-        for (const device of data.devices) {
-          try {
-            // Check if device already exists
-            const existingDevice = await storage.getDeviceByIP(device.ipAddress);
-            
-            if (!existingDevice) {
-              // Find correct subnet by IP address (not by exported subnet ID)
-              const correctSubnetId = await networkScanner.findSubnetForDeviceIP(device.ipAddress);
-              
-              if (correctSubnetId) {
-                await storage.createDevice({
-                  ipAddress: device.ipAddress,
-                  hostname: device.hostname,
-                  macAddress: device.macAddress,
-                  vendor: device.vendor,
-                  deviceType: device.deviceType,
-                  purpose: device.purpose,
-                  location: device.location,
-                  subnetId: correctSubnetId,
-                  status: device.status || 'unknown',
-                  assignmentType: device.assignmentType || 'static',
-                  createdBy: 'config import',
-                  openPorts: device.openPorts || []
-                });
-                imported.devices++;
-                console.log(`Successfully imported device ${device.ipAddress} to subnet ${correctSubnetId}`);
-              } else {
-                console.warn(`Could not assign subnet for device ${device.ipAddress}, skipping`);
-                errors.push(`Device ${device.ipAddress}: Could not determine correct subnet`);
-              }
-            } else {
-              console.log(`Device ${device.ipAddress} already exists, skipping`);
-            }
-          } catch (error: any) {
-            console.warn(`Failed to import device ${device.ipAddress}:`, error);
-            errors.push(`Device ${device.ipAddress}: ${error.message}`);
-          }
-        }
-      }
 
       res.json({
         message: "Configuration imported successfully",
