@@ -623,6 +623,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { key } = req.params;
       const { value, description } = req.body;
       const setting = await storage.setSetting(key, value, description);
+      
+      // If scan interval was updated, restart periodic scanning
+      if (key === 'scan_interval') {
+        const scanInterval = parseInt(value);
+        networkScanner.startPeriodicScanning(scanInterval);
+        console.log(`Periodic scanning interval updated to ${scanInterval} minutes`);
+      }
+      
       res.json(setting);
     } catch (error) {
       console.error("Error updating setting:", error);

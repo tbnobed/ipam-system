@@ -75,9 +75,17 @@ app.use((req, res, next) => {
     console.error("Error fixing device subnets:", error);
   }
 
-  // Start periodic network scanning
-  networkScanner.startPeriodicScanning(5);
-  console.log("Periodic network scanning started (every 5 minutes)");
+  // Start periodic network scanning with configured interval
+  try {
+    const scanIntervalSetting = await storage.getSetting('scan_interval');
+    const scanInterval = scanIntervalSetting ? parseInt(scanIntervalSetting.value) : 60;
+    networkScanner.startPeriodicScanning(scanInterval);
+    console.log(`Periodic network scanning started (every ${scanInterval} minutes)`);
+  } catch (error) {
+    console.error("Error reading scan interval setting, using default 60 minutes:", error);
+    networkScanner.startPeriodicScanning(60);
+    console.log("Periodic network scanning started (every 60 minutes - default)");
+  }
 
   const server = await registerRoutes(app);
 
