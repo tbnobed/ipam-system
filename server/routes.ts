@@ -362,7 +362,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const device = await storage.createDevice(validatedData);
+      // Add the username of the person creating the device
+      const deviceData = {
+        ...validatedData,
+        createdBy: req.user.username
+      };
+      
+      const device = await storage.createDevice(deviceData);
       res.status(201).json(device);
     } catch (error) {
       console.error("Error creating device:", error);
