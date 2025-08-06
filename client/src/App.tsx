@@ -10,6 +10,7 @@ import Discovery from "@/pages/discovery";
 import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
 import Users from "@/pages/users";
+import Profile from "@/pages/profile";
 import LoginPage from "@/pages/login";
 import Sidebar from "@/components/layout/sidebar";
 import NotFound from "@/pages/not-found";
@@ -41,6 +42,7 @@ function Router() {
           <Route path="/devices" component={Devices} />
           {user.role !== "viewer" && <Route path="/discovery" component={Discovery} />}
           {user.role !== "viewer" && <Route path="/analytics" component={Analytics} />}
+          <Route path="/profile" component={Profile} />
           {user.role === "admin" && <Route path="/settings" component={Settings} />}
           {user.role === "admin" && <Route path="/users" component={Users} />}
           <Route component={NotFound} />

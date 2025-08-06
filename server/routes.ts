@@ -795,6 +795,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update username
+  app.post('/api/auth/update-username', requireAuth, async (req: any, res) => {
+    try {
+      const { username } = req.body;
+      
+      if (!username || username.length < 3) {
+        return res.status(400).json({ error: 'Username must be at least 3 characters' });
+      }
+
+      // Check if username already exists (excluding current user)
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser && existingUser.id !== req.user.id) {
+        return res.status(400).json({ error: 'Username already exists' });
+      }
+
+      const updatedUser = await storage.updateUser(req.user.id, { username });
+      
+      // Update session
+      req.session.user = {
+        ...req.session.user,
+        username: updatedUser.username
+      };
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error updating username:', error);
+      res.status(500).json({ error: 'Failed to update username' });
+    }
+  });
+
+  // Update password
+  app.post('/api/auth/update-password', requireAuth, async (req: any, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: 'Current password and new password are required' });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters' });
+      }
+
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Verify current password
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+
+      // Hash new password
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      
+      await storage.updateUser(req.user.id, { password: hashedNewPassword });
+      res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+      console.error('Error updating password:', error);
+      res.status(500).json({ error: 'Failed to update password' });
+    }
+  });
+
   // User management endpoints - only admins can access these
   app.get("/api/users", requireAuth, async (req: any, res) => {
     try {
