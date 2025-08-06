@@ -31,28 +31,28 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
 
   return (
-    <div className="hidden md:flex md:w-64 md:flex-col">
-      <div className="flex flex-col flex-grow pt-5 overflow-y-auto bg-white border-r border-gray-200">
+    <div className="hidden md:flex md:w-72 md:flex-col">
+      <div className="flex flex-col flex-grow bg-white border-r border-gray-100 shadow-sm">
         {/* Logo */}
-        <div className="flex items-center flex-shrink-0 px-6">
+        <div className="flex items-center flex-shrink-0 px-6 py-6 border-b border-gray-50">
           <div className="flex items-center">
-            <div className="flex-shrink-0 w-12 h-8 flex items-center justify-center">
+            <div className="flex-shrink-0 w-10 h-8 flex items-center justify-center">
               <img 
                 src={tbnLogo} 
                 alt="TBN"
-                className="h-6 w-auto object-contain"
+                className="h-7 w-auto object-contain"
               />
             </div>
-            <div className="ml-3">
-              <h1 className="text-xl font-semibold text-gray-900">IPAM</h1>
-              <p className="text-xs text-gray-500">Network Management</p>
+            <div className="ml-4">
+              <h1 className="text-xl font-bold text-gray-900 tracking-tight">IPAM</h1>
+              <p className="text-xs font-medium text-gray-500 tracking-wide uppercase">Network Management</p>
             </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <div className="mt-8 flex-grow flex flex-col">
-          <nav className="flex-1 px-4 space-y-1">
+        <div className="flex-grow flex flex-col py-6">
+          <nav className="flex-1 px-4 space-y-2">
             {navigation.map((item) => {
               // Hide Users and Settings menu for non-admin users
               if ((item.name === "Users" || item.name === "Settings") && user?.role !== "admin") {
@@ -73,16 +73,16 @@ export default function Sidebar() {
               return (
                 <Link key={item.name} href={item.href}>
                   <div className={cn(
-                    "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer",
+                    "group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 cursor-pointer",
                     isActive
-                      ? "bg-primary/10 border-r-2 border-primary text-primary"
-                      : "text-gray-700 hover:bg-gray-50"
+                      ? "bg-blue-50 text-blue-700 shadow-sm border border-blue-100"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   )}>
                     <Icon className={cn(
-                      "mr-3 flex-shrink-0 h-4 w-4",
-                      isActive ? "text-primary" : "text-gray-400"
+                      "mr-4 flex-shrink-0 h-5 w-5 transition-colors",
+                      isActive ? "text-blue-600" : "text-gray-400 group-hover:text-gray-600"
                     )} />
-                    {item.name}
+                    <span className="font-medium">{item.name}</span>
                   </div>
                 </Link>
               );
@@ -90,22 +90,23 @@ export default function Sidebar() {
           </nav>
 
           {/* User Profile */}
-          <div className="flex-shrink-0 p-4 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                  <User className="text-gray-600 w-4 h-4" />
+          <div className="flex-shrink-0 px-4 py-4 mt-6 border-t border-gray-100">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+              <div className="flex items-center min-w-0 flex-1">
+                <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-sm">
+                  <User className="text-white w-5 h-5" />
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-700">{user?.username}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+                <div className="ml-3 min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{user?.username}</p>
+                  <p className="text-xs font-medium text-gray-500 capitalize">{user?.role}</p>
                 </div>
               </div>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={logout}
-                className="text-gray-500 hover:text-red-600"
+                className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-md transition-colors ml-2"
+                title="Sign out"
               >
                 <LogOut className="h-4 w-4" />
               </Button>
