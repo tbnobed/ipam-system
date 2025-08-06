@@ -36,7 +36,7 @@ export default function DeviceTable() {
   const { user } = useAuth();
   const [filters, setFilters] = useState<DeviceFilters>({
     page: 1,
-    // No limit - show all devices by default
+    limit: 100, // Increased default limit to show more devices per page
   });
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -671,35 +671,24 @@ export default function DeviceTable() {
           </Table>
         </div>
 
-        {/* Device Count and Optional Pagination */}
+        {/* Pagination */}
         <div className="flex items-center justify-between mt-4">
           <div className="flex items-center space-x-4">
             <div className="text-sm text-gray-700">
-              {filters.limit ? (
-                <>
-                  Showing {((currentPage - 1) * filters.limit) + 1} to{' '}
-                  {Math.min(currentPage * filters.limit, deviceData?.total || 0)} of{' '}
-                  {deviceData?.total || 0} devices
-                </>
-              ) : (
-                <>Showing all {deviceData?.total || 0} devices</>
-              )}
+              Showing {((currentPage - 1) * filters.limit!) + 1} to{' '}
+              {Math.min(currentPage * filters.limit!, deviceData?.total || 0)} of{' '}
+              {deviceData?.total || 0} devices
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-700">Show:</span>
               <Select 
-                value={filters.limit?.toString() || "all"} 
-                onValueChange={(value) => setFilters(prev => ({ 
-                  ...prev, 
-                  limit: value === "all" ? undefined : parseInt(value), 
-                  page: 1 
-                }))}
+                value={filters.limit?.toString() || "100"} 
+                onValueChange={(value) => setFilters(prev => ({ ...prev, limit: parseInt(value), page: 1 }))}
               >
                 <SelectTrigger className="w-20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="25">25</SelectItem>
                   <SelectItem value="50">50</SelectItem>
                   <SelectItem value="100">100</SelectItem>
@@ -710,29 +699,27 @@ export default function DeviceTable() {
               <span className="text-sm text-gray-700">per page</span>
             </div>
           </div>
-          {filters.limit && (
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage <= 1}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="text-sm text-gray-700">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage >= totalPages}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <span className="text-sm text-gray-700">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
