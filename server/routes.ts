@@ -1502,23 +1502,30 @@ export function registerBackupRoutes(app: Express) {
         }
       }
 
+      // Create a mapping of exported VLAN IDs to actual database IDs
+      const vlanIdMapping = new Map<number, number>();
+
       // Import VLANs first (they are referenced by subnets)
       for (const vlan of data.vlans) {
         try {
-          // Check if VLAN already exists
+          // Check if VLAN already exists by vlanId
           const existingVlans = await storage.getAllVlans();
-          const vlanExists = existingVlans.some(v => v.vlanId === vlan.vlanId);
+          const existingVlan = existingVlans.find(v => v.vlanId === vlan.vlanId);
           
-          if (!vlanExists) {
-            await storage.createVlan({
+          if (!existingVlan) {
+            const createdVlan = await storage.createVlan({
               vlanId: vlan.vlanId,
               name: vlan.name,
               description: vlan.description
             });
+            // Map the old database ID to the new database ID
+            vlanIdMapping.set(vlan.id, createdVlan.id);
             imported.vlans++;
-            console.log(`Successfully imported VLAN ${vlan.vlanId}: ${vlan.name}`);
+            console.log(`Successfully imported VLAN ${vlan.vlanId}: ${vlan.name} (DB ID: ${vlan.id} -> ${createdVlan.id})`);
           } else {
-            console.log(`VLAN ${vlan.vlanId} already exists, skipping`);
+            // Map to existing VLAN's database ID
+            vlanIdMapping.set(vlan.id, existingVlan.id);
+            console.log(`VLAN ${vlan.vlanId} already exists, using existing DB ID: ${existingVlan.id}`);
           }
         } catch (error: any) {
           console.warn(`Failed to import VLAN ${vlan.vlanId}:`, error);
@@ -1526,7 +1533,7 @@ export function registerBackupRoutes(app: Express) {
         }
       }
 
-      // Import subnets after VLANs are created
+      // Import subnets after VLANs are created and mapped
       for (const subnet of data.subnets) {
         try {
           // Check if subnet already exists
@@ -1534,14 +1541,20 @@ export function registerBackupRoutes(app: Express) {
           const subnetExists = existingSubnets.some(s => s.network === subnet.network);
           
           if (!subnetExists) {
+            // Use the mapped VLAN ID instead of the original one
+            const mappedVlanId = vlanIdMapping.get(subnet.vlanId);
+            if (!mappedVlanId) {
+              throw new Error(`Cannot find mapped VLAN ID for original ID ${subnet.vlanId}`);
+            }
+
             await storage.createSubnet({
               network: subnet.network,
               gateway: subnet.gateway,
-              vlanId: subnet.vlanId,
+              vlanId: mappedVlanId,
               description: subnet.description
             });
             imported.subnets++;
-            console.log(`Successfully imported subnet ${subnet.network}`);
+            console.log(`Successfully imported subnet ${subnet.network} with VLAN ID ${mappedVlanId}`);
           } else {
             console.log(`Subnet ${subnet.network} already exists, skipping`);
           }
