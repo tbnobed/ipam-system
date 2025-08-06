@@ -316,8 +316,8 @@ export class DatabaseStorage implements IStorage {
 
   async getDevices(filters: DeviceFilters): Promise<PaginatedResponse<Device>> {
     const page = filters.page || 1;
-    const limit = filters.limit || 50;
-    const offset = (page - 1) * limit;
+    const limit = filters.limit; // No default limit - show all devices if not specified
+    const offset = limit ? (page - 1) * limit : 0;
 
     let conditions = [];
 
@@ -393,7 +393,7 @@ export class DatabaseStorage implements IStorage {
     
     // Query all devices - no longer restrict by specific subnet IDs
     // This ensures devices show up regardless of which subnet ID they're assigned to
-    const data = await db.select({
+    let query = db.select({
       id: devices.id,
       ipAddress: devices.ipAddress,
       hostname: devices.hostname,
@@ -412,9 +412,14 @@ export class DatabaseStorage implements IStorage {
     })
       .from(devices)
       .where(whereClause)
-      .orderBy(...orderByClause)
-      .limit(limit)
-      .offset(offset);
+      .orderBy(...orderByClause);
+
+    // Only apply limit and offset if limit is specified
+    if (limit) {
+      query = query.limit(limit).offset(offset);
+    }
+
+    const data = await query;
 
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)` })
@@ -426,7 +431,7 @@ export class DatabaseStorage implements IStorage {
       total: Number(count),
       page,
       limit,
-      totalPages: Math.ceil(Number(count) / limit),
+      totalPages: limit ? Math.ceil(Number(count) / limit) : 1,
     };
   }
 
