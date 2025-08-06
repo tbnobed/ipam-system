@@ -39,6 +39,7 @@ export const subnets = pgTable("subnets", {
   gateway: text("gateway"),
   description: text("description"),
   vlanId: integer("vlan_id").references(() => vlans.id),
+  assignmentType: text("assignment_type").default("dhcp"), // dhcp, static
 });
 
 export const devices = pgTable("devices", {
@@ -91,6 +92,7 @@ export const settings = pgTable("settings", {
   key: text("key").unique().notNull(),
   value: text("value").notNull(),
   description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

@@ -59,8 +59,19 @@ BEGIN
 END
 $$;
 
--- Log the migration
-INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details, timestamp)
-VALUES (1, 'migration', 'system', 7, 
-  '{"message": "Added user groups and group permissions tables", "migration": "007_add_user_groups_and_permissions.sql"}',
-  CURRENT_TIMESTAMP);
+-- Log the migration (only if users table has records)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM users LIMIT 1) THEN
+    INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details, timestamp)
+    VALUES (1, 'migration', 'system', 7, 
+      '{"message": "Added user groups and group permissions tables", "migration": "007_add_user_groups_and_permissions.sql"}',
+      CURRENT_TIMESTAMP);
+  ELSE
+    -- Log without user_id if no users exist yet
+    INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details, timestamp)
+    VALUES (NULL, 'migration', 'system', 7, 
+      '{"message": "Added user groups and group permissions tables", "migration": "007_add_user_groups_and_permissions.sql"}',
+      CURRENT_TIMESTAMP);
+  END IF;
+END $$;

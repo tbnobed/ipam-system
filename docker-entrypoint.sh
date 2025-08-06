@@ -15,7 +15,7 @@ export NODE_ENV=production
 
 # Run database migration with automatic confirmation
 echo "Setting up database schema..."
-echo "y" | timeout 60 npm run db:push || echo "Database schema setup may have failed, but continuing..."
+timeout 60 npm run db:push -- --force || echo "Database schema setup may have failed, but continuing..."
 echo "Database schema setup completed successfully"
 
 # Force push schema changes to ensure all tables are up to date
