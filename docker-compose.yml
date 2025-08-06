@@ -5,6 +5,14 @@ services:
       - "5000:5000"
     env_file:
       - .env.docker
+    environment:
+      # Explicitly set critical environment variables to ensure they're passed
+      - NODE_ENV=${NODE_ENV:-production}
+      - DEFAULT_SCAN_INTERVAL=${DEFAULT_SCAN_INTERVAL:-5}
+      - DATA_RETENTION_DAYS=${DATA_RETENTION_DAYS:-90}
+      - ALERT_EMAILS=${ALERT_EMAILS:-alerts@obedtv.com}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - FROM_EMAIL=${FROM_EMAIL:-alerts@obedtv.com}
     depends_on:
       postgres:
         condition: service_healthy

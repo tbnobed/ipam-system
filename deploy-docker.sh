@@ -24,6 +24,31 @@ fi
 
 echo "✅ docker-compose is available"
 
+# Verify .env.docker environment variables
+echo ""
+echo "🔍 Verifying environment configuration..."
+if [ -f ".env.docker" ]; then
+    echo "✅ .env.docker file found"
+    
+    # Source the env file to test variable loading
+    set -a
+    source .env.docker
+    set +a
+    
+    echo "📋 Key environment variables:"
+    echo "   NODE_ENV: ${NODE_ENV:-not_set}"
+    echo "   DEFAULT_SCAN_INTERVAL: ${DEFAULT_SCAN_INTERVAL:-not_set}" 
+    echo "   ALERT_EMAILS: ${ALERT_EMAILS:-not_set}"
+    echo "   SENDGRID_API_KEY: ${SENDGRID_API_KEY:+configured}"
+    
+    if [ -z "$SENDGRID_API_KEY" ] || [ "$SENDGRID_API_KEY" = "SG.your_sendgrid_api_key_here" ]; then
+        echo "⚠️  Warning: SENDGRID_API_KEY not configured - email notifications will not work"
+    fi
+else
+    echo "❌ .env.docker file not found!"
+    exit 1
+fi
+
 # Create backup of existing data if container exists
 if docker ps -a | grep -q "ipam-system"; then
     echo "📦 Existing IPAM system found. Creating backup..."
