@@ -18,8 +18,12 @@ A comprehensive IP Address Management (IPAM) solution for broadcast facility net
 - Comprehensive settings management system
 - Network scan control with stop/start functionality
 - Activity logging and audit trails
+- User profile management with secure credential updates
+- Complete backup and restore functionality for system configuration
 
 ## Recent Changes
+- **2025-08-06**: **USER PROFILE MANAGEMENT**: Implemented comprehensive user profile management system allowing all users to update their own credentials - created Profile page with secure forms for username and password updates, added backend API endpoints with bcrypt validation, included proper session updates and error handling
+- **2025-08-06**: **LOGIN PAGE CLEANUP**: Removed demo credentials display from login page for cleaner professional appearance
 - **2025-08-06**: **BACKUP AND RESTORE SYSTEM**: Implemented comprehensive backup and restore functionality with two distinct features: Export Configuration (VLANs, subnets, settings without user data) and Full System Backup (complete system including users and permissions) - Import Configuration now fully functional with proper error handling and import order
 - **2025-08-06**: **ENHANCED DATA MANAGEMENT UI**: Redesigned settings page Data Management section with organized export/import options, file upload for configuration imports, and detailed success/error feedback
 - **2025-08-06**: **IMPORT VALIDATION**: Added robust validation and error handling for configuration imports with proper VLAN-first import order, duplicate detection, and comprehensive error reporting
