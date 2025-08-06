@@ -268,11 +268,14 @@ async function setupProduction() {
     ];
 
     // Log environment variables for debugging
-    console.log('📋 Environment variables for settings:');
+    console.log('📋 DOCKER ENVIRONMENT VARIABLES:');
+    console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
     console.log(`   DEFAULT_SCAN_INTERVAL: ${process.env.DEFAULT_SCAN_INTERVAL || 'not set'}`);
     console.log(`   DATA_RETENTION_DAYS: ${process.env.DATA_RETENTION_DAYS || 'not set'}`);
     console.log(`   ALERT_EMAILS: ${process.env.ALERT_EMAILS || 'not set'}`);
-    console.log(`   SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? 'set' : 'not set'}`);
+    console.log(`   SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? 'configured' : 'not set'}`);
+    console.log(`   FROM_EMAIL: ${process.env.FROM_EMAIL || 'not set'}`);
+    console.log('🔧 Environment variables loaded from .env.docker via docker-compose env_file');
     
     for (const setting of defaultSettings) {
       // Only set if it doesn't exist (preserve user customizations)
