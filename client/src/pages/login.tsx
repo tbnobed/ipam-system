@@ -65,7 +65,11 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <Shield className="h-12 w-12 text-blue-600" />
+            <img 
+              src="@assets/tbn_logo_1754505164327.webp" 
+              alt="TBN"
+              className="h-12 w-auto object-contain"
+            />
           </div>
           <CardTitle className="text-2xl font-bold">IPAM System</CardTitle>
           <p className="text-gray-600">Sign in to your account</p>
