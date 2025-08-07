@@ -576,13 +576,23 @@ export default function DeviceTable() {
                     {getSortIcon("lastSeen")}
                   </Button>
                 </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 font-semibold"
+                    onClick={() => handleSort("createdBy")}
+                  >
+                    Created By
+                    {getSortIcon("createdBy")}
+                  </Button>
+                </TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {devices.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={10} className="text-center py-8 text-gray-500">
                     {filters.search || filters.vlan || filters.status ? 
                       "No devices found matching your filters. Try adjusting your search criteria." :
                       "No devices found. Start a network scan to discover devices on your network."
@@ -642,6 +652,9 @@ export default function DeviceTable() {
                       ? formatDistanceToNow(new Date(device.lastSeen), { addSuffix: true })
                       : 'Never'
                     }
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-700">
+                    {(device as any).createdBy || 'system scan'}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
