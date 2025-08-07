@@ -648,7 +648,7 @@ export default function DeviceTable() {
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-gray-600">
-                    {(device as any).createdBy || 'system scan'}
+                    {device.createdBy || 'system scan'}
                   </TableCell>
                   <TableCell className="text-sm text-gray-500">
                     {device.lastSeen 
