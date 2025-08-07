@@ -32,6 +32,13 @@ The IPAM system is built with a modern full-stack architecture. The **backend** 
 - Activity logging and audit trails.
 - Notification system with support for email alerts.
 - User role system including Admin, User, and Viewer roles with distinct permissions.
+- Device tracking functionality to monitor who created each device.
+
+## Recent Changes
+- **2025-08-07**: **DEVICE TRACKING FEATURE**: Added "Created By" column to track who added each device - devices from system scans show "system scan", manually added devices show the username. Includes complete Docker deployment support with database migration and schema updates
+- **2025-08-07**: **DOCKER DEPLOYMENT FIX**: Fixed critical production deployment issue where settings table was missing created_at column causing database initialization failures - updated docker-entrypoint.sh to include proper schema definition, Docker build now succeeds completely
+- **2025-08-07**: **MODERN SIDEBAR REDESIGN**: Implemented modern sidebar design with enhanced spacing, professional styling, blue accent colors, gradient user avatar, and 50% larger TBN logo for better brand visibility
+- **2025-08-07**: **TBN LOGO INTEGRATION**: Properly moved TBN logo to client/src/assets directory structure and updated imports for proper Vite asset handling, removed unnecessary static file serving
 
 ## External Dependencies
 - **PostgreSQL**: Primary database for all application data.

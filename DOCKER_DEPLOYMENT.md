@@ -24,6 +24,8 @@ That's it! The system will automatically:
 - Create session table
 - Set up default users (admin/admin, user/user, viewer/viewer)
 - Configure default settings
+- Add device tracking functionality (created_by column)
+- Apply all database migrations including user permissions and device tracking
 
 ## Manual Deployment Steps
 

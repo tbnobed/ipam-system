@@ -45,6 +45,22 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   details JSONB,
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add created_by column to devices table if it doesn't exist
+DO \$\$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'devices' AND column_name = 'created_by'
+  ) THEN
+    ALTER TABLE devices ADD COLUMN created_by TEXT DEFAULT 'system scan';
+    UPDATE devices SET created_by = 'system scan' WHERE created_by IS NULL;
+    RAISE NOTICE 'Added created_by column to devices table';
+  ELSE
+    RAISE NOTICE 'created_by column already exists in devices table';
+  END IF;
+END
+\$\$;
 " || echo "Table creation verification failed, but continuing..."
 
 # Run additional migrations for user groups and permissions
@@ -54,6 +70,15 @@ if [ -f /app/migrations/007_add_user_groups_and_permissions.sql ]; then
   PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -f /app/migrations/007_add_user_groups_and_permissions.sql || echo "Group permissions migration failed, but continuing..."
 else
   echo "Migration file not found, skipping..."
+fi
+
+# Run migration for created_by column
+echo "Running created_by column migration..."
+if [ -f /app/migrations/008_add_created_by_to_devices.sql ]; then
+  echo "Created_by migration file exists, running..."
+  PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -f /app/migrations/008_add_created_by_to_devices.sql || echo "Created_by migration failed, but continuing..."
+else
+  echo "Created_by migration file not found, skipping..."
 fi
 
 # Verify current database structure
