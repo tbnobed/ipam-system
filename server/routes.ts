@@ -42,6 +42,7 @@ const getUserAccessibleVlans = async (userId: number, userRole: string) => {
 
 // Helper function to get user's accessible subnets
 const getUserAccessibleSubnets = async (userId: number, userRole: string) => {
+  // Admins can access all subnets
   if (userRole === 'admin') {
     return await storage.getAllSubnets();
   }
@@ -61,6 +62,7 @@ const getUserAccessibleSubnets = async (userId: number, userRole: string) => {
 
 // Helper function to filter devices by accessible subnets
 const filterDevicesByAccessibleSubnets = async (devices: any[], userId: number, userRole: string) => {
+  // Admins can see all devices
   if (userRole === 'admin') {
     return devices;
   }
@@ -465,6 +467,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const accessibleSubnets = await getUserAccessibleSubnets(req.user.id, req.user.role);
         const accessibleSubnetIds = accessibleSubnets.map(s => s.id);
         validSubnetIds = validSubnetIds.filter(id => accessibleSubnetIds.includes(id));
+      } else {
+        // Admin users can scan all subnets if none specified
+        if (validSubnetIds.length === 0) {
+          const allSubnets = await storage.getAllSubnets();
+          validSubnetIds = allSubnets.map(s => s.id);
+        }
       }
       
       console.log("Processing scan with subnet IDs:", validSubnetIds);
