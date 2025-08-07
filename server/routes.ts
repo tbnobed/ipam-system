@@ -322,7 +322,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endIndex = startIndex + filters.limit;
       const paginatedDevices = filteredDevices.slice(startIndex, endIndex);
       
+      console.log(`DEBUG - User role: ${req.user.role}, User ID: ${req.user.id}`);
+      console.log(`DEBUG - Raw devices before filtering: ${allDevicesResult.data.length}`);
+      console.log(`DEBUG - Devices after permission filtering: ${filteredDevices.length}`);
       console.log(`DEBUG - totalFilteredDevices: ${totalFilteredDevices}, filters.limit: ${filters.limit}, Math.ceil: ${Math.ceil(totalFilteredDevices / filters.limit)}, totalPages: ${totalPages}`);
+      
+      // Emergency bypass for admin users if filtering fails
+      if (req.user.role === 'admin' && filteredDevices.length === 0 && allDevicesResult.data.length > 0) {
+        console.log(`ERROR - Admin user should see all devices but filtering returned 0. Bypassing filter.`);
+        const emergencyTotal = allDevicesResult.data.length;
+        const emergencyPages = Math.max(1, Math.ceil(emergencyTotal / filters.limit));
+        const emergencyStart = (filters.page - 1) * filters.limit;
+        const emergencyEnd = emergencyStart + filters.limit;
+        const emergencyPaginated = allDevicesResult.data.slice(emergencyStart, emergencyEnd);
+        
+        console.log(`EMERGENCY BYPASS - Returning ${emergencyPaginated.length} devices directly`);
+        
+        return res.json({
+          data: emergencyPaginated,
+          total: emergencyTotal,
+          totalPages: emergencyPages,
+          page: filters.page,
+          limit: filters.limit
+        });
+      }
       
       console.log(`Returned ${paginatedDevices.length} devices out of ${totalFilteredDevices} total (filtered by permissions)`);
       console.log("Sample device IPs:", paginatedDevices.slice(0, 5).map(d => `${d.id}:${d.ipAddress}:subnet${d.subnetId}`));
