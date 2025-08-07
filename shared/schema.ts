@@ -56,7 +56,6 @@ export const devices = pgTable("devices", {
   lastSeen: timestamp("last_seen"),
   openPorts: text("open_ports").array(),
   assignmentType: text("assignment_type").default("dhcp"), // dhcp, static, reserved
-  createdBy: text("created_by").default("system scan"), // username or "system scan"
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
