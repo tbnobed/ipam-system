@@ -15,7 +15,7 @@ export NODE_ENV=production
 
 # Run database migration with automatic confirmation
 echo "Setting up database schema..."
-timeout 60 npm run db:push -- --force || echo "Database schema setup may have failed, but continuing..."
+echo "y" | timeout 60 npm run db:push || echo "Database schema setup may have failed, but continuing..."
 echo "Database schema setup completed successfully"
 
 # Force push schema changes to ensure all tables are up to date
@@ -53,15 +53,6 @@ if [ -f /app/migrations/007_add_user_groups_and_permissions.sql ]; then
   PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -f /app/migrations/007_add_user_groups_and_permissions.sql || echo "Group permissions migration failed, but continuing..."
 else
   echo "Migration file not found, skipping..."
-fi
-
-# Run migration 009 for device createdBy column
-echo "Running device createdBy column migration..."
-if [ -f /app/migrations/009_add_device_created_by.sql ]; then
-  echo "Migration 009 file exists, running..."
-  PGPASSWORD=ipam_password psql -h postgres -U ipam_user -d ipam_db -f /app/migrations/009_add_device_created_by.sql || echo "Device createdBy migration failed, but continuing..."
-else
-  echo "Migration 009 file not found, skipping..."
 fi
 
 # Verify current database structure
@@ -123,19 +114,6 @@ BEGIN
     WHERE table_name = 'users' AND column_name = 'group_id'
   ) THEN
     ALTER TABLE users ADD COLUMN group_id INTEGER REFERENCES user_groups(id) ON DELETE SET NULL;
-  END IF;
-END
-\$\$;
-
--- Add created_by column to devices table if it doesn't exist (migration 009)
-DO \$\$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'devices' AND column_name = 'created_by'
-  ) THEN
-    ALTER TABLE devices ADD COLUMN created_by TEXT DEFAULT 'system scan';
-    UPDATE devices SET created_by = 'system scan' WHERE created_by IS NULL;
   END IF;
 END
 \$\$;

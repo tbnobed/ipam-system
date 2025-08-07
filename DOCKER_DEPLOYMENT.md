@@ -20,11 +20,10 @@ This guide explains how to deploy the IPAM System using Docker with complete aut
 That's it! The system will automatically:
 - Build the application container
 - Set up PostgreSQL database (preserving existing data)
-- Apply all 9 database migrations including device creation tracking
-- Update database schema safely (including createdBy column for devices)
-- Create session table and group permissions
+- Update database schema safely
+- Create session table
 - Set up default users (admin/admin, user/user, viewer/viewer)
-- Configure default settings and notification preferences
+- Configure default settings
 
 ## Manual Deployment Steps
 
@@ -84,10 +83,8 @@ The system includes complete authentication and authorization:
 ## Database
 
 - PostgreSQL 15 with automatic schema initialization
-- Session table for secure authentication  
+- Session table for secure authentication
 - User management with permission system
-- Device creation tracking (shows who added each device)
-- All 9 database migrations applied automatically
 - Data persistence through Docker volumes
 - Health checks ensure proper startup sequence
 
@@ -95,12 +92,9 @@ The system includes complete authentication and authorization:
 
 - Real-time network scanning with WebSocket updates
 - Multi-subnet support with VLAN organization
-- Device discovery and tracking with creation attribution
-- Device creation tracking (shows who added each device: username or "system scan")
+- Device discovery and tracking
 - Excel export organized by VLAN
 - Permission-based data filtering
-- Enhanced group permissions system with inheritance
-- TBN organizational branding and modern UI
 
 ## Access
 
@@ -202,13 +196,7 @@ If you encounter database schema issues:
    ```bash
    docker-compose exec postgres psql -U ipam_user -d ipam_db -c "
    ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true NOT NULL;
-   ALTER TABLE devices ADD COLUMN IF NOT EXISTS created_by TEXT DEFAULT 'system scan';
    "
-   ```
-
-3. **Apply latest migration (009) for device tracking:**
-   ```bash
-   docker-compose exec postgres psql -U ipam_user -d ipam_db -f /app/migrations/009_add_device_created_by.sql
    ```
 
 3. **Complete database reset (⚠️ DESTROYS ALL DATA):**
