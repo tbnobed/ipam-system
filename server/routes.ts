@@ -72,20 +72,84 @@ const filterDevicesByAccessibleSubnets = async (devices: any[], userId: number, 
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize sessions
-  app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false, // Set to true in production with HTTPS
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    },
-  }));
   // Health check
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Debug endpoint to test proxy configuration
+  app.get('/api/debug/proxy', (req, res) => {
+    res.json({
+      headers: {
+        host: req.headers.host,
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+        'x-forwarded-for': req.headers['x-forwarded-for'],
+        'x-real-ip': req.headers['x-real-ip'],
+        'x-forwarded-proto': req.headers['x-forwarded-proto'],
+        'user-agent': req.headers['user-agent'],
+        cookie: req.headers.cookie ? 'present' : 'none'
+      },
+      session: {
+        id: req.sessionID,
+        user: (req.session as any)?.user || null,
+        cookie: req.session?.cookie || null
+      },
+      ip: req.ip,
+      ips: req.ips,
+      hostname: req.hostname,
+      protocol: req.protocol,
+      secure: req.secure
+    });
+  });
+
+  // Simple login endpoint that works better with proxies
+  app.post('/api/auth/proxy-login', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password required' });
+      }
+
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      const bcrypt = require('bcrypt');
+      const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      // Store user in session with explicit session save
+      (req.session as any).user = {
+        id: user.id,
+        username: user.username,
+        role: user.role
+      };
+      
+      // Force session save for proxy compatibility
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ error: 'Session save failed' });
+        }
+        
+        console.log('Session saved successfully for proxy login:', req.sessionID);
+        res.json({
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          sessionId: req.sessionID
+        });
+      });
+      
+    } catch (error) {
+      console.error('Proxy login error:', error);
+      res.status(500).json({ error: 'Login failed' });
+    }
   });
 
   // Health check endpoint for Docker

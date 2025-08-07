@@ -13,10 +13,24 @@ app.set('trust proxy', true);
 
 // CORS middleware for proxy requests
 app.use((req, res, next) => {
+  const origin = req.get('Origin') || req.get('Referer') || '*';
+  
   res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Origin', req.get('Origin') || '*');
+  res.header('Access-Control-Allow-Origin', origin);
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie');
+  res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+  
+  // Debug logging for proxy requests
+  if (req.headers['x-forwarded-for'] || req.headers['x-real-ip']) {
+    console.log(`Proxy request: ${req.method} ${req.path} from ${req.headers['x-forwarded-for'] || req.headers['x-real-ip']}`);
+    console.log(`Headers:`, {
+      host: req.headers.host,
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      cookie: req.headers.cookie ? 'present' : 'none'
+    });
+  }
   
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
@@ -28,16 +42,19 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Session configuration
+// Session configuration - simplified for proxy compatibility
 app.use(session({
   secret: process.env.SESSION_SECRET || 'ipam-system-secret-key',
   resave: false,
   saveUninitialized: false,
+  name: 'connect.sid', // Use default session name
+  proxy: true, // Trust proxy for secure cookies
   cookie: {
-    secure: false, // Keep false to support both HTTP and HTTPS behind proxy
-    httpOnly: true,
+    secure: false, // Keep false for HTTP/HTTPS compatibility
+    httpOnly: true, // Back to true for security
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'lax' // Allow cross-site requests for proxy setups
+    sameSite: false, // Disable sameSite for proxy compatibility
+    domain: undefined // Let Express handle domain
   }
 }));
 
