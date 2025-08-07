@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS settings (
   key TEXT UNIQUE NOT NULL,
   value TEXT NOT NULL,
   description TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 

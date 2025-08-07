@@ -659,12 +659,10 @@ class NetworkScanner {
           lastSeen: new Date(),
           openPorts: (discovery.openPorts || []).map(String),
           assignmentType: 'static',
-          createdBy: 'system scan',
         });
       }
     } catch (error) {
       console.error(`Error updating device ${discovery.ipAddress}:`, error);
-      console.error('Full error details:', error);
       // Continue processing other devices even if one fails
     }
   }

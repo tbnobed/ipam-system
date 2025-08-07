@@ -407,7 +407,6 @@ export class DatabaseStorage implements IStorage {
       lastSeen: devices.lastSeen,
       openPorts: devices.openPorts,
       assignmentType: devices.assignmentType,
-      createdBy: devices.createdBy,
       createdAt: devices.createdAt,
       updatedAt: devices.updatedAt
     })

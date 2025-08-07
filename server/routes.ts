@@ -42,7 +42,6 @@ const getUserAccessibleVlans = async (userId: number, userRole: string) => {
 
 // Helper function to get user's accessible subnets
 const getUserAccessibleSubnets = async (userId: number, userRole: string) => {
-  // Admins can access all subnets
   if (userRole === 'admin') {
     return await storage.getAllSubnets();
   }
@@ -62,7 +61,6 @@ const getUserAccessibleSubnets = async (userId: number, userRole: string) => {
 
 // Helper function to filter devices by accessible subnets
 const filterDevicesByAccessibleSubnets = async (devices: any[], userId: number, userRole: string) => {
-  // Admins can see all devices
   if (userRole === 'admin') {
     return devices;
   }
@@ -322,30 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endIndex = startIndex + filters.limit;
       const paginatedDevices = filteredDevices.slice(startIndex, endIndex);
       
-      console.log(`DEBUG - User role: ${req.user.role}, User ID: ${req.user.id}`);
-      console.log(`DEBUG - Raw devices before filtering: ${allDevicesResult.data.length}`);
-      console.log(`DEBUG - Devices after permission filtering: ${filteredDevices.length}`);
       console.log(`DEBUG - totalFilteredDevices: ${totalFilteredDevices}, filters.limit: ${filters.limit}, Math.ceil: ${Math.ceil(totalFilteredDevices / filters.limit)}, totalPages: ${totalPages}`);
-      
-      // Emergency bypass for admin users if filtering fails
-      if (req.user.role === 'admin' && filteredDevices.length === 0 && allDevicesResult.data.length > 0) {
-        console.log(`ERROR - Admin user should see all devices but filtering returned 0. Bypassing filter.`);
-        const emergencyTotal = allDevicesResult.data.length;
-        const emergencyPages = Math.max(1, Math.ceil(emergencyTotal / filters.limit));
-        const emergencyStart = (filters.page - 1) * filters.limit;
-        const emergencyEnd = emergencyStart + filters.limit;
-        const emergencyPaginated = allDevicesResult.data.slice(emergencyStart, emergencyEnd);
-        
-        console.log(`EMERGENCY BYPASS - Returning ${emergencyPaginated.length} devices directly`);
-        
-        return res.json({
-          data: emergencyPaginated,
-          total: emergencyTotal,
-          totalPages: emergencyPages,
-          page: filters.page,
-          limit: filters.limit
-        });
-      }
       
       console.log(`Returned ${paginatedDevices.length} devices out of ${totalFilteredDevices} total (filtered by permissions)`);
       console.log("Sample device IPs:", paginatedDevices.slice(0, 5).map(d => `${d.id}:${d.ipAddress}:subnet${d.subnetId}`));
@@ -387,13 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Add the username of the person creating the device
-      const deviceData = {
-        ...validatedData,
-        createdBy: req.user.username
-      };
-      
-      const device = await storage.createDevice(deviceData);
+      const device = await storage.createDevice(validatedData);
       res.status(201).json(device);
     } catch (error) {
       console.error("Error creating device:", error);
@@ -490,12 +459,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const accessibleSubnets = await getUserAccessibleSubnets(req.user.id, req.user.role);
         const accessibleSubnetIds = accessibleSubnets.map(s => s.id);
         validSubnetIds = validSubnetIds.filter(id => accessibleSubnetIds.includes(id));
-      } else {
-        // Admin users can scan all subnets if none specified
-        if (validSubnetIds.length === 0) {
-          const allSubnets = await storage.getAllSubnets();
-          validSubnetIds = allSubnets.map(s => s.id);
-        }
       }
       
       console.log("Processing scan with subnet IDs:", validSubnetIds);
