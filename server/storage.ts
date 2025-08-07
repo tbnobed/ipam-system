@@ -339,23 +339,18 @@ export class DatabaseStorage implements IStorage {
         .innerJoin(vlans, eq(subnets.vlanId, vlans.id))
         .where(eq(vlans.vlanId, parseInt(filters.vlan)));
       
-      console.log(`🏷️  VLAN filter ${filters.vlan}: Found ${vlanSubnets.length} subnets`, vlanSubnets.map(s => s.id));
-      
       if (vlanSubnets.length > 0) {
         const subnetConditions = vlanSubnets.map(subnet => eq(devices.subnetId, subnet.id));
         conditions.push(or(...subnetConditions));
       } else {
         // If no subnets found for this VLAN, return no devices
-        console.log(`❌ No subnets found for VLAN ${filters.vlan} - filtering to return no devices`);
         conditions.push(sql`1 = 0`);
       }
     }
 
     if (filters.subnet) {
       // Filter devices by specific subnet ID
-      const subnetId = parseInt(filters.subnet);
-      console.log(`🌐 Subnet filter: Filtering devices by subnet ID ${subnetId}`);
-      conditions.push(eq(devices.subnetId, subnetId));
+      conditions.push(eq(devices.subnetId, parseInt(filters.subnet)));
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

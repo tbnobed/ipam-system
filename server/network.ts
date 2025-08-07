@@ -249,9 +249,7 @@ class NetworkScanner {
         },
       });
 
-      const aliveCount = results.filter(d => d.isAlive).length;
-      console.log(`Network scan ${scanId} completed. Scanned ${results.length} IPs, found ${aliveCount} alive devices.`);
-      console.log(`Production debug - alive devices:`, results.filter(d => d.isAlive).map(d => d.ipAddress));
+      console.log(`Network scan ${scanId} completed. Found ${results.length} devices.`);
     } catch (error) {
       console.error(`Network scan ${scanId} failed:`, error);
       
@@ -306,12 +304,6 @@ class NetworkScanner {
       
       const aliveResults = batchResults.filter(result => result.isAlive);
       results.push(...aliveResults);
-      
-      // Enhanced logging for production debugging
-      console.log(`Batch scan results for ${network}: ${batchResults.length} scanned, ${aliveResults.length} alive`);
-      if (aliveResults.length > 0) {
-        console.log(`Found alive devices:`, aliveResults.map(d => `${d.ipAddress}(alive:${d.isAlive})`));
-      }
       
       // Broadcast newly found devices immediately
       if (aliveResults.length > 0) {
@@ -390,13 +382,6 @@ class NetworkScanner {
       // Enhanced ping for shared gateway networks
       const pingResult = await this.pingDevice(ipAddress);
       result.isAlive = pingResult.success;
-      
-      // Enhanced logging for debugging scan logic
-      console.log(`🔍 Scanning ${ipAddress}: ${result.isAlive ? '✅ ALIVE' : '❌ no response'} (${pingResult.responseTime ? pingResult.responseTime + 'ms' : 'timeout'})`);
-      
-      if (result.isAlive) {
-        console.log(`✅ Device found at ${ipAddress} - ping success`);
-      }
 
       if (result.isAlive) {
         // Try to get hostname
@@ -433,11 +418,6 @@ class NetworkScanner {
       const timeoutSetting = await storage.getSetting('ping_timeout');
       const timeout = timeoutSetting ? parseInt(timeoutSetting.value) : 2;
       
-      // Test localhost first to ensure ping works
-      if (ipAddress === '127.0.0.1') {
-        console.log(`🧪 Testing localhost ping for verification...`);
-      }
-      
       // Enhanced ping settings for shared gateway networks
       // Use multiple attempts with different timing for better reliability
       const { stdout } = await execAsync(`ping -c 3 -W ${timeout} -i 0.3 ${ipAddress}`);
@@ -446,7 +426,6 @@ class NetworkScanner {
       const match = stdout.match(/time=([0-9.]+)/);
       const responseTime = match ? parseFloat(match[1]) : undefined;
 
-      console.log(`🏓 Ping ${ipAddress}: SUCCESS (${responseTime}ms)`);
       return {
         success: true,
         responseTime,
@@ -460,13 +439,11 @@ class NetworkScanner {
         const match = stdout.match(/time=([0-9.]+)/);
         const responseTime = match ? parseFloat(match[1]) : undefined;
         
-        console.log(`🏓 Ping ${ipAddress}: SUCCESS on fallback (${responseTime}ms)`);
         return {
           success: true,
           responseTime,
         };
       } catch (fallbackError) {
-        console.log(`🏓 Ping ${ipAddress}: FAILED - ${String(error).slice(0, 100)}`);
         return {
           success: false,
           error: String(error),
@@ -618,38 +595,24 @@ class NetworkScanner {
   }
 
   private async findSubnetForIP(ipAddress: string): Promise<number | null> {
-    try {
-      const subnets = await storage.getAllSubnets();
-      console.log(`🔍 Finding subnet for IP ${ipAddress}, available subnets:`, subnets.map(s => `${s.id}: ${s.network}`));
-      
-      // Sort by CIDR specificity (most specific first) to prevent conflicts
-      const sortedSubnets = subnets.sort((a, b) => {
-        const cidrA = parseInt(a.network.split('/')[1]);
-        const cidrB = parseInt(b.network.split('/')[1]);
-        // Higher CIDR = more specific, should be checked first
-        if (cidrA !== cidrB) return cidrB - cidrA;
-        return a.network.localeCompare(b.network);
-      });
-      
-      for (const subnet of sortedSubnets) {
-        const isMatch = this.isIPInSubnet(ipAddress, subnet.network);
-        console.log(`   Checking ${ipAddress} against subnet ${subnet.id} (${subnet.network}): ${isMatch ? '✅ MATCH' : '❌ no match'}`);
-        if (isMatch) {
-          console.log(`✅ Found subnet ${subnet.id} for IP ${ipAddress}`);
-          return subnet.id;
-        }
+    const subnets = await storage.getAllSubnets();
+    
+    // Sort by CIDR specificity (most specific first) to prevent conflicts
+    const sortedSubnets = subnets.sort((a, b) => {
+      const cidrA = parseInt(a.network.split('/')[1]);
+      const cidrB = parseInt(b.network.split('/')[1]);
+      // Higher CIDR = more specific, should be checked first
+      if (cidrA !== cidrB) return cidrB - cidrA;
+      return a.network.localeCompare(b.network);
+    });
+    
+    for (const subnet of sortedSubnets) {
+      if (this.isIPInSubnet(ipAddress, subnet.network)) {
+        return subnet.id;
       }
-      console.error(`❌ No subnet found for IP ${ipAddress}`);
-    } catch (error) {
-      console.error(`Error finding subnet for IP ${ipAddress}:`, error);
     }
     
     return null;
-  }
-
-  // Public method for device import to find subnet for IP
-  async findSubnetForDeviceIP(ipAddress: string): Promise<number | null> {
-    return this.findSubnetForIP(ipAddress);
   }
 
   private isIPInSubnet(ipAddress: string, subnet: string): boolean {
@@ -684,25 +647,20 @@ class NetworkScanner {
           openPorts: (discovery.openPorts || []).map(String),
         });
       } else {
-        // Create new device - ALWAYS determine correct subnet by IP address
+        // Create new device - let database function determine correct subnet
         const correctSubnetId = await this.findSubnetForIP(discovery.ipAddress);
-        if (correctSubnetId) {
-          await storage.createDevice({
-            ipAddress: discovery.ipAddress,
-            hostname: discovery.hostname,
-            macAddress: discovery.macAddress,
-            vendor: discovery.vendor,
-            subnetId: correctSubnetId, // Use ONLY the calculated subnet ID
-            status: 'online',
-            lastSeen: new Date(),
-            openPorts: (discovery.openPorts || []).map(String),
-            assignmentType: 'static',
-            createdBy: 'system scan',
-          });
-          console.log(`✅ Created device ${discovery.ipAddress} in subnet ${correctSubnetId}`);
-        } else {
-          console.error(`❌ Could not assign subnet for IP ${discovery.ipAddress} - skipping device creation`);
-        }
+        await storage.createDevice({
+          ipAddress: discovery.ipAddress,
+          hostname: discovery.hostname,
+          macAddress: discovery.macAddress,
+          vendor: discovery.vendor,
+          subnetId: correctSubnetId || originalSubnetId,
+          status: 'online',
+          lastSeen: new Date(),
+          openPorts: (discovery.openPorts || []).map(String),
+          assignmentType: 'static',
+          createdBy: 'system scan',
+        });
       }
     } catch (error) {
       console.error(`Error updating device ${discovery.ipAddress}:`, error);
