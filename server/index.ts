@@ -13,10 +13,18 @@ app.set('trust proxy', true);
 
 // CORS middleware for proxy requests
 app.use((req, res, next) => {
+  const origin = req.get('Origin');
+  
+  // Allow requests from NPM proxy domains and direct access
   res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Origin', req.get('Origin') || '*');
+  res.header('Access-Control-Allow-Origin', origin || '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Forwarded-For, X-Forwarded-Proto, X-Forwarded-Host');
+  
+  // Add debugging for proxy headers
+  if (req.headers['x-forwarded-for']) {
+    console.log(`Proxy request from: ${req.headers['x-forwarded-for']}, Host: ${req.get('host')}, Origin: ${origin}`);
+  }
   
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
@@ -33,11 +41,13 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'ipam-system-secret-key',
   resave: false,
   saveUninitialized: false,
+  name: 'ipam.session', // Custom session name to avoid conflicts
   cookie: {
     secure: false, // Keep false to support both HTTP and HTTPS behind proxy
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'lax' // Allow cross-site requests for proxy setups
+    sameSite: 'lax', // Allow cross-site requests for proxy setups
+    domain: undefined // Let browser handle domain automatically
   }
 }));
 
