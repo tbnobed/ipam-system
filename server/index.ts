@@ -67,13 +67,6 @@ app.use((req, res, next) => {
     console.error("Settings initialization failed:", error);
   }
 
-  // Initialize default users if none exist
-  try {
-    await storage.initializeDefaultUsers();
-  } catch (error) {
-    console.error("User initialization failed:", error);
-  }
-
   // Fix existing device subnet assignments
   try {
     console.log("Starting to fix existing device subnet assignments...");

@@ -32,9 +32,9 @@ Key architectural decisions and technical implementations include:
 - **Docker:** Used for containerization and deployment of the entire application stack.
 
 ## Recent Changes
+- **2025-08-06**: **ADDED BY COLUMN IMPLEMENTATION**: Added "Added by" column to Device List showing username for manually added devices and "system scan" for automatically discovered devices. Includes database migration 009, enhanced network scanning logic, and sortable column in device table
+- **2025-08-06**: **PRODUCTION DEVICE SCAN ISSUE IDENTIFIED**: Enhanced error logging in network scanning to diagnose why discovered devices (121 shown in scan UI) are not being saved to production database. Issue appears to be silent failures in device creation during network scans
 - **2025-08-06**: **DOCKER BUILD ISSUES RESOLVED**: Fixed critical database schema issues causing Docker deployment failures - resolved missing created_at column in settings table, missing assignment_type column in subnets table, and foreign key constraint violations in activity_logs. All 8 database migrations now apply successfully enabling clean Docker deployments
 - **2025-08-06**: **DOCKER COMPOSE CLEANUP**: Removed obsolete init.sql reference from docker-compose.yml configuration ensuring PostgreSQL container starts without initialization errors
 - **2025-08-06**: **CODEBASE CLEANUP**: Removed all unnecessary Docker test scripts and database maintenance files - cleaned up 18 obsolete files including test scripts, debug tools, production fixes, and temporary assets while preserving only essential deployment files for fresh installations  
 - **2025-08-06**: **HARDCODED IDS ELIMINATION**: Completely eliminated all hardcoded VLAN and subnet IDs from codebase - updated test scripts and production fixes to use dynamic database lookups ensuring complete data integrity with authentic sources only
-- **2025-08-06**: **SIDEBAR MODERNIZATION**: Redesigned sidebar with modern professional appearance - increased TBN logo size by 50%, improved spacing and typography, added blue accent colors and smooth transitions, enhanced user profile section with gradient avatar
-- **2025-08-06**: **TBN BRANDING INTEGRATION**: Moved TBN logo to proper Vite asset directory structure and integrated throughout application with proper organizational branding

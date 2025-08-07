@@ -407,6 +407,7 @@ export class DatabaseStorage implements IStorage {
       lastSeen: devices.lastSeen,
       openPorts: devices.openPorts,
       assignmentType: devices.assignmentType,
+      createdBy: devices.createdBy,
       createdAt: devices.createdAt,
       updatedAt: devices.updatedAt
     })
@@ -692,31 +693,6 @@ export class DatabaseStorage implements IStorage {
           console.log(`🔄 Updated setting from env: ${setting.key} = ${setting.value}`);
         }
       }
-    }
-  }
-
-  // System initialization - create default admin if no users exist
-  async initializeDefaultUsers(): Promise<void> {
-    try {
-      const existingUsers = await this.getAllUsers();
-      
-      if (existingUsers.length === 0) {
-        console.log("No users found, creating default admin user...");
-        const bcrypt = require('bcrypt');
-        const hashedPassword = await bcrypt.hash('admin123', 10);
-        
-        await this.createUser({
-          username: 'admin',
-          password: hashedPassword,
-          role: 'admin',
-          isActive: true
-        });
-        
-        console.log("✅ Default admin user created: username='admin', password='admin123'");
-        console.log("⚠️  Please change the default password after first login");
-      }
-    } catch (error) {
-      console.error("Error initializing default users:", error);
     }
   }
 
