@@ -1,0 +1,141 @@
+postgres-1  |
+postgres-1  | waiting for server to start....2025-08-07 07:12:45.748 UTC [41] LOG:  starting PostgreSQL 15.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+postgres-1  | 2025-08-07 07:12:45.749 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+postgres-1  | 2025-08-07 07:12:45.752 UTC [44] LOG:  database system was shut down at 2025-08-07 07:12:45 UTC
+postgres-1  | 2025-08-07 07:12:45.757 UTC [41] LOG:  database system is ready to accept connections
+postgres-1  |  done
+postgres-1  | server started
+postgres-1  | CREATE DATABASE
+postgres-1  |
+postgres-1  |
+postgres-1  | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/init.sql
+postgres-1  | CREATE TABLE
+postgres-1  | CREATE TABLE
+postgres-1  | CREATE TABLE
+postgres-1  | CREATE TABLE
+postgres-1  | CREATE TABLE
+postgres-1  | CREATE TABLE
+postgres-1  | CREATE TABLE
+postgres-1  | CREATE FUNCTION
+postgres-1  | CREATE FUNCTION
+postgres-1  | psql:/docker-entrypoint-initdb.d/init.sql:154: NOTICE:  trigger "device_auto_subnet_insert" for relation "devices" does not exist, skipping
+postgres-1  | DROP TRIGGER
+postgres-1  | CREATE TRIGGER
+postgres-1  | DROP TRIGGER
+postgres-1  | psql:/docker-entrypoint-initdb.d/init.sql:161: NOTICE:  trigger "device_auto_subnet_update" for relation "devices" does not exist, skipping
+postgres-1  | CREATE TRIGGER
+postgres-1  | psql:/docker-entrypoint-initdb.d/init.sql:172: NOTICE:  relation "migrations" already exists, skipping
+postgres-1  | CREATE TABLE
+postgres-1  | INSERT 0 1
+postgres-1  |
+postgres-1  |
+postgres-1  | waiting for server to shut down....2025-08-07 07:12:45.956 UTC [41] LOG:  received fast shutdown request
+postgres-1  | 2025-08-07 07:12:45.957 UTC [41] LOG:  aborting any active transactions
+postgres-1  | 2025-08-07 07:12:45.961 UTC [41] LOG:  background worker "logical replication launcher" (PID 47) exited with exit code 1
+postgres-1  | 2025-08-07 07:12:45.961 UTC [42] LOG:  shutting down
+postgres-1  | 2025-08-07 07:12:45.962 UTC [42] LOG:  checkpoint starting: shutdown immediate
+postgres-1  | 2025-08-07 07:12:45.988 UTC [42] LOG:  checkpoint complete: wrote 951 buffers (5.8%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.020 s, sync=0.003 s, total=0.027 s; sync files=339, longest=0.001 s, average=0.001 s; distance=4437 kB, estimate=4437 kB
+postgres-1  | 2025-08-07 07:12:45.994 UTC [41] LOG:  database system is shut down
+postgres-1  |  done
+postgres-1  | server stopped
+postgres-1  |
+postgres-1  | PostgreSQL init process complete; ready for start up.
+postgres-1  |
+postgres-1  | 2025-08-07 07:12:46.078 UTC [1] LOG:  starting PostgreSQL 15.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+postgres-1  | 2025-08-07 07:12:46.078 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+postgres-1  | 2025-08-07 07:12:46.078 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+postgres-1  | 2025-08-07 07:12:46.080 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+postgres-1  | 2025-08-07 07:12:46.083 UTC [59] LOG:  database system was shut down at 2025-08-07 07:12:45 UTC
+postgres-1  | 2025-08-07 07:12:46.088 UTC [1] LOG:  database system is ready to accept connections
+ipam-app-1  |   Yes, truncate the tableVerifying database tables...
+ipam-app-1  | NOTICE:  relation "activity_logs" already exists, skipping
+ipam-app-1  | CREATE TABLE
+ipam-app-1  | CREATE TABLE
+ipam-app-1  | Running user groups and permissions migration...
+ipam-app-1  | Migration file exists, running...
+ipam-app-1  | CREATE TABLE
+ipam-app-1  | CREATE TABLE
+ipam-app-1  | DO
+ipam-app-1  | CREATE INDEX
+ipam-app-1  | CREATE INDEX
+ipam-app-1  | CREATE INDEX
+ipam-app-1  | CREATE INDEX
+ipam-app-1  | DO
+ipam-app-1  | INSERT 0 1
+ipam-app-1  | Checking current database structure...
+ipam-app-1  |     table_name
+ipam-app-1  | -------------------
+ipam-app-1  |  group_permissions
+ipam-app-1  |  user_groups
+ipam-app-1  | (2 rows)
+ipam-app-1  |
+ipam-app-1  | Creating group permissions tables manually...
+ipam-app-1  | NOTICE:  relation "user_groups" already exists, skipping
+ipam-app-1  | NOTICE:  relation "group_permissions" already exists, skipping
+ipam-app-1  | CREATE TABLE
+ipam-app-1  | DO
+ipam-app-1  | CREATE TABLE
+ipam-app-1  | NOTICE:  relation "idx_group_permissions_group_id" already exists, skipping
+ipam-app-1  | DO
+ipam-app-1  | CREATE INDEX
+ipam-app-1  | CREATE INDEX
+ipam-app-1  | NOTICE:  relation "idx_group_permissions_vlan_id" already exists, skipping
+ipam-app-1  | NOTICE:  relation "idx_group_permissions_subnet_id" already exists, skipping
+ipam-app-1  | NOTICE:  relation "idx_users_group_id" already exists, skipping
+ipam-app-1  | CREATE INDEX
+ipam-app-1  | CREATE INDEX
+ipam-app-1  | DO
+ipam-app-1  | Checking users table structure...
+ipam-app-1  | DO
+ipam-app-1  | Creating session table...
+ipam-app-1  | CREATE TABLE
+ipam-app-1  | CREATE INDEX
+ipam-app-1  | DO
+ipam-app-1  | Setting up production environment...
+ipam-app-1  | Setting up production database...
+ipam-app-1  | ✅ Admin user created/updated
+ipam-app-1  | ✅ Demo user created/updated
+ipam-app-1  | ✅ Demo viewer created/updated
+ipam-app-1  | 📋 DOCKER ENVIRONMENT VARIABLES:
+ipam-app-1  |    NODE_ENV: production
+ipam-app-1  |    DEFAULT_SCAN_INTERVAL: 3600
+ipam-app-1  |    DATA_RETENTION_DAYS: 90
+ipam-app-1  |    ALERT_EMAILS: obedtest@tbn.tv
+ipam-app-1  |    SENDGRID_API_KEY: configured
+ipam-app-1  |    FROM_EMAIL: alerts@obedtv.com
+ipam-app-1  | 🔧 Environment variables loaded from .env.docker via docker-compose env_file
+postgres-1  | 2025-08-07 07:13:18.213 UTC [95] ERROR:  column "created_at" of relation "settings" does not exist at character 59
+postgres-1  | 2025-08-07 07:13:18.213 UTC [95] STATEMENT:
+postgres-1  |             INSERT INTO settings (key, value, description, created_at, updated_at)
+postgres-1  |             VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+postgres-1  |
+ipam-app-1  | ❌ Production database setup failed: error: column "created_at" of relation "settings" does not exist
+ipam-app-1  |     at /app/node_modules/pg-pool/index.js:45:11
+ipam-app-1  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+ipam-app-1  |     at async setupProduction (file:///app/setup-production.mjs:89:9) {
+ipam-app-1  |   length: 131,
+ipam-app-1  |   severity: 'ERROR',
+ipam-app-1  |   code: '42703',
+ipam-app-1  |   detail: undefined,
+ipam-app-1  |   hint: undefined,
+ipam-app-1  |   position: '59',
+ipam-app-1  |   internalPosition: undefined,
+ipam-app-1  |   internalQuery: undefined,
+ipam-app-1  |   where: undefined,
+ipam-app-1  |   schema: undefined,
+ipam-app-1  |   table: undefined,
+ipam-app-1  |   column: undefined,
+ipam-app-1  |   dataType: undefined,
+ipam-app-1  |   constraint: undefined,
+ipam-app-1  |   file: 'parse_target.c',
+ipam-app-1  |   line: '1075',
+ipam-app-1  |   routine: 'checkInsertTargets'
+ipam-app-1  | }
+ipam-app-1  | Production setup script failed, creating users manually...
+ipam-app-1  | Creating admin user manually...
+ipam-app-1  | INSERT 0 1
+ipam-app-1  | Creating user account manually...
+ipam-app-1  | INSERT 0 1
+ipam-app-1  | Creating viewer account manually...
+ipam-app-1  | INSERT 0 1
+ipam-app-1  | Verifying users were created...
