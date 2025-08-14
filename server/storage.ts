@@ -114,17 +114,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createVlan(insertVlan: InsertVlan): Promise<Vlan> {
-    // Check if VLAN ID already exists
-    const existingVlan = await db
-      .select()
-      .from(vlans)
-      .where(eq(vlans.vlanId, insertVlan.vlanId))
-      .limit(1);
-    
-    if (existingVlan.length > 0) {
-      throw new Error(`VLAN ID ${insertVlan.vlanId} already exists`);
-    }
-    
     const [vlan] = await db
       .insert(vlans)
       .values(insertVlan)
@@ -133,19 +122,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateVlan(id: number, updates: Partial<InsertVlan>): Promise<Vlan> {
-    // If updating VLAN ID, check for duplicates
-    if (updates.vlanId !== undefined) {
-      const existingVlan = await db
-        .select()
-        .from(vlans)
-        .where(and(eq(vlans.vlanId, updates.vlanId), ne(vlans.id, id)))
-        .limit(1);
-      
-      if (existingVlan.length > 0) {
-        throw new Error(`VLAN ID ${updates.vlanId} already exists`);
-      }
-    }
-    
     const [vlan] = await db
       .update(vlans)
       .set(updates)

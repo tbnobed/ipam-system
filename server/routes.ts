@@ -137,12 +137,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(vlan);
     } catch (error) {
       console.error("Error creating VLAN:", error);
-      
-      // Handle specific duplicate key error
-      if (error instanceof Error && error.message.includes('already exists')) {
-        return res.status(409).json({ error: error.message });
-      }
-      
       res.status(400).json({ error: "Failed to create VLAN" });
     }
   });
@@ -168,12 +162,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(vlan);
     } catch (error) {
       console.error("Error updating VLAN:", error);
-      
-      // Handle specific duplicate key error
-      if (error instanceof Error && error.message.includes('already exists')) {
-        return res.status(409).json({ error: error.message });
-      }
-      
       res.status(400).json({ error: "Failed to update VLAN" });
     }
   });
