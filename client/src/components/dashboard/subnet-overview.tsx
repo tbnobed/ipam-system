@@ -45,23 +45,22 @@ export default function SubnetOverview({ subnets }: SubnetOverviewProps) {
           </Button>
         </Link>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {subnets.slice(0, 8).map((subnet) => (
-            <div key={subnet.id} className="flex items-center space-x-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{subnet.name}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{subnet.utilization}% used</span>
-                </div>
-                <Progress 
-                  value={subnet.utilization} 
-                  className="h-2 mb-1"
-                />
-                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span className="truncate">{subnet.description}</span>
-                  <span className="whitespace-nowrap">{subnet.available} available</span>
-                </div>
+      <CardContent className="p-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-80 overflow-y-auto">
+          {subnets.slice(0, 12).map((subnet) => (
+            <div key={subnet.id} className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+              <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate mb-1">
+                {subnet.name}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                {subnet.utilization}% used
+              </div>
+              <Progress 
+                value={subnet.utilization} 
+                className="h-1 mb-1"
+              />
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {subnet.available} avail
               </div>
             </div>
           ))}
