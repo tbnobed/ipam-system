@@ -45,21 +45,21 @@ export default function SubnetOverview({ subnets }: SubnetOverviewProps) {
           </Button>
         </Link>
       </CardHeader>
-      <CardContent className="p-4">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-80 overflow-y-auto">
+      <CardContent className="p-4 h-96">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 h-full overflow-y-auto">
           {subnets
             .sort((a, b) => b.utilization - a.utilization)
             .map((subnet) => (
-            <div key={subnet.id} className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
-              <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate mb-1">
+            <div key={subnet.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded border h-fit">
+              <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate mb-2">
                 {subnet.name}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                 {subnet.utilization}% used
               </div>
               <Progress 
                 value={subnet.utilization} 
-                className="h-1 mb-1"
+                className="h-1.5 mb-2"
               />
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 {subnet.available} avail
