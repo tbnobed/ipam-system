@@ -35,6 +35,7 @@ The IPAM system is built with a modern full-stack architecture. The **backend** 
 - Device tracking functionality to monitor who created each device.
 
 ## Recent Changes
+- **2025-08-14**: **VLAN DUPLICATE KEY CONSTRAINT FIX**: Fixed critical production issue where duplicate VLAN ID creation caused constraint violations - added proper duplicate checking in createVlan and updateVlan methods with improved error handling and HTTP 409 responses for conflicts
 - **2025-08-07**: **DEVICE TRACKING FEATURE**: Added "Created By" column to track who added each device - devices from system scans show "system scan", manually added devices show the username. Includes complete Docker deployment support with database migration and schema updates
 - **2025-08-07**: **DOCKER DEPLOYMENT FIX**: Fixed critical production deployment issue where settings table was missing created_at column causing database initialization failures - updated docker-entrypoint.sh to include proper schema definition, Docker build now succeeds completely
 - **2025-08-07**: **MODERN SIDEBAR REDESIGN**: Implemented modern sidebar design with enhanced spacing, professional styling, blue accent colors, gradient user avatar, and 50% larger TBN logo for better brand visibility
