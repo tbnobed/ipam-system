@@ -49,7 +49,6 @@ export default function SubnetOverview({ subnets }: SubnetOverviewProps) {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-80 overflow-y-auto">
           {subnets
             .sort((a, b) => b.utilization - a.utilization)
-            .slice(0, 12)
             .map((subnet) => (
             <div key={subnet.id} className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
               <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate mb-1">
