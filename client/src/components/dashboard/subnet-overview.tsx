@@ -45,24 +45,26 @@ export default function SubnetOverview({ subnets }: SubnetOverviewProps) {
           </Button>
         </Link>
       </CardHeader>
-      <CardContent className="p-4 h-96">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 h-full overflow-y-auto">
+      <CardContent className="p-4 flex-1 flex flex-col">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-fr gap-3 flex-1 overflow-y-auto">
           {subnets
             .sort((a, b) => b.utilization - a.utilization)
             .map((subnet) => (
-            <div key={subnet.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded border h-fit">
+            <div key={subnet.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded border flex flex-col justify-between min-h-[100px]">
               <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate mb-2">
                 {subnet.name}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                {subnet.utilization}% used
-              </div>
-              <Progress 
-                value={subnet.utilization} 
-                className="h-1.5 mb-2"
-              />
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                {subnet.available} avail
+              <div className="flex-1 flex flex-col justify-center">
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  {subnet.utilization}% used
+                </div>
+                <Progress 
+                  value={subnet.utilization} 
+                  className="h-2 mb-2"
+                />
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {subnet.available} avail
+                </div>
               </div>
             </div>
           ))}
