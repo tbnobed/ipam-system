@@ -347,7 +347,7 @@ export default function VLANs() {
           </div>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {vlans?.map((vlan) => {
             const vlanSubnets = getSubnetsForVlan(vlan.id);
             const isExpanded = expandedVlans.has(vlan.id);
