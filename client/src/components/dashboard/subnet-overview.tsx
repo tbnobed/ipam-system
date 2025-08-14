@@ -46,20 +46,22 @@ export default function SubnetOverview({ subnets }: SubnetOverviewProps) {
         </Link>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {subnets.map((subnet) => (
-            <div key={subnet.id} className="p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-900">{subnet.name}</span>
-                <span className="text-sm text-gray-500">{subnet.utilization}% used</span>
-              </div>
-              <Progress 
-                value={subnet.utilization} 
-                className="h-2 mb-2"
-              />
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>{subnet.description}</span>
-                <span>{subnet.available} available</span>
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {subnets.slice(0, 8).map((subnet) => (
+            <div key={subnet.id} className="flex items-center space-x-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{subnet.name}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{subnet.utilization}% used</span>
+                </div>
+                <Progress 
+                  value={subnet.utilization} 
+                  className="h-2 mb-1"
+                />
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <span className="truncate">{subnet.description}</span>
+                  <span className="whitespace-nowrap">{subnet.available} available</span>
+                </div>
               </div>
             </div>
           ))}
